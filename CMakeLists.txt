@@ -41,3 +41,7 @@ set(SOURCES main.cpp ${IMGUI} ${GL3W})
 
 add_executable(phos ${SOURCES})
 target_link_libraries(phos ${SDL2_LIBRARIES})
+
+#add_subdirectory(libs/imgui)
+#add_subdirectory(libs/gl3w/GL)
+#add_subdirectory(src)
