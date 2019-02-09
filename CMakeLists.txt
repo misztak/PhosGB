@@ -4,14 +4,14 @@ project(phos)
 set(CMAKE_CXX_STANDARD 17)
 
 # compiler flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/usr/include/SDL -Wall")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 # linker flags
 if (APPLE)
     set(LIBS "-lc++abi -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo")
 elseif(UNIX AND NOT APPLE)
-    # TODO
+    set(LIBS "-Wl,--start-group -lGL -ldl")
 elseif(WIN32)
     # TODO
 else()
