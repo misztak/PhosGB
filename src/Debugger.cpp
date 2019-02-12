@@ -1,4 +1,5 @@
 #include <iostream>
+#include <array>
 #include "Debugger.h"
 
 Debugger::Debugger() : enabled(false), show_demo_window(true), show_another_window(false) {}
@@ -6,7 +7,6 @@ Debugger::Debugger() : enabled(false), show_demo_window(true), show_another_wind
 void Debugger::initContext(SDL_Window* window, void* glContext) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    io = ImGui::GetIO();
     ImGui::StyleColorsDark();
 
     ImGui_ImplSDL2_InitForOpenGL(window, glContext);
@@ -25,7 +25,34 @@ void Debugger::toggle() {
     enabled = !enabled;
 }
 
-void Debugger::start(SDL_Window* window, ImVec4& clear_color) {
+const int width = 160;
+const int height = 144;
+const size_t wow = width*height*4;
+
+void memes(std::array<uint8_t, wow>& pixel) {
+    uint8_t pixelBuffer[wow];
+    memcpy(pixelBuffer, pixel.data(), wow);
+
+    GLuint handler;
+    glGenTextures(1, &handler);
+    glBindTexture(GL_TEXTURE_2D, handler);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel.data());
+
+    GLenum error;
+    if ((error = glGetError()) != GL_NO_ERROR) {
+        std::cerr << "OpenGL error: " << error << std::endl;
+        exit(1);
+    }
+
+    ImGui::Text("Serious shit inc");
+    ImGui::Image((void*)(intptr_t)handler, ImVec2(160, 144));
+    glBindTexture(GL_TEXTURE_2D, 0);
+    ImGui::ShowMetricsWindow();
+}
+
+void Debugger::start(SDL_Window* window, std::array<uint8_t, 160*144*4>& pixel) {
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
@@ -47,7 +74,7 @@ void Debugger::start(SDL_Window* window, ImVec4& clear_color) {
         ImGui::Checkbox("Another Window", &show_another_window);
 
         ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-        ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+        //ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
         if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
             counter++;
@@ -55,16 +82,7 @@ void Debugger::start(SDL_Window* window, ImVec4& clear_color) {
         ImGui::Text("counter = %d", counter);
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        ImGui::End();
-    }
-
-    // 3. Show another simple window.
-    if (show_another_window)
-    {
-        ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-        ImGui::Text("Hello from another window!");
-        if (ImGui::Button("Close Me"))
-            show_another_window = false;
+        memes(pixel);
         ImGui::End();
     }
 
