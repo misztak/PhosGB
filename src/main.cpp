@@ -1,7 +1,6 @@
 #include <GL/glew.h>
 #include <SDL.h>
 #include <array>
-#include <iostream>
 
 #include "Debugger.h"
 #include "Display.h"
@@ -14,9 +13,9 @@
     // GL 3.0 + GLSL 130
     const int compatFlags = 0;
     const int minorVersion = 0;
-# endif
+#endif
 
-int main(int, char**)
+int main(int argc, char** argv)
 {
     // Debugger Test
     Debugger debugger;
@@ -25,7 +24,7 @@ int main(int, char**)
     if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER) != 0)
     {
         printf("Error: %s\n", SDL_GetError());
-        return -1;
+        return 1;
     }
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, compatFlags);
@@ -39,7 +38,11 @@ int main(int, char**)
     //SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_DisplayMode current;
     SDL_GetCurrentDisplayMode(0, &current);
-    SDL_Window* window = SDL_CreateWindow("Dear ImGui SDL2+OpenGL3 example", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCALED_WIDTH, SCALED_HEIGHT, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE);
+    SDL_Window* window = SDL_CreateWindow(
+            "PhosGB",
+            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+            SCALED_WIDTH, SCALED_HEIGHT,
+            SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE );
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
     SDL_GL_SetSwapInterval(1); // Enable vsync
 
@@ -48,9 +51,8 @@ int main(int, char**)
     if (err)
     {
         fprintf(stderr, "Failed to initialize OpenGL loader!\n");
-        return -1;
+        return 1;
     }
-    debugger.initContext(window, gl_context);
 
     const int wow = 160*144*4;
     std::array<uint8_t, wow> pixel = {};
@@ -69,15 +71,22 @@ int main(int, char**)
         counter++;
     }
 
-    Display display;
-    if (!display.initGL()) {
-        return -1;
-    }
-    if (!display.loadPixelArray(pixel)) {
-        return -1;
+    std::array<uint8_t, wow> pixel2 = {};
+    for (uint8_t& p: pixel2) {
+        p = 255;
     }
 
+    Display display;
+    if (!display.initGL()) {
+        return 1;
+    }
+    if (!display.loadPixelArray(pixel)) {
+        return 1;
+    }
+    debugger.initContext(window, gl_context, pixel2);
+
     // Main loop
+    bool hostChanged = false;
     bool done = false;
     while (!done)
     {
@@ -91,15 +100,25 @@ int main(int, char**)
                 done = true;
             if (event.type == SDL_KEYDOWN) {
                 debugger.toggle();
+                hostChanged = true;
             }
         }
 
-        if (debugger.isEnabled()) debugger.start(window, pixel);
-        SDL_GL_MakeCurrent(window, gl_context);
-        //glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-        display.render();
+        if (hostChanged && debugger.isEnabled()) {
+            SDL_SetWindowSize(window, 1200, 900);
+            hostChanged = false;
+        } else if (hostChanged && !debugger.isEnabled()) {
+            SDL_SetWindowSize(window, SCALED_WIDTH, SCALED_HEIGHT);
+            hostChanged = false;
+        }
 
+        if (debugger.isEnabled()) debugger.start(window);
+        SDL_GL_MakeCurrent(window, gl_context);
+
+        glClear(GL_COLOR_BUFFER_BIT);
+        if (!debugger.isEnabled()) display.render();
         if (debugger.isEnabled()) debugger.draw();
+
         SDL_GL_SwapWindow(window);
     }
 

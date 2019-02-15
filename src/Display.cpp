@@ -20,7 +20,7 @@ bool Display::loadPixelArray(std::array<uint8_t, TEXTURE_SIZE> pixels) {
 
     GLenum error;
     if ((error = glGetError()) != GL_NO_ERROR) {
-        std::cout << "OpenGL Error: " << error << std::endl;
+        printf("OpenGL Error: %u", error);
         return false;
     }
 
@@ -39,7 +39,7 @@ bool Display::initGL() {
 
     GLenum error;
     if ((error = glGetError()) != GL_NO_ERROR) {
-        std::cout << "OpenGL Error: " << error << std::endl;
+        printf("OpenGL Error: %u", error);
         return false;
     }
 
@@ -57,8 +57,6 @@ void Display::freeTexture() {
 }
 
 void Display::render() {
-    glClear(GL_COLOR_BUFFER_BIT);
-
     if (textureHandler != 0) {
         glLoadIdentity();
         glTranslatef(0.0f,0.0f,0.0f);

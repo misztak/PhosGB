@@ -2,8 +2,8 @@
 #define PHOS_DISPLAY_H
 
 #include <GL/glew.h>
+
 #include <array>
-#include <iostream>
 
 #define WIDTH 160
 #define HEIGHT 144

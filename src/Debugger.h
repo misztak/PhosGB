@@ -7,24 +7,36 @@
 #include <GL/glew.h>
 #include <SDL.h>
 
+#include <array>
+
 #if __APPLE__
 #define GLSL_VERSION "#version 150"
 #else
 #define GLSL_VERSION "#version 130"
 #endif
 
+#define WIDTH 160
+#define HEIGHT 144
+#define SCALE 2
+#define SCALED_WIDTH (WIDTH * SCALE)
+#define SCALED_HEIGHT (HEIGHT * SCALE)
+#define TEXTURE_SIZE (WIDTH * HEIGHT * 4)
+
 class Debugger {
 private:
     bool enabled;
+public:
+    GLuint textureHandler;
     bool show_demo_window;
     bool show_another_window;
 public:
     Debugger();
-    void initContext(SDL_Window* window, void* glContext);
+    void initContext(SDL_Window* window, void* glContext, std::array<uint8_t, TEXTURE_SIZE>& pixel);
     void processEvent(SDL_Event& event);
     bool isEnabled();
     void toggle();
-    void start(SDL_Window* window, std::array<uint8_t, 160*144*4>& pixel);
+    void start(SDL_Window* window);
+    void emulatorView();
     void draw();
     void stop();
 };
