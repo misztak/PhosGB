@@ -85,7 +85,11 @@ void Debugger::start(SDL_Window* window) {
 }
 
 void Debugger::draw() {
+#if __APPLE__
+    ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+#else
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#endif
 }
 
 void Debugger::stop() {
