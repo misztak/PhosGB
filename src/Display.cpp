@@ -9,7 +9,7 @@ Display::~Display() {
     freeTexture();
 }
 
-bool Display::loadPixelArray(std::array<uint8_t, TEXTURE_SIZE> pixels) {
+bool Display::loadPixelArray(std::array<uint8_t, TEXTURE_SIZE>& pixels) {
     freeTexture();
     glGenTextures(1, &textureHandler);
     glBindTexture(GL_TEXTURE_2D, textureHandler);

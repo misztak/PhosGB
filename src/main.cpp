@@ -6,13 +6,15 @@
 #include "Display.h"
 
 #if __APPLE__
-    // GL 3.2 Core + GLSL 150
-    const int compatFlags = SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG;
+    // GL 2.2
+    const int majorVersion = 2;
     const int minorVersion = 2;
+    const int profileMask = 0;
 #else
-    // GL 3.0 + GLSL 130
-    const int compatFlags = 0;
+    // GL 3.0
+    const int majorVersion = 3;
     const int minorVersion = 0;
+    const int profileMask = SDL_GL_CONTEXT_PROFILE_CORE;
 #endif
 
 int main(int argc, char** argv)
@@ -27,10 +29,9 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, compatFlags);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profileMask);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, majorVersion);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minorVersion);
 
     // Create window with graphics context
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);

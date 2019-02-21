@@ -13,7 +13,11 @@ void Debugger::initContext(SDL_Window* window, void* glContext, std::array<uint8
     ImGui::StyleColorsDark();
 
     ImGui_ImplSDL2_InitForOpenGL(window, glContext);
+#if __APPLE__
+    ImGui_ImplOpenGL2_Init();
+#else
     ImGui_ImplOpenGL3_Init(GLSL_VERSION);
+#endif
 
     glGenTextures(1, &textureHandler);
     glBindTexture(GL_TEXTURE_2D, textureHandler);
@@ -63,7 +67,11 @@ void Debugger::emulatorView() {
 
 void Debugger::start(SDL_Window* window) {
     // Start the Dear ImGui frame
+#if __APPLE__
+    ImGui_ImplOpenGL2_NewFrame();
+#else
     ImGui_ImplOpenGL3_NewFrame();
+#endif
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
 
@@ -84,7 +92,11 @@ void Debugger::stop() {
     if (textureHandler != 0) {
         glDeleteTextures(1, &textureHandler);
     }
+#if __APPLE__
+    ImGui_ImplOpenGL2_Shutdown();
+#else
     ImGui_ImplOpenGL3_Shutdown();
+#endif
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 }

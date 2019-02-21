@@ -3,16 +3,15 @@
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
-#include "imgui_impl_opengl3.h"
 #include <GL/glew.h>
 #include <SDL.h>
-
 #include <array>
 
 #if __APPLE__
-#define GLSL_VERSION "#version 150"
+#include "imgui_impl_opengl2.h"
 #else
 #define GLSL_VERSION "#version 130"
+#include "imgui_impl_opengl3.h"
 #endif
 
 #define WIDTH 160

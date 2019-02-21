@@ -16,7 +16,7 @@ class Display {
 public:
     Display();
     ~Display();
-    bool loadPixelArray(std::array<uint8_t, TEXTURE_SIZE> pixels);
+    bool loadPixelArray(std::array<uint8_t, TEXTURE_SIZE>& pixels);
     bool initGL();
     void update();
     void freeTexture();

@@ -21,7 +21,7 @@
 
 #pragma once
 
-// Set default OpenGL loader to be glew
+// Set default OpenGL loader to be gl3w
 #if !defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)     \
  && !defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)     \
  && !defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)     \
