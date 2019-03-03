@@ -1,4 +1,4 @@
-file(GLOB_RECURSE imgui_SOURCES "*.cpp")
+file(GLOB imgui_SOURCES *.cpp *.h)
 
 find_package(SDL2 REQUIRED)
 

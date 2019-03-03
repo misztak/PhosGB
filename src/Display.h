@@ -1,28 +1,17 @@
 #ifndef PHOS_DISPLAY_H
 #define PHOS_DISPLAY_H
 
-#include <GL/glew.h>
-
 #include <array>
 
-#define WIDTH 160
-#define HEIGHT 144
-#define SCALE 2
-#define SCALED_WIDTH (WIDTH * SCALE)
-#define SCALED_HEIGHT (HEIGHT * SCALE)
-#define TEXTURE_SIZE (WIDTH * HEIGHT * 4)
+#include "IDisplay.h"
 
-class Display {
+class Display : public IDisplay {
 public:
-    Display();
+    Display(std::array<uint8_t, TEXTURE_SIZE>& pixel);
     ~Display();
-    bool loadPixelArray(std::array<uint8_t, TEXTURE_SIZE>& pixels);
-    bool initGL();
-    void update();
-    void freeTexture();
-    void render();
-public:
-    GLuint textureHandler;
+    void render() override;
+    void processEvent(SDL_Event& event) override;
+    void update(std::array<uint8_t, TEXTURE_SIZE>& pixels) override;
 };
 
 

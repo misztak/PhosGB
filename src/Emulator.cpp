@@ -17,11 +17,26 @@
     const int profileMask = SDL_GL_CONTEXT_PROFILE_CORE;
 #endif
 
+bool initGL() {
+    glViewport(0, 0, SCALED_WIDTH, SCALED_HEIGHT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0.0, WIDTH, HEIGHT, 0.0, 1.0, -1.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glClearColor(0,0,0,255);
+    glEnable(GL_TEXTURE_2D);
+
+    GLenum error;
+    if ((error = glGetError()) != GL_NO_ERROR) {
+        printf("OpenGL Error: %u", error);
+        return false;
+    }
+    return true;
+}
+
 int main(int argc, char** argv)
 {
-    // Debugger Test
-    Debugger debugger;
-
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER) != 0)
     {
@@ -35,19 +50,16 @@ int main(int argc, char** argv)
 
     // Create window with graphics context
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    //SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    //SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_DisplayMode current;
     SDL_GetCurrentDisplayMode(0, &current);
     SDL_Window* window = SDL_CreateWindow(
             "PhosGB",
             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-            SCALED_WIDTH, SCALED_HEIGHT,
+            1200, 900,
             SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE );
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
     SDL_GL_SetSwapInterval(1); // Enable vsync
 
-    // Initialize OpenGL loader
     bool err = glewInit() != GLEW_OK;
     if (err)
     {
@@ -55,77 +67,54 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    const int wow = 160*144*4;
-    std::array<uint8_t, wow> pixel = {};
-    int counter = 0;
-    for (size_t i=0; i<pixel.size(); i+=4) {
-        if (counter % 2 == 0) {
-            pixel[i] = 255;
-            pixel[i+1] = 255;
-            pixel[i+2] = 255;
-        } else {
-            pixel[i] = 255;
-            pixel[i+1] = 0;
-            pixel[i+1] = 0;
-        }
-        pixel[i+3] = 255;
-        counter++;
+    std::array<uint8_t, TEXTURE_SIZE> pixel = {};
+    for (uint8_t& p: pixel) {
+        p = 127;
     }
 
-    std::array<uint8_t, wow> pixel2 = {};
-    for (uint8_t& p: pixel2) {
-        p = 255;
+    if (!initGL()) {
+        return 1;
     }
 
-    Display display;
-    if (!display.initGL()) {
-        return 1;
-    }
-    if (!display.loadPixelArray(pixel)) {
-        return 1;
-    }
-    debugger.initContext(window, gl_context, pixel2);
+    IDisplay* host;
+    Display display(pixel);
+    Debugger debugger(window, gl_context, pixel);
 
     // Main loop
-    bool hostChanged = false;
+    host = &debugger;
+    bool isDebugger = true;
     bool done = false;
     while (!done)
     {
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
-            if (debugger.isEnabled()) debugger.processEvent(event);
             if (event.type == SDL_QUIT)
                 done = true;
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
                 done = true;
-            if (event.type == SDL_KEYDOWN) {
-                debugger.toggle();
-                hostChanged = true;
+            if (event.type == SDL_KEYUP && event.key.keysym.scancode == SDL_SCANCODE_G) {
+                if (isDebugger) {
+                    isDebugger = false;
+                    host = &display;
+                } else {
+                    isDebugger = true;
+                    host = &debugger;
+                }
             }
+            host->processEvent(event);
         }
 
-        if (hostChanged && debugger.isEnabled()) {
-            SDL_SetWindowSize(window, 1200, 900);
-            hostChanged = false;
-        } else if (hostChanged && !debugger.isEnabled()) {
-            SDL_SetWindowSize(window, SCALED_WIDTH, SCALED_HEIGHT);
-            hostChanged = false;
-        }
-
-        if (debugger.isEnabled()) debugger.start(window);
+        host->update(pixel);
         SDL_GL_MakeCurrent(window, gl_context);
 
         glClear(GL_COLOR_BUFFER_BIT);
-        if (!debugger.isEnabled()) display.render();
-        if (debugger.isEnabled()) debugger.draw();
+        host->render();
 
         SDL_GL_SwapWindow(window);
     }
 
     // Cleanup
-    debugger.stop();
-
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
