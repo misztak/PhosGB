@@ -3,6 +3,7 @@
 
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
+#include "imgui_memory_editor.h"
 #include <GL/glew.h>
 #include <SDL.h>
 #include <array>

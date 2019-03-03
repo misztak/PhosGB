@@ -1,5 +1,4 @@
 #include "Debugger.h"
-#include "imgui_memory_editor.h"
 
 Debugger::Debugger(SDL_Window* w, void* glContext, std::array<uint8_t, TEXTURE_SIZE>& pixel) {
     textureHandler = 0;

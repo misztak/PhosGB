@@ -19,6 +19,9 @@ else()
 endif ()
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LIBS}")
 
+enable_testing()
+
 add_subdirectory(libs/imgui)
 add_subdirectory(libs/glew)
 add_subdirectory(src)
+add_subdirectory(test)
