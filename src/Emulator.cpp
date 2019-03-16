@@ -1,6 +1,8 @@
 #include <GL/glew.h>
 #include <SDL.h>
 #include <array>
+#include <chrono>
+#include <thread>
 
 #include "Debugger.h"
 #include "Display.h"
@@ -16,6 +18,10 @@
     const int minorVersion = 0;
     const int profileMask = SDL_GL_CONTEXT_PROFILE_CORE;
 #endif
+
+constexpr int FPS = 60;
+constexpr double FRAME_TIME_MICRO = (1.0 / FPS) * 1e6;
+constexpr int TICKS_PER_FRAME = 70224;
 
 bool initGL() {
     glViewport(0, 0, SCALED_WIDTH, SCALED_HEIGHT);
@@ -35,11 +41,13 @@ bool initGL() {
     return true;
 }
 
-int main(int argc, char** argv)
-{
+void mockTick() {
+    int a = std::rand();
+}
+
+int main(int argc, char** argv) {
     // Setup SDL
-    if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER) != 0)
-    {
+    if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER) != 0) {
         printf("Error: %s\n", SDL_GetError());
         return 1;
     }
@@ -58,11 +66,10 @@ int main(int argc, char** argv)
             1200, 900,
             SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE );
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-    SDL_GL_SetSwapInterval(1); // Enable vsync
+    SDL_GL_SetSwapInterval(0); // Disable vsync
 
     bool err = glewInit() != GLEW_OK;
-    if (err)
-    {
+    if (err) {
         fprintf(stderr, "Failed to initialize OpenGL loader!\n");
         return 1;
     }
@@ -84,11 +91,14 @@ int main(int argc, char** argv)
     host = &debugger;
     bool isDebugger = true;
     bool done = false;
-    while (!done)
-    {
+
+    uint32_t ticks = 0;
+    std::chrono::system_clock::time_point start;
+    std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+
+    while (!done) {
         SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
+        while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT)
                 done = true;
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
@@ -105,6 +115,13 @@ int main(int argc, char** argv)
             host->processEvent(event);
         }
 
+        // emulator tick
+        while (ticks < TICKS_PER_FRAME) {
+            mockTick();
+            ticks++;
+        }
+        ticks -= TICKS_PER_FRAME;
+
         host->update(pixel);
         SDL_GL_MakeCurrent(window, gl_context);
 
@@ -112,6 +129,15 @@ int main(int argc, char** argv)
         host->render();
 
         SDL_GL_SwapWindow(window);
+
+        start = std::chrono::system_clock::now();
+        std::chrono::duration<double , std::micro> workTimeAccurate = start - end;
+        if (workTimeAccurate.count() < FRAME_TIME_MICRO) {
+            std::chrono::duration<double, std::micro> delta_mi(FRAME_TIME_MICRO - workTimeAccurate.count());
+            auto delta_mi_duration = std::chrono::duration_cast<std::chrono::microseconds>(delta_mi);
+            std::this_thread::sleep_for(std::chrono::microseconds(delta_mi_duration.count()));
+        }
+        end = std::chrono::system_clock::now();
     }
 
     // Cleanup
