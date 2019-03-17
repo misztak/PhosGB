@@ -1,41 +1,51 @@
 #ifndef PHOS_CPU_H
 #define PHOS_CPU_H
 
+#include <map>
+
+typedef unsigned char u8;
+typedef unsigned short u16;
+typedef unsigned int u32;
+
+// bitmasks for flags stored in lower 8bit of AF register
+enum FLAG { ZERO = 0x80, ADD_SUB = 0x40, HALF_CARRY = 0x20, CARRY = 0x10};
+
+// first four registers can be accessed as one 16bit or two separate 8bit registers
 struct registers {
     union {
         struct {
-            unsigned char f;
-            unsigned char a;
+            u8 f;
+            u8 a;
         };
-        unsigned short af;
+        u16 af;
     };
 
     union {
         struct {
-            unsigned char c;
-            unsigned char b;
+            u8 c;
+            u8 b;
         };
-        unsigned short bc;
+        u16 bc;
     };
 
     union {
         struct {
-            unsigned char e;
-            unsigned char d;
+            u8 e;
+            u8 d;
         };
-        unsigned short de;
+        u16 de;
     };
 
     union {
         struct {
-            unsigned char l;
-            unsigned char h;
+            u8 l;
+            u8 h;
         };
-        unsigned short hl;
+        u16 hl;
     };
 
-    unsigned short sp;
-    unsigned short pc;
+    u16 sp;
+    u16 pc;
 };
 
 class CPU {
@@ -43,7 +53,21 @@ public:
     struct registers regs;
 public:
     CPU();
+    void reset();
+private:
+    u8* byteRegisterMap[8];
+    u16* shortRegisterMap[4];
 
+    typedef u32 (CPU::*Instruction)(const u8& opcode);
+    Instruction instructions[256];
+    Instruction instructionsCB[256];
+private:
+    void setFlag(FLAG flag);
+    void clearFlag(FLAG flag);
+    bool isFlagSet(FLAG flag);
+
+    u32 NOP(const u8& opcode);
+    u32 LDrr(const u8& opcode);
 };
 
 #endif //PHOS_CPU_H
