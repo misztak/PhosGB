@@ -1,11 +1,10 @@
 #include <GL/glew.h>
 #include <SDL.h>
 #include <array>
-#include <chrono>
-#include <thread>
 
 #include "Debugger.h"
 #include "Display.h"
+#include "Timer.h"
 
 #if __APPLE__
     // GL 2.2
@@ -19,9 +18,7 @@
     const int profileMask = SDL_GL_CONTEXT_PROFILE_CORE;
 #endif
 
-constexpr int FPS = 60;
-constexpr double FRAME_TIME_MICRO = (1.0 / FPS) * 1e6;
-constexpr int TICKS_PER_FRAME = 70224;
+constexpr int ticksPerFrame = 70224;
 
 bool initGL() {
     glViewport(0, 0, SCALED_WIDTH, SCALED_HEIGHT);
@@ -41,8 +38,9 @@ bool initGL() {
     return true;
 }
 
-void mockTick() {
+int mockTick() {
     int a = std::rand();
+    return a;
 }
 
 int main(int argc, char** argv) {
@@ -65,8 +63,8 @@ int main(int argc, char** argv) {
             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
             1200, 900,
             SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE );
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-    SDL_GL_SetSwapInterval(0); // Disable vsync
+    SDL_GLContext glContext = SDL_GL_CreateContext(window);
+    SDL_GL_SetSwapInterval(0); // Vsync
 
     bool err = glewInit() != GLEW_OK;
     if (err) {
@@ -85,16 +83,15 @@ int main(int argc, char** argv) {
 
     IDisplay* host;
     Display display(pixel);
-    Debugger debugger(window, gl_context, pixel);
+    Debugger debugger(window, glContext, pixel);
 
     // Main loop
     host = &debugger;
     bool isDebugger = true;
     bool done = false;
 
-    uint32_t ticks = 0;
-    std::chrono::system_clock::time_point start;
-    std::chrono::system_clock::time_point end = std::chrono::system_clock::now();
+    int ticks = 0;
+    Timer frameTimer(ACCURACY);
 
     while (!done) {
         SDL_Event event;
@@ -103,45 +100,46 @@ int main(int argc, char** argv) {
                 done = true;
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
                 done = true;
-            if (event.type == SDL_KEYUP && event.key.keysym.scancode == SDL_SCANCODE_G) {
-                if (isDebugger) {
-                    isDebugger = false;
-                    host = &display;
-                } else {
-                    isDebugger = true;
-                    host = &debugger;
+            if (event.type == SDL_KEYUP) {
+                if (event.key.keysym.scancode == SDL_SCANCODE_G) {
+                    if (isDebugger) {
+                        isDebugger = false;
+                        host = &display;
+                    } else {
+                        isDebugger = true;
+                        host = &debugger;
+                    }
                 }
+                if (event.key.keysym.scancode == SDL_SCANCODE_M) {
+                    frameTimer.toggleMode();
+                    SDL_GL_SetSwapInterval(frameTimer.getMode() == VSYNC ? 1 : 0);
+                    printf("Switched to mode %d\n", frameTimer.getMode());
+                }
+
             }
             host->processEvent(event);
         }
 
         // emulator tick
-        while (ticks < TICKS_PER_FRAME) {
+        while (ticks < ticksPerFrame) {
             mockTick();
             ticks++;
         }
-        ticks -= TICKS_PER_FRAME;
+        ticks -= ticksPerFrame;
 
         host->update(pixel);
-        SDL_GL_MakeCurrent(window, gl_context);
+        SDL_GL_MakeCurrent(window, glContext);
 
         glClear(GL_COLOR_BUFFER_BIT);
         host->render();
 
         SDL_GL_SwapWindow(window);
 
-        start = std::chrono::system_clock::now();
-        std::chrono::duration<double , std::micro> workTimeAccurate = start - end;
-        if (workTimeAccurate.count() < FRAME_TIME_MICRO) {
-            std::chrono::duration<double, std::micro> delta_mi(FRAME_TIME_MICRO - workTimeAccurate.count());
-            auto delta_mi_duration = std::chrono::duration_cast<std::chrono::microseconds>(delta_mi);
-            std::this_thread::sleep_for(std::chrono::microseconds(delta_mi_duration.count()));
-        }
-        end = std::chrono::system_clock::now();
+        frameTimer.syncFrame();
     }
 
     // Cleanup
-    SDL_GL_DeleteContext(gl_context);
+    SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
     SDL_Quit();
 
