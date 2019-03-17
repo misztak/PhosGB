@@ -716,6 +716,8 @@ struct MemoryEditor
                 if (data_format == DataFormat_Hex) { snprintf(out_buf, out_buf_size, "%a", float64); return; }
                 break;
             }
+            case DataType_COUNT:
+                break;
         } // Switch
         IM_ASSERT(0); // Shouldn't reach
     }
