@@ -9,7 +9,7 @@ typedef unsigned int u32;
 enum FLAG { ZERO = 0x80, ADD_SUB = 0x40, HALF_CARRY = 0x20, CARRY = 0x10 };
 
 // first four registers can be accessed as one 16bit or two separate 8bit registers
-struct registers {
+typedef struct registers {
     union {
         struct {
             u8 f;
@@ -44,11 +44,11 @@ struct registers {
 
     u16 sp;
     u16 pc;
-};
+} registers;
 
 class CPU {
 public:
-    struct registers regs;
+    registers regs;
 public:
     CPU();
     void reset();
@@ -57,8 +57,8 @@ private:
     u16* shortRegisterMap[4];
 
     typedef u32 (CPU::*Instruction)(const u8& opcode);
-    Instruction instructions[256];
-    Instruction instructionsCB[256];
+    Instruction instructions[256] = { nullptr };
+    Instruction instructionsCB[256] = { nullptr };
 private:
     void setFlag(FLAG flag);
     void clearFlag(FLAG flag);
@@ -74,15 +74,16 @@ private:
                                         // 0x58, 0x59, 0x5A, 0x5B, 0x5C, 0x5D
                                         // 0x60, 0x61, 0x62, 0x63, 0x64, 0x65
                                         // 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D
+                                        // 0x47, 0x4F, 0x57, 0x5F, 0x67, 0x6F
     u32 LD_r_HL(const u8& opcode);      // 0x7E, 0x46, 0x4E, 0x56, 0x5E, 0x66, 0x6E
-    u32 LD_HL_r(const u8& opcode);      // 0x70, 0x71, 0x72, 0x73, 0x74, 0x75
+    u32 LD_HL_r(const u8& opcode);      // 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x77
     u32 LD_HL_n(const u8& opcode);      // 0x36
-    u32 LD_A_r(const u8& opcode);       // 0x7F, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D     (**duplicates**)
-    u32 LD_A_r2(const u8& opcode);      // 0x0A, 0x1A, 0x7E                             (**duplicates**)
+    u32 LD_A_BC(const u8& opcode);      // 0x0A
+    u32 LD_A_DE(const u8& opcode);      // 0x1A
     u32 LD_A_nn(const u8& opcode);      // 0xFA
     u32 LD_A_sharp(const u8& opcode);   // 0x3E
-    u32 LD_r_A(const u8& opcode);       // 0x7F, 0x47, 0x4F, 0x57, 0x5F, 0x67, 0x6F     (**duplicates**)
-    u32 LD_r2_A(const u8& opcode);      // 0x02, 0x12, 0x77
+    u32 LD_BC_A(const u8& opcode);      // 0x02
+    u32 LD_DE_A(const u8& opcode);      // 0x12
     u32 LD_nn_A(const u8& opcode);      // 0xEA
     u32 LD_A_Cff00(const u8& opcode);   // 0xF2
     u32 LD_Cff00_A(const u8& opcode);   // 0xE2
@@ -111,7 +112,7 @@ private:
     u32 SUB_A_sharp(const u8& opcode);  // 0xD6
     u32 SBC_A_r(const u8& opcode);      // 0x9F, 0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D
     u32 SBC_A_HL(const u8& opcode);     // 0x9E
-    u32 SBC_A_sharp(const u8& opcode);  // 0x??
+    //u32 SBC_A_sharp(const u8& opcode);// 0x??
     u32 AND_A_r(const u8& opcode);      // 0xA7, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5
     u32 AND_A_HL(const u8& opcode);     // 0xA6
     u32 AND_A_sharp(const u8& opcode);  // 0xE6
@@ -124,7 +125,7 @@ private:
     u32 CP_A_n(const u8& opcode);       // 0xBF, 0xB8, 0xB9, 0xBA, 0xBB, 0xBC, 0xBD
     u32 CP_A_HL(const u8& opcode);      // 0xBE
     u32 CP_A_sharp(const u8& opcode);   // 0xFE
-    u32 INC_r(const u8& opcode);        // 0x3C, 0x04, 0x0C, 0x14, 0x1C, 0x24, 0x2c
+    u32 INC_r(const u8& opcode);        // 0x3C, 0x04, 0x0C, 0x14, 0x1C, 0x24, 0x2C
     u32 INC_HL(const u8& opcode);       // 0x34
     u32 DEC_r(const u8& opcode);        // 0x3D, 0x05, 0x0D, 0x15, 0x1D, 0x25, 0x2D
     u32 DEC_HL(const u8& opcode);       // 0x35
@@ -180,11 +181,11 @@ private:
     u32 SRL_r(const u8& opcode);        // CB: 0x3F, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D
     u32 SRL_HL(const u8& opcode);       // CB: 0x3E
 
-    u32 BIT_b_r(const u8& opcode);      // CB: 0x47, 0x40, 0x41, 0x42, 0x43, 0x44, 0x45
+    u32 BIT_b_r(const u8& opcode);      // CB: 0x40 --> 0x7F
     u32 BIT_b_HL(const u8& opcode);     // CB: 0x46
-    u32 SET_b_r(const u8& opcode);      // CB: 0xC7, 0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5
+    u32 SET_b_r(const u8& opcode);      // CB: 0xC0 --> 0xFF
     u32 SET_b_HL(const u8& opcode);     // CB: 0xC6
-    u32 RES_b_r(const u8& opcode);      // CB: 0x87, 0x80, 0x81, 0x82, 0x83, 0x84, 0x85
+    u32 RES_b_r(const u8& opcode);      // CB: 0x80 --> 0xBF
     u32 RES_b_HL(const u8& opcode);     // CB: 0x86
 
     u32 SWAP_r(const u8& opcode);       // CB: 0x37, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35
