@@ -45,6 +45,3 @@ u32 CPU::NOP(const u8 &opcode) {
     return 4;
 }
 
-u32 CPU::LDrr(const u8 &opcode) {
-    return 4;
-}
