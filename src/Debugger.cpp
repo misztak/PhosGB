@@ -1,6 +1,6 @@
 #include "Debugger.h"
 
-Debugger::Debugger(SDL_Window* w, void* glContext, CPU* c, std::array<uint8_t, TEXTURE_SIZE>& pixel) {
+Debugger::Debugger(SDL_Window* w, void* glContext, Emulator* emu, std::array<uint8_t, TEXTURE_SIZE>& pixel) {
     textureHandler = 0;
     show_demo_window = false;
 
@@ -9,7 +9,7 @@ Debugger::Debugger(SDL_Window* w, void* glContext, CPU* c, std::array<uint8_t, T
     ImGui::StyleColorsDark();
 
     window = w;
-    cpu = c;
+    emulator = emu;
     ImGui_ImplSDL2_InitForOpenGL(window, glContext);
 #if __APPLE__
     ImGui_ImplOpenGL2_Init();
@@ -66,7 +66,7 @@ void Debugger::emulatorView() {
 
 void Debugger::memoryView() {
     static MemoryEditor editor;
-    ImGui::Begin("Hex Editor");
+    ImGui::Begin("Memory Editor");
 
     const char* items[] = {"ROM0", "ROM1", "WRAM", "ERAM", "ZRAM", "BIOS"};
     static int currentItem = 0;
@@ -74,22 +74,22 @@ void Debugger::memoryView() {
 
     switch (currentItem) {
         case 0:
-            editor.DrawContents(cpu->mmu.rom0, ROM0_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.rom0, ROM0_SIZE);
             break;
         case 1:
-            editor.DrawContents(cpu->mmu.rom1, ROM1_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.rom1, ROM1_SIZE);
             break;
         case 2:
-            editor.DrawContents(cpu->mmu.workingRAM, WRAM_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.workingRAM, WRAM_SIZE);
             break;
         case 3:
-            editor.DrawContents(cpu->mmu.externalRAM, ERAM_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.externalRAM, ERAM_SIZE);
             break;
         case 4:
-            editor.DrawContents(cpu->mmu.zeroPageRAM, ZRAM_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.zeroPageRAM, ZRAM_SIZE);
             break;
         case 5:
-            editor.DrawContents(cpu->mmu.bios, BIOS_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.bios, BIOS_SIZE);
             break;
         default:
             break;

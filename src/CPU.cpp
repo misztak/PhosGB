@@ -438,10 +438,12 @@ void CPU::reset() {
 
 }
 
-void CPU::init(std::string& romPath) {
+bool CPU::init(std::string& romPath) {
+    bool success = true;
     std::string bootROM = "../../gb/BootROM.gb";
-    mmu.loadROM(bootROM, true);
-    mmu.loadROM(romPath);
+    success &= mmu.loadROM(bootROM, true);
+    success &= mmu.loadROM(romPath);
+    return success;
 }
 
 void CPU::setFlag(FLAG flag) {

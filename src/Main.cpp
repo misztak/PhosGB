@@ -6,9 +6,7 @@
 #include "Debugger.h"
 #include "Display.h"
 #include "Timer.h"
-
-// TODO: Emulator class
-#include "CPU.h"
+#include "Emulator.h"
 
 #if __APPLE__
     // GL 2.2
@@ -41,11 +39,6 @@ bool initGL() {
         return false;
     }
     return true;
-}
-
-int mockTick() {
-    int a = std::rand();
-    return a;
 }
 
 int main(int argc, char** argv) {
@@ -82,9 +75,12 @@ int main(int argc, char** argv) {
         if (i % 4 == 0) pixel[i-1] = 255;
         else pixel[i-1] = 127;
     }
-    CPU cpu;
+    Emulator emulator;
     std::string filePath = "../../gb/Tetris.gb";
-    cpu.init(filePath);
+    if (!emulator.load(filePath)) {
+        printf("Failed to load BootROM or Cartridge\n");
+        return 2;
+    }
 
     if (!initGL()) {
         return 1;
@@ -92,7 +88,7 @@ int main(int argc, char** argv) {
 
     IDisplay* host;
     Display display(pixel);
-    Debugger debugger(window, glContext, &cpu, pixel);
+    Debugger debugger(window, glContext, &emulator, pixel);
 
     // Main loop
     host = &debugger;
@@ -124,17 +120,21 @@ int main(int argc, char** argv) {
                     SDL_GL_SetSwapInterval(frameTimer.getMode() == VSYNC ? 1 : 0);
                     printf("Switched to mode %d\n", frameTimer.getMode());
                 }
+                if (event.key.keysym.scancode == SDL_SCANCODE_H) {
+                    emulator.stop();
+                }
 
             }
             host->processEvent(event);
         }
 
         // emulator tick
-        while (ticks < ticksPerFrame) {
-            mockTick();
-            ticks++;
+        if (!emulator.isHalted) {
+            while (ticks < ticksPerFrame) {
+                ticks += emulator.tick();
+            }
+            ticks -= ticksPerFrame;
         }
-        ticks -= ticksPerFrame;
 
         host->update(pixel);
         SDL_GL_MakeCurrent(window, glContext);

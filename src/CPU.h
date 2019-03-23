@@ -51,7 +51,7 @@ public:
     MMU mmu;
 public:
     CPU();
-    void init(std::string& romPath);
+    bool init(std::string& romPath);
     void reset();
 private:
     u8* byteRegisterMap[8];
