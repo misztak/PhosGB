@@ -53,7 +53,6 @@ public:
     CPU();
     void init(std::string& romPath);
     void reset();
-    u8* getMemory();
 private:
     u8* byteRegisterMap[8];
     u16* shortRegisterMap[4];

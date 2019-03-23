@@ -1,6 +1,35 @@
 #include "MMU.h"
 
-bool MMU::loadROM(std::string& filename) {
+// TODO: add BIOS
+MMU::MMU(): inBIOS(false), fatalError(false) {
+    // init memory map
+    memoryMap[0x0] = &MMU::readROM0; memoryMap[0x1] = &MMU::readROM0;
+    memoryMap[0x2] = &MMU::readROM0; memoryMap[0x3] = &MMU::readROM0;
+    memoryMap[0x4] = &MMU::readROM1; memoryMap[0x5] = &MMU::readROM1;
+    memoryMap[0x6] = &MMU::readROM1; memoryMap[0x7] = &MMU::readROM1;
+    memoryMap[0x8] = &MMU::readVRAM; memoryMap[0x9] = &MMU::readVRAM;
+    memoryMap[0xA] = &MMU::readERAM; memoryMap[0xB] = &MMU::readERAM;
+    memoryMap[0xC] = &MMU::readWRAM; memoryMap[0xD] = &MMU::readWRAM;
+    memoryMap[0xE] = &MMU::readWRAMshadow;
+    memoryMap[0xF] = &MMU::readZRAM;
+
+}
+
+u8 MMU::readByte(u16 address) {
+    int location = address & 0xF000;
+    if (location == 0xE) {
+        printf("Reading shadow wram\n");
+    }
+    Memory mappedMemory = memoryMap[location];
+
+    return (this->*mappedMemory)(address);
+}
+
+u16 MMU::readWord(u16 address) {
+    return readByte(address) | (readByte(address + 1) << 8);
+}
+
+bool MMU::loadROM(std::string& filename, bool isBIOS) {
     std::ifstream file(filename);
     file.seekg(0, std::ifstream::end);
     long length = file.tellg();
@@ -10,20 +39,87 @@ bool MMU::loadROM(std::string& filename) {
         printf("Failed to open file\n");
         return false;
     }
-
-    char buffer[MEMORY_SIZE];
-    if (length > MEMORY_SIZE) {
-        length = MEMORY_SIZE;
+    if (length > INTERNAL_ROM_SIZE) {
+        printf("Unsupported ROM size %li\n", length);
+        return false;
     }
+
+    char buffer[INTERNAL_ROM_SIZE];
     file.read(&buffer[0], length);
 
-    printf("Read file %s, size=%li\n", filename.substr(filename.find_last_of('/')+1, filename.length()).data(), length);
-    for (int i=0; i<length; i++) {
-        memory[i] = (u8) buffer[i];
+    if (isBIOS) {
+        if (length != BIOS_SIZE) {
+            printf("Invalid BootROM size: %li\n", length);
+            return false;
+        }
+        std::memcpy(bios, buffer, BIOS_SIZE);
+        return true;
+    } else {
+        std::memcpy(rom0, buffer, ROM0_SIZE);
+        std::memcpy(rom1, buffer + ROM0_SIZE, ROM1_SIZE);
+        printf("Read file %s, size=%li\n", filename.substr(filename.find_last_of('/')+1, filename.length()).data(), length);
+        return true;
     }
-    return true;
 }
 
-u8* MMU::getMemory() {
-    return memory;
+u8 MMU::readROM0(const u16 address) {
+    if (inBIOS && address < 0x0100) {
+        return bios[address];
+    } else if (inBIOS && address == 0x0100) {
+        inBIOS = false;
+        // TODO: find out if this is correct
+    }
+    return rom0[address];
 }
+
+u8 MMU::readROM1(const u16 address) {
+    return rom1[address];
+}
+
+u8 MMU::readWRAM(const u16 address) {
+    return workingRAM[address & 0x1FFF];
+}
+
+u8 MMU::readWRAMshadow(const u16 address) {
+    // TODO: what's the point of this?
+    return workingRAM[address & 0x1FFF];
+}
+
+u8 MMU::readERAM(const u16 address) {
+    return externalRAM[address & 0x1FFF];
+}
+
+// TODO: rename this
+u8 MMU::readZRAM(const u16 address) {
+    int location = address & 0x0F00;
+    if (location < 0x0E00) {
+        // WRAM shadow
+        return workingRAM[address & 0x1FFF];
+    } else if (location == 0x0E00) {
+        // OAM
+        if (address < 0xFEA0) {
+            // return GPU.oam[address & 0xFF];
+        } else {
+            return 0;
+        }
+    } else  if (location == 0x0F00){
+        if (address >= 0xFF80) {
+            // Zero-page
+            return zeroPageRAM[address & 0x7F];
+        } else {
+            // IO Control
+            return 0;
+        }
+    }
+    // should never be reached
+    printf("Invalid ZRAM address %d\n", address);
+    fatalError = true;
+    return 0;
+}
+
+u8 MMU::readVRAM(u16 address) {
+    // return GPU.vram[address & 0x1FFF];
+    fatalError = true;
+    return 0;
+}
+

@@ -67,7 +67,34 @@ void Debugger::emulatorView() {
 void Debugger::memoryView() {
     static MemoryEditor editor;
     ImGui::Begin("Hex Editor");
-    editor.DrawContents(cpu->getMemory(), MEMORY_SIZE);
+
+    const char* items[] = {"ROM0", "ROM1", "WRAM", "ERAM", "ZRAM", "BIOS"};
+    static int currentItem = 0;
+    ImGui::Combo("Location", &currentItem, items, IM_ARRAYSIZE(items));
+
+    switch (currentItem) {
+        case 0:
+            editor.DrawContents(cpu->mmu.rom0, ROM0_SIZE);
+            break;
+        case 1:
+            editor.DrawContents(cpu->mmu.rom1, ROM1_SIZE);
+            break;
+        case 2:
+            editor.DrawContents(cpu->mmu.workingRAM, WRAM_SIZE);
+            break;
+        case 3:
+            editor.DrawContents(cpu->mmu.externalRAM, ERAM_SIZE);
+            break;
+        case 4:
+            editor.DrawContents(cpu->mmu.zeroPageRAM, ZRAM_SIZE);
+            break;
+        case 5:
+            editor.DrawContents(cpu->mmu.bios, BIOS_SIZE);
+            break;
+        default:
+            break;
+    }
+
     ImGui::End();
 }
 

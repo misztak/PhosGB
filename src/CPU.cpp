@@ -439,11 +439,9 @@ void CPU::reset() {
 }
 
 void CPU::init(std::string& romPath) {
+    std::string bootROM = "../../gb/BootROM.gb";
+    mmu.loadROM(bootROM, true);
     mmu.loadROM(romPath);
-}
-
-u8* CPU::getMemory() {
-    return mmu.getMemory();
 }
 
 void CPU::setFlag(FLAG flag) {
