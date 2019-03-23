@@ -68,7 +68,7 @@ void Debugger::memoryView() {
     static MemoryEditor editor;
     ImGui::Begin("Memory Editor");
 
-    const char* items[] = {"ROM0", "ROM1", "WRAM", "ERAM", "ZRAM", "BIOS"};
+    const char* items[] = {"ROM0", "ROM1", "WRAM", "ERAM", "ZRAM", "IO", "BIOS"};
     static int currentItem = 0;
     ImGui::Combo("Location", &currentItem, items, IM_ARRAYSIZE(items));
 
@@ -89,6 +89,9 @@ void Debugger::memoryView() {
             editor.DrawContents(emulator->cpu.mmu.zeroPageRAM, ZRAM_SIZE);
             break;
         case 5:
+            editor.DrawContents(emulator->cpu.mmu.mappedIO, IO_SIZE);
+            break;
+        case 6:
             editor.DrawContents(emulator->cpu.mmu.bios, BIOS_SIZE);
             break;
         default:

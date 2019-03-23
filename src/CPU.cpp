@@ -432,10 +432,52 @@ CPU::CPU() {
     instructionsCB[0xAE] = &CPU::RES_b_HL;  instructionsCB[0xBE] = &CPU::RES_b_HL;
     instructionsCB[0xAF] = &CPU::RES_b_r;   instructionsCB[0xBF] = &CPU::RES_b_r;
 
+    reset();
 }
 
 void CPU::reset() {
+    r.af = 0x01B0;
+    r.bc = 0x0013;
+    r.de = 0x00D8;
+    r.hl = 0x014D;
+    r.sp = 0xFFFE;
 
+    mmu.writeByte(0xFF05, 0x00);    // TIMA
+    mmu.writeByte(0xFF06, 0x00);    // TMA
+    mmu.writeByte(0xFF07, 0x00);    // TAC
+
+    mmu.writeByte(0xFF10, 0x80);    // NR10
+    mmu.writeByte(0xFF11, 0xBF);    // NR11
+    mmu.writeByte(0xFF12, 0xF3);    // NR12
+    mmu.writeByte(0xFF14, 0xBF);    // NR14
+    mmu.writeByte(0xFF16, 0x3F);    // NR21
+    mmu.writeByte(0xFF17, 0x00);    // NR22
+    mmu.writeByte(0xFF19, 0xBF);    // NR24
+    mmu.writeByte(0xFF1A, 0x7F);    // NR30
+    mmu.writeByte(0xFF1B, 0xFF);    // NR31
+    mmu.writeByte(0xFF1C, 0x9F);    // NR32
+    mmu.writeByte(0xFF1E, 0xBF);    // NR33
+    mmu.writeByte(0xFF20, 0xFF);    // NR41
+    mmu.writeByte(0xFF21, 0x00);    // NR42
+    mmu.writeByte(0xFF22, 0x00);    // NR43
+    mmu.writeByte(0xFF23, 0xBF);    // NR30
+    mmu.writeByte(0xFF24, 0x77);    // NR50
+    mmu.writeByte(0xFF25, 0xF3);    // NR51
+    mmu.writeByte(0xFF26, 0xF1);    // NR52
+
+    mmu.writeByte(0xFF40, 0x91);    // LCDC
+    mmu.writeByte(0xFF42, 0x00);    // SCY
+    mmu.writeByte(0xFF43, 0x00);    // SCY
+    mmu.writeByte(0xFF45, 0x00);    // LYC
+    mmu.writeByte(0xFF47, 0xFC);    // BGP
+    mmu.writeByte(0xFF48, 0xFF);    // OBP0
+    mmu.writeByte(0xFF49, 0xFF);    // OBP1
+    mmu.writeByte(0xFF4A, 0x00);    // WY
+    mmu.writeByte(0xFF4B, 0x00);    // WX
+
+    mmu.writeByte(0xFFFF, 0x00);    // IE
+
+    // TODO: GPU Boot
 }
 
 bool CPU::init(std::string& romPath) {

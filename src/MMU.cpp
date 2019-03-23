@@ -29,6 +29,33 @@ u16 MMU::readWord(u16 address) {
     return readByte(address) | (readByte(address + 1) << 8);
 }
 
+void MMU::writeByte(u16 address, u8 value) {
+    if (address < 0xC000) {
+        printf("Attempted to overwrite BootROM\n");
+        fatalError = true;
+        return;
+    }
+    // TODO: cartridge external RAM
+    // TODO: improved IO (0xFF0F, 0xFF50, 0xFF4D)
+    // TODO: check for off by one errors
+    if (address >= 0xC000 && address <= 0xDFFF) {
+        workingRAM[address - 0xC000] = value;
+    } else if (address >= 0xE000 && address <= 0xFDFF) {
+        workingRAM[address - 0xE000] = value;
+    } else if (address >= 0xFF00 && address <= 0xFF7F) {
+        mappedIO[address - 0xFF00] = value;
+    } else if (address >= 0xFF80 && address <= 0xFFFF) {
+        zeroPageRAM[address - 0xFF80] = value;
+    } else {
+        printf("Attempted to write to illegal address %d\n", address);
+        fatalError = true;
+    }
+}
+
+void MMU::writeWord(u16 address, u16 value) {
+
+}
+
 bool MMU::loadROM(std::string& filename, bool isBIOS) {
     std::ifstream file(filename);
     file.seekg(0, std::ifstream::end);
