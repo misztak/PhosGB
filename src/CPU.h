@@ -1,9 +1,8 @@
 #ifndef PHOS_CPU_H
 #define PHOS_CPU_H
 
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
+#include "Common.h"
+#include "MMU.h"
 
 // bitmasks for flags stored in lower 8bit of AF register
 enum FLAG { ZERO = 0x80, ADD_SUB = 0x40, HALF_CARRY = 0x20, CARRY = 0x10 };
@@ -48,17 +47,20 @@ typedef struct registers {
 
 class CPU {
 public:
-    registers regs;
+    registers r;
+    MMU mmu;
 public:
     CPU();
+    void init(std::string& romPath);
     void reset();
+    u8* getMemory();
 private:
     u8* byteRegisterMap[8];
     u16* shortRegisterMap[4];
 
     typedef u32 (CPU::*Instruction)(const u8& opcode);
-    Instruction instructions[256] = { nullptr };
-    Instruction instructionsCB[256] = { nullptr };
+    Instruction instructions[256];
+    Instruction instructionsCB[256];
 private:
     void setFlag(FLAG flag);
     void clearFlag(FLAG flag);
@@ -112,7 +114,7 @@ private:
     u32 SUB_A_sharp(const u8& opcode);  // 0xD6
     u32 SBC_A_r(const u8& opcode);      // 0x9F, 0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D
     u32 SBC_A_HL(const u8& opcode);     // 0x9E
-    //u32 SBC_A_sharp(const u8& opcode);// 0x??
+    u32 SBC_A_sharp(const u8& opcode);  // 0xDE // TODO: value of sharp
     u32 AND_A_r(const u8& opcode);      // 0xA7, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5
     u32 AND_A_HL(const u8& opcode);     // 0xA6
     u32 AND_A_sharp(const u8& opcode);  // 0xE6

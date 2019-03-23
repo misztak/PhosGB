@@ -1,26 +1,26 @@
 #include "CPU.h"
 
 CPU::CPU() {
-    regs.af = 0;
-    regs.bc = 0;
-    regs.de = 0;
-    regs.hl = 0;
-    regs.sp = 0;
-    regs.pc = 0;
+    r.af = 0;
+    r.bc = 0;
+    r.de = 0;
+    r.hl = 0;
+    r.sp = 0;
+    r.pc = 0;
 
-    byteRegisterMap[0x0] = &regs.b;
-    byteRegisterMap[0x1] = &regs.c;
-    byteRegisterMap[0x2] = &regs.d;
-    byteRegisterMap[0x3] = &regs.e;
-    byteRegisterMap[0x4] = &regs.h;
-    byteRegisterMap[0x5] = &regs.l;
-    byteRegisterMap[0x6] = &regs.f;
-    byteRegisterMap[0x7] = &regs.a;
+    byteRegisterMap[0x0] = &r.b;
+    byteRegisterMap[0x1] = &r.c;
+    byteRegisterMap[0x2] = &r.d;
+    byteRegisterMap[0x3] = &r.e;
+    byteRegisterMap[0x4] = &r.h;
+    byteRegisterMap[0x5] = &r.l;
+    byteRegisterMap[0x6] = &r.f;
+    byteRegisterMap[0x7] = &r.a;
 
-    shortRegisterMap[0x0] = &regs.bc;
-    shortRegisterMap[0x1] = &regs.de;
-    shortRegisterMap[0x2] = &regs.hl;
-    shortRegisterMap[0x3] = &regs.sp;
+    shortRegisterMap[0x0] = &r.bc;
+    shortRegisterMap[0x1] = &r.de;
+    shortRegisterMap[0x2] = &r.hl;
+    shortRegisterMap[0x3] = &r.sp;
 
     // Z80 Instructions //
 
@@ -170,6 +170,7 @@ CPU::CPU() {
     instructions[0x9C] = &CPU::SBC_A_r;
     instructions[0x9D] = &CPU::SBC_A_r;
     instructions[0x9E] = &CPU::SBC_A_HL;
+    instructions[0xDE] = &CPU::SBC_A_sharp;
 
     instructions[0xA7] = &CPU::AND_A_r;
     instructions[0xA0] = &CPU::AND_A_r;
@@ -293,281 +294,143 @@ CPU::CPU() {
 
     // CB Instructions //
 
-    instructionsCB[0x07] = &CPU::RLC_r;
-    instructionsCB[0x00] = &CPU::RLC_r;
-    instructionsCB[0x01] = &CPU::RLC_r;
-    instructionsCB[0x02] = &CPU::RLC_r;
-    instructionsCB[0x03] = &CPU::RLC_r;
-    instructionsCB[0x04] = &CPU::RLC_r;
-    instructionsCB[0x05] = &CPU::RLC_r;
-    instructionsCB[0x06] = &CPU::RLC_HL;
+    instructionsCB[0x07] = &CPU::RLC_r;     instructionsCB[0x17] = &CPU::RL_r;
+    instructionsCB[0x00] = &CPU::RLC_r;     instructionsCB[0x10] = &CPU::RL_r;
+    instructionsCB[0x01] = &CPU::RLC_r;     instructionsCB[0x11] = &CPU::RL_r;
+    instructionsCB[0x02] = &CPU::RLC_r;     instructionsCB[0x12] = &CPU::RL_r;
+    instructionsCB[0x03] = &CPU::RLC_r;     instructionsCB[0x13] = &CPU::RL_r;
+    instructionsCB[0x04] = &CPU::RLC_r;     instructionsCB[0x14] = &CPU::RL_r;
+    instructionsCB[0x05] = &CPU::RLC_r;     instructionsCB[0x15] = &CPU::RL_r;
+    instructionsCB[0x06] = &CPU::RLC_HL;    instructionsCB[0x16] = &CPU::RL_HL;
 
-    instructionsCB[0x17] = &CPU::RL_r;
-    instructionsCB[0x10] = &CPU::RL_r;
-    instructionsCB[0x11] = &CPU::RL_r;
-    instructionsCB[0x12] = &CPU::RL_r;
-    instructionsCB[0x13] = &CPU::RL_r;
-    instructionsCB[0x14] = &CPU::RL_r;
-    instructionsCB[0x15] = &CPU::RL_r;
-    instructionsCB[0x16] = &CPU::RL_HL;
+    instructionsCB[0x0F] = &CPU::RRC_r;     instructionsCB[0x1F] = &CPU::RR_r;
+    instructionsCB[0x08] = &CPU::RRC_r;     instructionsCB[0x18] = &CPU::RR_r;
+    instructionsCB[0x09] = &CPU::RRC_r;     instructionsCB[0x19] = &CPU::RR_r;
+    instructionsCB[0x0A] = &CPU::RRC_r;     instructionsCB[0x1A] = &CPU::RR_r;
+    instructionsCB[0x0B] = &CPU::RRC_r;     instructionsCB[0x1B] = &CPU::RR_r;
+    instructionsCB[0x0C] = &CPU::RRC_r;     instructionsCB[0x1C] = &CPU::RR_r;
+    instructionsCB[0x0D] = &CPU::RRC_r;     instructionsCB[0x1D] = &CPU::RR_r;
+    instructionsCB[0x0E] = &CPU::RRC_HL;    instructionsCB[0x1E] = &CPU::RR_HL;
 
-    instructionsCB[0x0F] = &CPU::RRC_r;
-    instructionsCB[0x08] = &CPU::RRC_r;
-    instructionsCB[0x09] = &CPU::RRC_r;
-    instructionsCB[0x0A] = &CPU::RRC_r;
-    instructionsCB[0x0B] = &CPU::RRC_r;
-    instructionsCB[0x0C] = &CPU::RRC_r;
-    instructionsCB[0x0D] = &CPU::RRC_r;
-    instructionsCB[0x0E] = &CPU::RRC_HL;
+    instructionsCB[0x27] = &CPU::SLA_r;     instructionsCB[0x2F] = &CPU::SRA_r;
+    instructionsCB[0x20] = &CPU::SLA_r;     instructionsCB[0x28] = &CPU::SRA_r;
+    instructionsCB[0x21] = &CPU::SLA_r;     instructionsCB[0x29] = &CPU::SRA_r;
+    instructionsCB[0x22] = &CPU::SLA_r;     instructionsCB[0x2A] = &CPU::SRA_r;
+    instructionsCB[0x23] = &CPU::SLA_r;     instructionsCB[0x2B] = &CPU::SRA_r;
+    instructionsCB[0x24] = &CPU::SLA_r;     instructionsCB[0x2C] = &CPU::SRA_r;
+    instructionsCB[0x25] = &CPU::SLA_r;     instructionsCB[0x2D] = &CPU::SRA_r;
+    instructionsCB[0x26] = &CPU::SLA_HL;    instructionsCB[0x2E] = &CPU::SRA_HL;
 
-    instructionsCB[0x1F] = &CPU::RR_r;
-    instructionsCB[0x18] = &CPU::RR_r;
-    instructionsCB[0x19] = &CPU::RR_r;
-    instructionsCB[0x1A] = &CPU::RR_r;
-    instructionsCB[0x1B] = &CPU::RR_r;
-    instructionsCB[0x1C] = &CPU::RR_r;
-    instructionsCB[0x1D] = &CPU::RR_r;
-    instructionsCB[0x1E] = &CPU::RR_HL;
+    instructionsCB[0x3F] = &CPU::SRL_r;     instructionsCB[0x37] = &CPU::SWAP_r;
+    instructionsCB[0x38] = &CPU::SRL_r;     instructionsCB[0x30] = &CPU::SWAP_r;
+    instructionsCB[0x39] = &CPU::SRL_r;     instructionsCB[0x31] = &CPU::SWAP_r;
+    instructionsCB[0x3A] = &CPU::SRL_r;     instructionsCB[0x32] = &CPU::SWAP_r;
+    instructionsCB[0x3B] = &CPU::SRL_r;     instructionsCB[0x33] = &CPU::SWAP_r;
+    instructionsCB[0x3C] = &CPU::SRL_r;     instructionsCB[0x34] = &CPU::SWAP_r;
+    instructionsCB[0x3D] = &CPU::SRL_r;     instructionsCB[0x35] = &CPU::SWAP_r;
+    instructionsCB[0x3E] = &CPU::SRL_HL;    instructionsCB[0x36] = &CPU::SWAP_HL;
 
-    instructionsCB[0x27] = &CPU::SLA_r;
-    instructionsCB[0x20] = &CPU::SLA_r;
-    instructionsCB[0x21] = &CPU::SLA_r;
-    instructionsCB[0x22] = &CPU::SLA_r;
-    instructionsCB[0x23] = &CPU::SLA_r;
-    instructionsCB[0x24] = &CPU::SLA_r;
-    instructionsCB[0x25] = &CPU::SLA_r;
-    instructionsCB[0x26] = &CPU::SLA_HL;
+    instructionsCB[0x40] = &CPU::BIT_b_r;   instructionsCB[0x50] = &CPU::BIT_b_r;
+    instructionsCB[0x41] = &CPU::BIT_b_r;   instructionsCB[0x51] = &CPU::BIT_b_r;
+    instructionsCB[0x42] = &CPU::BIT_b_r;   instructionsCB[0x52] = &CPU::BIT_b_r;
+    instructionsCB[0x43] = &CPU::BIT_b_r;   instructionsCB[0x53] = &CPU::BIT_b_r;
+    instructionsCB[0x44] = &CPU::BIT_b_r;   instructionsCB[0x54] = &CPU::BIT_b_r;
+    instructionsCB[0x45] = &CPU::BIT_b_r;   instructionsCB[0x55] = &CPU::BIT_b_r;
+    instructionsCB[0x46] = &CPU::BIT_b_HL;  instructionsCB[0x56] = &CPU::BIT_b_HL;
+    instructionsCB[0x47] = &CPU::BIT_b_r;   instructionsCB[0x57] = &CPU::BIT_b_r;
+    instructionsCB[0x48] = &CPU::BIT_b_r;   instructionsCB[0x58] = &CPU::BIT_b_r;
+    instructionsCB[0x49] = &CPU::BIT_b_r;   instructionsCB[0x59] = &CPU::BIT_b_r;
+    instructionsCB[0x4A] = &CPU::BIT_b_r;   instructionsCB[0x5A] = &CPU::BIT_b_r;
+    instructionsCB[0x4B] = &CPU::BIT_b_r;   instructionsCB[0x5B] = &CPU::BIT_b_r;
+    instructionsCB[0x4C] = &CPU::BIT_b_r;   instructionsCB[0x5C] = &CPU::BIT_b_r;
+    instructionsCB[0x4D] = &CPU::BIT_b_r;   instructionsCB[0x5D] = &CPU::BIT_b_r;
+    instructionsCB[0x4E] = &CPU::BIT_b_HL;  instructionsCB[0x5E] = &CPU::BIT_b_HL;
+    instructionsCB[0x4F] = &CPU::BIT_b_r;   instructionsCB[0x5F] = &CPU::BIT_b_r;
 
-    instructionsCB[0x2F] = &CPU::SRA_r;
-    instructionsCB[0x28] = &CPU::SRA_r;
-    instructionsCB[0x29] = &CPU::SRA_r;
-    instructionsCB[0x2A] = &CPU::SRA_r;
-    instructionsCB[0x2B] = &CPU::SRA_r;
-    instructionsCB[0x2C] = &CPU::SRA_r;
-    instructionsCB[0x2D] = &CPU::SRA_r;
-    instructionsCB[0x2E] = &CPU::SRA_HL;
+    instructionsCB[0x60] = &CPU::BIT_b_r;   instructionsCB[0x70] = &CPU::BIT_b_r;
+    instructionsCB[0x61] = &CPU::BIT_b_r;   instructionsCB[0x71] = &CPU::BIT_b_r;
+    instructionsCB[0x62] = &CPU::BIT_b_r;   instructionsCB[0x72] = &CPU::BIT_b_r;
+    instructionsCB[0x63] = &CPU::BIT_b_r;   instructionsCB[0x73] = &CPU::BIT_b_r;
+    instructionsCB[0x64] = &CPU::BIT_b_r;   instructionsCB[0x74] = &CPU::BIT_b_r;
+    instructionsCB[0x65] = &CPU::BIT_b_r;   instructionsCB[0x75] = &CPU::BIT_b_r;
+    instructionsCB[0x66] = &CPU::BIT_b_HL;  instructionsCB[0x76] = &CPU::BIT_b_HL;
+    instructionsCB[0x67] = &CPU::BIT_b_r;   instructionsCB[0x77] = &CPU::BIT_b_r;
+    instructionsCB[0x68] = &CPU::BIT_b_r;   instructionsCB[0x78] = &CPU::BIT_b_r;
+    instructionsCB[0x69] = &CPU::BIT_b_r;   instructionsCB[0x79] = &CPU::BIT_b_r;
+    instructionsCB[0x6A] = &CPU::BIT_b_r;   instructionsCB[0x7A] = &CPU::BIT_b_r;
+    instructionsCB[0x6B] = &CPU::BIT_b_r;   instructionsCB[0x7B] = &CPU::BIT_b_r;
+    instructionsCB[0x6C] = &CPU::BIT_b_r;   instructionsCB[0x7C] = &CPU::BIT_b_r;
+    instructionsCB[0x6D] = &CPU::BIT_b_r;   instructionsCB[0x7D] = &CPU::BIT_b_r;
+    instructionsCB[0x6E] = &CPU::BIT_b_HL;  instructionsCB[0x7E] = &CPU::BIT_b_HL;
+    instructionsCB[0x6F] = &CPU::BIT_b_r;   instructionsCB[0x7F] = &CPU::BIT_b_r;
 
-    instructionsCB[0x3F] = &CPU::SRL_r;
-    instructionsCB[0x38] = &CPU::SRL_r;
-    instructionsCB[0x39] = &CPU::SRL_r;
-    instructionsCB[0x3A] = &CPU::SRL_r;
-    instructionsCB[0x3B] = &CPU::SRL_r;
-    instructionsCB[0x3C] = &CPU::SRL_r;
-    instructionsCB[0x3D] = &CPU::SRL_r;
-    instructionsCB[0x3E] = &CPU::SRL_HL;
+    instructionsCB[0xC0] = &CPU::SET_b_r;   instructionsCB[0xD0] = &CPU::SET_b_r;
+    instructionsCB[0xC1] = &CPU::SET_b_r;   instructionsCB[0xD1] = &CPU::SET_b_r;
+    instructionsCB[0xC2] = &CPU::SET_b_r;   instructionsCB[0xD2] = &CPU::SET_b_r;
+    instructionsCB[0xC3] = &CPU::SET_b_r;   instructionsCB[0xD3] = &CPU::SET_b_r;
+    instructionsCB[0xC4] = &CPU::SET_b_r;   instructionsCB[0xD4] = &CPU::SET_b_r;
+    instructionsCB[0xC5] = &CPU::SET_b_r;   instructionsCB[0xD5] = &CPU::SET_b_r;
+    instructionsCB[0xC6] = &CPU::SET_b_HL;  instructionsCB[0xD6] = &CPU::SET_b_HL;
+    instructionsCB[0xC7] = &CPU::SET_b_r;   instructionsCB[0xD7] = &CPU::SET_b_r;
+    instructionsCB[0xC8] = &CPU::SET_b_r;   instructionsCB[0xD8] = &CPU::SET_b_r;
+    instructionsCB[0xC9] = &CPU::SET_b_r;   instructionsCB[0xD9] = &CPU::SET_b_r;
+    instructionsCB[0xCA] = &CPU::SET_b_r;   instructionsCB[0xDA] = &CPU::SET_b_r;
+    instructionsCB[0xCB] = &CPU::SET_b_r;   instructionsCB[0xDB] = &CPU::SET_b_r;
+    instructionsCB[0xCC] = &CPU::SET_b_r;   instructionsCB[0xDC] = &CPU::SET_b_r;
+    instructionsCB[0xCD] = &CPU::SET_b_r;   instructionsCB[0xDD] = &CPU::SET_b_r;
+    instructionsCB[0xCE] = &CPU::SET_b_HL;  instructionsCB[0xDE] = &CPU::SET_b_HL;
+    instructionsCB[0xCF] = &CPU::SET_b_r;   instructionsCB[0xDF] = &CPU::SET_b_r;
 
-    instructionsCB[0x37] = &CPU::SWAP_r;
-    instructionsCB[0x30] = &CPU::SWAP_r;
-    instructionsCB[0x31] = &CPU::SWAP_r;
-    instructionsCB[0x32] = &CPU::SWAP_r;
-    instructionsCB[0x33] = &CPU::SWAP_r;
-    instructionsCB[0x34] = &CPU::SWAP_r;
-    instructionsCB[0x35] = &CPU::SWAP_r;
-    instructionsCB[0x36] = &CPU::SWAP_HL;
+    instructionsCB[0xE0] = &CPU::SET_b_r;   instructionsCB[0xF0] = &CPU::SET_b_r;
+    instructionsCB[0xE1] = &CPU::SET_b_r;   instructionsCB[0xF1] = &CPU::SET_b_r;
+    instructionsCB[0xE2] = &CPU::SET_b_r;   instructionsCB[0xF2] = &CPU::SET_b_r;
+    instructionsCB[0xE3] = &CPU::SET_b_r;   instructionsCB[0xF3] = &CPU::SET_b_r;
+    instructionsCB[0xE4] = &CPU::SET_b_r;   instructionsCB[0xF4] = &CPU::SET_b_r;
+    instructionsCB[0xE5] = &CPU::SET_b_r;   instructionsCB[0xF5] = &CPU::SET_b_r;
+    instructionsCB[0xE6] = &CPU::SET_b_HL;  instructionsCB[0xF6] = &CPU::SET_b_HL;
+    instructionsCB[0xE7] = &CPU::SET_b_r;   instructionsCB[0xF7] = &CPU::SET_b_r;
+    instructionsCB[0xE8] = &CPU::SET_b_r;   instructionsCB[0xF8] = &CPU::SET_b_r;
+    instructionsCB[0xE9] = &CPU::SET_b_r;   instructionsCB[0xF9] = &CPU::SET_b_r;
+    instructionsCB[0xEA] = &CPU::SET_b_r;   instructionsCB[0xFA] = &CPU::SET_b_r;
+    instructionsCB[0xEB] = &CPU::SET_b_r;   instructionsCB[0xFB] = &CPU::SET_b_r;
+    instructionsCB[0xEC] = &CPU::SET_b_r;   instructionsCB[0xFC] = &CPU::SET_b_r;
+    instructionsCB[0xED] = &CPU::SET_b_r;   instructionsCB[0xFD] = &CPU::SET_b_r;
+    instructionsCB[0xEE] = &CPU::SET_b_HL;  instructionsCB[0xFE] = &CPU::SET_b_HL;
+    instructionsCB[0xEF] = &CPU::SET_b_r;   instructionsCB[0xFF] = &CPU::SET_b_r;
 
-    instructionsCB[0x40] = &CPU::BIT_b_r;
-    instructionsCB[0x41] = &CPU::BIT_b_r;
-    instructionsCB[0x42] = &CPU::BIT_b_r;
-    instructionsCB[0x43] = &CPU::BIT_b_r;
-    instructionsCB[0x44] = &CPU::BIT_b_r;
-    instructionsCB[0x45] = &CPU::BIT_b_r;
-    instructionsCB[0x46] = &CPU::BIT_b_HL;
-    instructionsCB[0x47] = &CPU::BIT_b_r;
-    instructionsCB[0x48] = &CPU::BIT_b_r;
-    instructionsCB[0x49] = &CPU::BIT_b_r;
-    instructionsCB[0x4A] = &CPU::BIT_b_r;
-    instructionsCB[0x4B] = &CPU::BIT_b_r;
-    instructionsCB[0x4C] = &CPU::BIT_b_r;
-    instructionsCB[0x4D] = &CPU::BIT_b_r;
-    instructionsCB[0x4E] = &CPU::BIT_b_HL;
-    instructionsCB[0x4F] = &CPU::BIT_b_r;
+    instructionsCB[0x80] = &CPU::RES_b_r;   instructionsCB[0x90] = &CPU::RES_b_r;
+    instructionsCB[0x81] = &CPU::RES_b_r;   instructionsCB[0x91] = &CPU::RES_b_r;
+    instructionsCB[0x82] = &CPU::RES_b_r;   instructionsCB[0x92] = &CPU::RES_b_r;
+    instructionsCB[0x83] = &CPU::RES_b_r;   instructionsCB[0x93] = &CPU::RES_b_r;
+    instructionsCB[0x84] = &CPU::RES_b_r;   instructionsCB[0x94] = &CPU::RES_b_r;
+    instructionsCB[0x85] = &CPU::RES_b_r;   instructionsCB[0x95] = &CPU::RES_b_r;
+    instructionsCB[0x86] = &CPU::RES_b_HL;  instructionsCB[0x96] = &CPU::RES_b_HL;
+    instructionsCB[0x87] = &CPU::RES_b_r;   instructionsCB[0x97] = &CPU::RES_b_r;
+    instructionsCB[0x88] = &CPU::RES_b_r;   instructionsCB[0x98] = &CPU::RES_b_r;
+    instructionsCB[0x89] = &CPU::RES_b_r;   instructionsCB[0x99] = &CPU::RES_b_r;
+    instructionsCB[0x8A] = &CPU::RES_b_r;   instructionsCB[0x9A] = &CPU::RES_b_r;
+    instructionsCB[0x8B] = &CPU::RES_b_r;   instructionsCB[0x9B] = &CPU::RES_b_r;
+    instructionsCB[0x8C] = &CPU::RES_b_r;   instructionsCB[0x9C] = &CPU::RES_b_r;
+    instructionsCB[0x8D] = &CPU::RES_b_r;   instructionsCB[0x9D] = &CPU::RES_b_r;
+    instructionsCB[0x8E] = &CPU::RES_b_HL;  instructionsCB[0x9E] = &CPU::RES_b_HL;
+    instructionsCB[0x8F] = &CPU::RES_b_r;   instructionsCB[0x9F] = &CPU::RES_b_r;
 
-    instructionsCB[0x50] = &CPU::BIT_b_r;
-    instructionsCB[0x51] = &CPU::BIT_b_r;
-    instructionsCB[0x52] = &CPU::BIT_b_r;
-    instructionsCB[0x53] = &CPU::BIT_b_r;
-    instructionsCB[0x54] = &CPU::BIT_b_r;
-    instructionsCB[0x55] = &CPU::BIT_b_r;
-    instructionsCB[0x56] = &CPU::BIT_b_HL;
-    instructionsCB[0x57] = &CPU::BIT_b_r;
-    instructionsCB[0x58] = &CPU::BIT_b_r;
-    instructionsCB[0x59] = &CPU::BIT_b_r;
-    instructionsCB[0x5A] = &CPU::BIT_b_r;
-    instructionsCB[0x5B] = &CPU::BIT_b_r;
-    instructionsCB[0x5C] = &CPU::BIT_b_r;
-    instructionsCB[0x5D] = &CPU::BIT_b_r;
-    instructionsCB[0x5E] = &CPU::BIT_b_HL;
-    instructionsCB[0x5F] = &CPU::BIT_b_r;
-
-    instructionsCB[0x60] = &CPU::BIT_b_r;
-    instructionsCB[0x61] = &CPU::BIT_b_r;
-    instructionsCB[0x62] = &CPU::BIT_b_r;
-    instructionsCB[0x63] = &CPU::BIT_b_r;
-    instructionsCB[0x64] = &CPU::BIT_b_r;
-    instructionsCB[0x65] = &CPU::BIT_b_r;
-    instructionsCB[0x66] = &CPU::BIT_b_HL;
-    instructionsCB[0x67] = &CPU::BIT_b_r;
-    instructionsCB[0x68] = &CPU::BIT_b_r;
-    instructionsCB[0x69] = &CPU::BIT_b_r;
-    instructionsCB[0x6A] = &CPU::BIT_b_r;
-    instructionsCB[0x6B] = &CPU::BIT_b_r;
-    instructionsCB[0x6C] = &CPU::BIT_b_r;
-    instructionsCB[0x6D] = &CPU::BIT_b_r;
-    instructionsCB[0x6E] = &CPU::BIT_b_HL;
-    instructionsCB[0x6F] = &CPU::BIT_b_r;
-
-    instructionsCB[0x70] = &CPU::BIT_b_r;
-    instructionsCB[0x71] = &CPU::BIT_b_r;
-    instructionsCB[0x72] = &CPU::BIT_b_r;
-    instructionsCB[0x73] = &CPU::BIT_b_r;
-    instructionsCB[0x74] = &CPU::BIT_b_r;
-    instructionsCB[0x75] = &CPU::BIT_b_r;
-    instructionsCB[0x76] = &CPU::BIT_b_HL;
-    instructionsCB[0x77] = &CPU::BIT_b_r;
-    instructionsCB[0x78] = &CPU::BIT_b_r;
-    instructionsCB[0x79] = &CPU::BIT_b_r;
-    instructionsCB[0x7A] = &CPU::BIT_b_r;
-    instructionsCB[0x7B] = &CPU::BIT_b_r;
-    instructionsCB[0x7C] = &CPU::BIT_b_r;
-    instructionsCB[0x7D] = &CPU::BIT_b_r;
-    instructionsCB[0x7E] = &CPU::BIT_b_HL;
-    instructionsCB[0x7F] = &CPU::BIT_b_r;
-
-    instructionsCB[0xC0] = &CPU::SET_b_r;
-    instructionsCB[0xC1] = &CPU::SET_b_r;
-    instructionsCB[0xC2] = &CPU::SET_b_r;
-    instructionsCB[0xC3] = &CPU::SET_b_r;
-    instructionsCB[0xC4] = &CPU::SET_b_r;
-    instructionsCB[0xC5] = &CPU::SET_b_r;
-    instructionsCB[0xC6] = &CPU::SET_b_HL;
-    instructionsCB[0xC7] = &CPU::SET_b_r;
-    instructionsCB[0xC8] = &CPU::SET_b_r;
-    instructionsCB[0xC9] = &CPU::SET_b_r;
-    instructionsCB[0xCA] = &CPU::SET_b_r;
-    instructionsCB[0xCB] = &CPU::SET_b_r;
-    instructionsCB[0xCC] = &CPU::SET_b_r;
-    instructionsCB[0xCD] = &CPU::SET_b_r;
-    instructionsCB[0xCE] = &CPU::SET_b_HL;
-    instructionsCB[0xCF] = &CPU::SET_b_r;
-
-    instructionsCB[0xD0] = &CPU::SET_b_r;
-    instructionsCB[0xD1] = &CPU::SET_b_r;
-    instructionsCB[0xD2] = &CPU::SET_b_r;
-    instructionsCB[0xD3] = &CPU::SET_b_r;
-    instructionsCB[0xD4] = &CPU::SET_b_r;
-    instructionsCB[0xD5] = &CPU::SET_b_r;
-    instructionsCB[0xD6] = &CPU::SET_b_HL;
-    instructionsCB[0xD7] = &CPU::SET_b_r;
-    instructionsCB[0xD8] = &CPU::SET_b_r;
-    instructionsCB[0xD9] = &CPU::SET_b_r;
-    instructionsCB[0xDA] = &CPU::SET_b_r;
-    instructionsCB[0xDB] = &CPU::SET_b_r;
-    instructionsCB[0xDC] = &CPU::SET_b_r;
-    instructionsCB[0xDD] = &CPU::SET_b_r;
-    instructionsCB[0xDE] = &CPU::SET_b_HL;
-    instructionsCB[0xDF] = &CPU::SET_b_r;
-
-    instructionsCB[0xE0] = &CPU::SET_b_r;
-    instructionsCB[0xE1] = &CPU::SET_b_r;
-    instructionsCB[0xE2] = &CPU::SET_b_r;
-    instructionsCB[0xE3] = &CPU::SET_b_r;
-    instructionsCB[0xE4] = &CPU::SET_b_r;
-    instructionsCB[0xE5] = &CPU::SET_b_r;
-    instructionsCB[0xE6] = &CPU::SET_b_HL;
-    instructionsCB[0xE7] = &CPU::SET_b_r;
-    instructionsCB[0xE8] = &CPU::SET_b_r;
-    instructionsCB[0xE9] = &CPU::SET_b_r;
-    instructionsCB[0xEA] = &CPU::SET_b_r;
-    instructionsCB[0xEB] = &CPU::SET_b_r;
-    instructionsCB[0xEC] = &CPU::SET_b_r;
-    instructionsCB[0xED] = &CPU::SET_b_r;
-    instructionsCB[0xEE] = &CPU::SET_b_HL;
-    instructionsCB[0xEF] = &CPU::SET_b_r;
-
-    instructionsCB[0xF0] = &CPU::SET_b_r;
-    instructionsCB[0xF1] = &CPU::SET_b_r;
-    instructionsCB[0xF2] = &CPU::SET_b_r;
-    instructionsCB[0xF3] = &CPU::SET_b_r;
-    instructionsCB[0xF4] = &CPU::SET_b_r;
-    instructionsCB[0xF5] = &CPU::SET_b_r;
-    instructionsCB[0xF6] = &CPU::SET_b_HL;
-    instructionsCB[0xF7] = &CPU::SET_b_r;
-    instructionsCB[0xF8] = &CPU::SET_b_r;
-    instructionsCB[0xF9] = &CPU::SET_b_r;
-    instructionsCB[0xFA] = &CPU::SET_b_r;
-    instructionsCB[0xFB] = &CPU::SET_b_r;
-    instructionsCB[0xFC] = &CPU::SET_b_r;
-    instructionsCB[0xFD] = &CPU::SET_b_r;
-    instructionsCB[0xFE] = &CPU::SET_b_HL;
-    instructionsCB[0xFF] = &CPU::SET_b_r;
-
-    instructionsCB[0x80] = &CPU::RES_b_r;
-    instructionsCB[0x81] = &CPU::RES_b_r;
-    instructionsCB[0x82] = &CPU::RES_b_r;
-    instructionsCB[0x83] = &CPU::RES_b_r;
-    instructionsCB[0x84] = &CPU::RES_b_r;
-    instructionsCB[0x85] = &CPU::RES_b_r;
-    instructionsCB[0x86] = &CPU::RES_b_HL;
-    instructionsCB[0x87] = &CPU::RES_b_r;
-    instructionsCB[0x88] = &CPU::RES_b_r;
-    instructionsCB[0x89] = &CPU::RES_b_r;
-    instructionsCB[0x8A] = &CPU::RES_b_r;
-    instructionsCB[0x8B] = &CPU::RES_b_r;
-    instructionsCB[0x8C] = &CPU::RES_b_r;
-    instructionsCB[0x8D] = &CPU::RES_b_r;
-    instructionsCB[0x8E] = &CPU::RES_b_HL;
-    instructionsCB[0x8F] = &CPU::RES_b_r;
-
-    instructionsCB[0x90] = &CPU::RES_b_r;
-    instructionsCB[0x91] = &CPU::RES_b_r;
-    instructionsCB[0x92] = &CPU::RES_b_r;
-    instructionsCB[0x93] = &CPU::RES_b_r;
-    instructionsCB[0x94] = &CPU::RES_b_r;
-    instructionsCB[0x95] = &CPU::RES_b_r;
-    instructionsCB[0x96] = &CPU::RES_b_HL;
-    instructionsCB[0x97] = &CPU::RES_b_r;
-    instructionsCB[0x98] = &CPU::RES_b_r;
-    instructionsCB[0x99] = &CPU::RES_b_r;
-    instructionsCB[0x9A] = &CPU::RES_b_r;
-    instructionsCB[0x9B] = &CPU::RES_b_r;
-    instructionsCB[0x9C] = &CPU::RES_b_r;
-    instructionsCB[0x9D] = &CPU::RES_b_r;
-    instructionsCB[0x9E] = &CPU::RES_b_HL;
-    instructionsCB[0x9F] = &CPU::RES_b_r;
-
-    instructionsCB[0xA0] = &CPU::RES_b_r;
-    instructionsCB[0xA1] = &CPU::RES_b_r;
-    instructionsCB[0xA2] = &CPU::RES_b_r;
-    instructionsCB[0xA3] = &CPU::RES_b_r;
-    instructionsCB[0xA4] = &CPU::RES_b_r;
-    instructionsCB[0xA5] = &CPU::RES_b_r;
-    instructionsCB[0xA6] = &CPU::RES_b_HL;
-    instructionsCB[0xA7] = &CPU::RES_b_r;
-    instructionsCB[0xA8] = &CPU::RES_b_r;
-    instructionsCB[0xA9] = &CPU::RES_b_r;
-    instructionsCB[0xAA] = &CPU::RES_b_r;
-    instructionsCB[0xAB] = &CPU::RES_b_r;
-    instructionsCB[0xAC] = &CPU::RES_b_r;
-    instructionsCB[0xAD] = &CPU::RES_b_r;
-    instructionsCB[0xAE] = &CPU::RES_b_HL;
-    instructionsCB[0xAF] = &CPU::RES_b_r;
-
-    instructionsCB[0xB0] = &CPU::RES_b_r;
-    instructionsCB[0xB1] = &CPU::RES_b_r;
-    instructionsCB[0xB2] = &CPU::RES_b_r;
-    instructionsCB[0xB3] = &CPU::RES_b_r;
-    instructionsCB[0xB4] = &CPU::RES_b_r;
-    instructionsCB[0xB5] = &CPU::RES_b_r;
-    instructionsCB[0xB6] = &CPU::RES_b_HL;
-    instructionsCB[0xB7] = &CPU::RES_b_r;
-    instructionsCB[0xB8] = &CPU::RES_b_r;
-    instructionsCB[0xB9] = &CPU::RES_b_r;
-    instructionsCB[0xBA] = &CPU::RES_b_r;
-    instructionsCB[0xBB] = &CPU::RES_b_r;
-    instructionsCB[0xBC] = &CPU::RES_b_r;
-    instructionsCB[0xBD] = &CPU::RES_b_r;
-    instructionsCB[0xBE] = &CPU::RES_b_HL;
-    instructionsCB[0xBF] = &CPU::RES_b_r;
+    instructionsCB[0xA0] = &CPU::RES_b_r;   instructionsCB[0xB0] = &CPU::RES_b_r;
+    instructionsCB[0xA1] = &CPU::RES_b_r;   instructionsCB[0xB1] = &CPU::RES_b_r;
+    instructionsCB[0xA2] = &CPU::RES_b_r;   instructionsCB[0xB2] = &CPU::RES_b_r;
+    instructionsCB[0xA3] = &CPU::RES_b_r;   instructionsCB[0xB3] = &CPU::RES_b_r;
+    instructionsCB[0xA4] = &CPU::RES_b_r;   instructionsCB[0xB4] = &CPU::RES_b_r;
+    instructionsCB[0xA5] = &CPU::RES_b_r;   instructionsCB[0xB5] = &CPU::RES_b_r;
+    instructionsCB[0xA6] = &CPU::RES_b_HL;  instructionsCB[0xB6] = &CPU::RES_b_HL;
+    instructionsCB[0xA7] = &CPU::RES_b_r;   instructionsCB[0xB7] = &CPU::RES_b_r;
+    instructionsCB[0xA8] = &CPU::RES_b_r;   instructionsCB[0xB8] = &CPU::RES_b_r;
+    instructionsCB[0xA9] = &CPU::RES_b_r;   instructionsCB[0xB9] = &CPU::RES_b_r;
+    instructionsCB[0xAA] = &CPU::RES_b_r;   instructionsCB[0xBA] = &CPU::RES_b_r;
+    instructionsCB[0xAB] = &CPU::RES_b_r;   instructionsCB[0xBB] = &CPU::RES_b_r;
+    instructionsCB[0xAC] = &CPU::RES_b_r;   instructionsCB[0xBC] = &CPU::RES_b_r;
+    instructionsCB[0xAD] = &CPU::RES_b_r;   instructionsCB[0xBD] = &CPU::RES_b_r;
+    instructionsCB[0xAE] = &CPU::RES_b_HL;  instructionsCB[0xBE] = &CPU::RES_b_HL;
+    instructionsCB[0xAF] = &CPU::RES_b_r;   instructionsCB[0xBF] = &CPU::RES_b_r;
 
 }
 
@@ -575,426 +438,438 @@ void CPU::reset() {
 
 }
 
+void CPU::init(std::string& romPath) {
+    mmu.loadROM(romPath);
+}
+
+u8* CPU::getMemory() {
+    return mmu.getMemory();
+}
+
 void CPU::setFlag(FLAG flag) {
-    regs.f |= flag;
+    r.f |= flag;
 }
 
 void CPU::clearFlag(FLAG flag) {
-    regs.f &= ~flag;
+    r.f &= ~flag;
 }
 
 bool CPU::isFlagSet(FLAG flag) {
-    return regs.f & flag;
+    return r.f & flag;
 }
 
-u32 CPU::LD_r_n(const u8 &opcode) {
+u32 CPU::LD_r_n(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_r_r(const u8 &opcode) {
+u32 CPU::LD_r_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_r_HL(const u8 &opcode) {
+u32 CPU::LD_r_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_HL_r(const u8 &opcode) {
+u32 CPU::LD_HL_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_HL_n(const u8 &opcode) {
+u32 CPU::LD_HL_n(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_A_BC(const u8 &opcode) {
+u32 CPU::LD_A_BC(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_A_DE(const u8 &opcode) {
+u32 CPU::LD_A_DE(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_A_nn(const u8 &opcode) {
+u32 CPU::LD_A_nn(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_A_sharp(const u8 &opcode) {
+u32 CPU::LD_A_sharp(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_BC_A(const u8 &opcode) {
+u32 CPU::LD_BC_A(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_DE_A(const u8 &opcode) {
+u32 CPU::LD_DE_A(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_nn_A(const u8 &opcode) {
+u32 CPU::LD_nn_A(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_A_Cff00(const u8 &opcode) {
+u32 CPU::LD_A_Cff00(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_Cff00_A(const u8 &opcode) {
+u32 CPU::LD_Cff00_A(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LDD_A_HL(const u8 &opcode) {
+u32 CPU::LDD_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LDD_HL_A(const u8 &opcode) {
+u32 CPU::LDD_HL_A(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LDI_A_HL(const u8 &opcode) {
+u32 CPU::LDI_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LDI_HL_A(const u8 &opcode) {
+u32 CPU::LDI_HL_A(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_nff00_A(const u8 &opcode) {
+u32 CPU::LD_nff00_A(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_A_nff00(const u8 &opcode) {
+u32 CPU::LD_A_nff00(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_r2_nn(const u8 &opcode) {
+u32 CPU::LD_r2_nn(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_SP_HL(const u8 &opcode) {
+u32 CPU::LD_SP_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_HL_SPn(const u8 &opcode) {
+u32 CPU::LD_HL_SPn(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::LD_nn_SP(const u8 &opcode) {
+u32 CPU::LD_nn_SP(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::PUSH_r2(const u8 &opcode) {
+u32 CPU::PUSH_r2(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::POP_r2(const u8 &opcode) {
+u32 CPU::POP_r2(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::ADD_A_r(const u8 &opcode) {
+u32 CPU::ADD_A_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::ADD_A_HL(const u8 &opcode) {
+u32 CPU::ADD_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::ADD_A_sharp(const u8 &opcode) {
+u32 CPU::ADD_A_sharp(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::ADC_A_r(const u8 &opcode) {
+u32 CPU::ADC_A_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::ADC_A_HL(const u8 &opcode) {
+u32 CPU::ADC_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::ADC_A_sharp(const u8 &opcode) {
+u32 CPU::ADC_A_sharp(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SUB_A_r(const u8 &opcode) {
+u32 CPU::SUB_A_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SUB_A_HL(const u8 &opcode) {
+u32 CPU::SUB_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SUB_A_sharp(const u8 &opcode) {
+u32 CPU::SUB_A_sharp(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SBC_A_r(const u8 &opcode) {
+u32 CPU::SBC_A_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SBC_A_HL(const u8 &opcode) {
+u32 CPU::SBC_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::AND_A_r(const u8 &opcode) {
+u32 CPU::SBC_A_sharp(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::AND_A_HL(const u8 &opcode) {
+u32 CPU::AND_A_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::AND_A_sharp(const u8 &opcode) {
+u32 CPU::AND_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::OR_A_r(const u8 &opcode) {
+u32 CPU::AND_A_sharp(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::OR_A_HL(const u8 &opcode) {
+u32 CPU::OR_A_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::OR_A_sharp(const u8 &opcode) {
+u32 CPU::OR_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::XOR_A_r(const u8 &opcode) {
+u32 CPU::OR_A_sharp(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::XOR_A_HL(const u8 &opcode) {
+u32 CPU::XOR_A_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::XOR_A_sharp(const u8 &opcode) {
+u32 CPU::XOR_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::CP_A_n(const u8 &opcode) {
+u32 CPU::XOR_A_sharp(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::CP_A_HL(const u8 &opcode) {
+u32 CPU::CP_A_n(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::CP_A_sharp(const u8 &opcode) {
+u32 CPU::CP_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::INC_r(const u8 &opcode) {
+u32 CPU::CP_A_sharp(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::INC_HL(const u8 &opcode) {
+u32 CPU::INC_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::DEC_r(const u8 &opcode) {
+u32 CPU::INC_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::DEC_HL(const u8 &opcode) {
+u32 CPU::DEC_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::ADD_HL_r2(const u8 &opcode) {
+u32 CPU::DEC_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::ADD_SP_sn(const u8 &opcode) {
+u32 CPU::ADD_HL_r2(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::INC_r2(const u8 &opcode) {
+u32 CPU::ADD_SP_sn(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::DEC_r2(const u8 &opcode) {
+u32 CPU::INC_r2(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::DAA(const u8 &opcode) {
+u32 CPU::DEC_r2(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::CPL(const u8 &opcode) {
+u32 CPU::DAA(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::CCF(const u8 &opcode) {
+u32 CPU::CPL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SCF(const u8 &opcode) {
+u32 CPU::CCF(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::NOP(const u8 &opcode) {
+u32 CPU::SCF(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::HALT(const u8 &opcode) {
+u32 CPU::NOP(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::STOP(const u8 &opcode) {
+u32 CPU::HALT(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::DI(const u8 &opcode) {
+u32 CPU::STOP(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::EI(const u8 &opcode) {
+u32 CPU::DI(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RLCA(const u8 &opcode) {
+u32 CPU::EI(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RLA(const u8 &opcode) {
+u32 CPU::RLCA(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RRCA(const u8 &opcode) {
+u32 CPU::RLA(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RRA(const u8 &opcode) {
+u32 CPU::RRCA(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::JP_nn(const u8 &opcode) {
+u32 CPU::RRA(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::JP_cc_nn(const u8 &opcode) {
+u32 CPU::JP_nn(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::JP_HL(const u8 &opcode) {
+u32 CPU::JP_cc_nn(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::JR_sn(const u8 &opcode) {
+u32 CPU::JP_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::JR_cc_sn(const u8 &opcode) {
+u32 CPU::JR_sn(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::CALL_nn(const u8 &opcode) {
+u32 CPU::JR_cc_sn(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::CALL_cc_nn(const u8 &opcode) {
+u32 CPU::CALL_nn(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RST_n(const u8 &opcode) {
+u32 CPU::CALL_cc_nn(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RET(const u8 &opcode) {
+u32 CPU::RST_n(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RET_cc(const u8 &opcode) {
+u32 CPU::RET(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RETI(const u8 &opcode) {
+u32 CPU::RET_cc(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RLC_r(const u8 &opcode) {
+u32 CPU::RETI(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RLC_HL(const u8 &opcode) {
+u32 CPU::RLC_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RL_r(const u8 &opcode) {
+u32 CPU::RLC_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RL_HL(const u8 &opcode) {
+u32 CPU::RL_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RRC_r(const u8 &opcode) {
+u32 CPU::RL_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RRC_HL(const u8 &opcode) {
+u32 CPU::RRC_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RR_r(const u8 &opcode) {
+u32 CPU::RRC_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RR_HL(const u8 &opcode) {
+u32 CPU::RR_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SLA_r(const u8 &opcode) {
+u32 CPU::RR_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SLA_HL(const u8 &opcode) {
+u32 CPU::SLA_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SRA_r(const u8 &opcode) {
+u32 CPU::SLA_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SRA_HL(const u8 &opcode) {
+u32 CPU::SRA_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SRL_r(const u8 &opcode) {
+u32 CPU::SRA_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SRL_HL(const u8 &opcode) {
+u32 CPU::SRL_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::BIT_b_r(const u8 &opcode) {
+u32 CPU::SRL_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::BIT_b_HL(const u8 &opcode) {
+u32 CPU::BIT_b_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SET_b_r(const u8 &opcode) {
+u32 CPU::BIT_b_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SET_b_HL(const u8 &opcode) {
+u32 CPU::SET_b_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RES_b_r(const u8 &opcode) {
+u32 CPU::SET_b_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::RES_b_HL(const u8 &opcode) {
+u32 CPU::RES_b_r(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SWAP_r(const u8 &opcode) {
+u32 CPU::RES_b_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SWAP_HL(const u8 &opcode) {
+u32 CPU::SWAP_r(const u8& opcode) {
+    return 0;
+}
+
+u32 CPU::SWAP_HL(const u8& opcode) {
     return 0;
 }
