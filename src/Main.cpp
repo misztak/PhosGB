@@ -2,9 +2,13 @@
 #include <SDL.h>
 #include <array>
 
+#include "Common.h"
 #include "Debugger.h"
 #include "Display.h"
 #include "Timer.h"
+
+// TODO: Emulator class
+#include "CPU.h"
 
 #if __APPLE__
     // GL 2.2
@@ -19,6 +23,7 @@
 #endif
 
 constexpr int ticksPerFrame = 70224;
+// TODO: accuracy of this (maybe try 69905?)
 
 bool initGL() {
     glViewport(0, 0, SCALED_WIDTH, SCALED_HEIGHT);
@@ -72,10 +77,14 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::array<uint8_t, TEXTURE_SIZE> pixel = {};
-    for (uint8_t& p: pixel) {
-        p = 127;
+    std::array<u8, TEXTURE_SIZE> pixel = {};
+    for (int i=1; i<=TEXTURE_SIZE; i++) {
+        if (i % 4 == 0) pixel[i-1] = 255;
+        else pixel[i-1] = 127;
     }
+    CPU cpu;
+    std::string filePath = "../../gb/Tetris.gb";
+    cpu.init(filePath);
 
     if (!initGL()) {
         return 1;
@@ -83,7 +92,7 @@ int main(int argc, char** argv) {
 
     IDisplay* host;
     Display display(pixel);
-    Debugger debugger(window, glContext, pixel);
+    Debugger debugger(window, glContext, &cpu, pixel);
 
     // Main loop
     host = &debugger;
