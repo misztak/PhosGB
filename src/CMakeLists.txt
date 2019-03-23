@@ -1,4 +1,4 @@
-file(GLOB_RECURSE phos_SOURCES "*.cpp")
+file(GLOB phos_SOURCES *.cpp *.h)
 
 find_package(SDL2 REQUIRED)
 
