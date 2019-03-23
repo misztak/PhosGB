@@ -1,6 +1,6 @@
 #include "Debugger.h"
 
-Debugger::Debugger(SDL_Window* w, void* glContext, std::array<uint8_t, TEXTURE_SIZE>& pixel) {
+Debugger::Debugger(SDL_Window* w, void* glContext, CPU* c, std::array<uint8_t, TEXTURE_SIZE>& pixel) {
     textureHandler = 0;
     show_demo_window = false;
 
@@ -9,6 +9,7 @@ Debugger::Debugger(SDL_Window* w, void* glContext, std::array<uint8_t, TEXTURE_S
     ImGui::StyleColorsDark();
 
     window = w;
+    cpu = c;
     ImGui_ImplSDL2_InitForOpenGL(window, glContext);
 #if __APPLE__
     ImGui_ImplOpenGL2_Init();
@@ -47,10 +48,7 @@ void Debugger::update(std::array<uint8_t, TEXTURE_SIZE>& pixel) {
 
     if (show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
     emulatorView();
-    static MemoryEditor editor;
-    ImGui::Begin("Hex Editor");
-    editor.DrawContents(pixel.data(), TEXTURE_SIZE);
-    ImGui::End();
+    memoryView();
 
     // Rendering
     ImGui::Render();
@@ -63,6 +61,13 @@ void Debugger::emulatorView() {
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::Image((void*)(intptr_t)textureHandler, ImVec2(SCALED_WIDTH, SCALED_HEIGHT));
     ImGui::ShowMetricsWindow();
+    ImGui::End();
+}
+
+void Debugger::memoryView() {
+    static MemoryEditor editor;
+    ImGui::Begin("Hex Editor");
+    editor.DrawContents(cpu->getMemory(), MEMORY_SIZE);
     ImGui::End();
 }
 

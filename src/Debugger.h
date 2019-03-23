@@ -8,6 +8,8 @@
 #include <SDL.h>
 #include <array>
 
+#include "CPU.h"
+
 #if __APPLE__
 #include "imgui_impl_opengl2.h"
 #else
@@ -20,15 +22,17 @@
 class Debugger : public IDisplay {
 public:
     SDL_Window* window;
+    CPU* cpu;
     bool show_demo_window;
 public:
-    Debugger(SDL_Window* window, void* glContext, std::array<uint8_t, TEXTURE_SIZE>& pixel);
+    Debugger(SDL_Window* window, void* glContext, CPU* cpu, std::array<uint8_t, TEXTURE_SIZE>& pixel);
     ~Debugger();
     void render() override;
     void processEvent(SDL_Event& event) override;
     void update(std::array<uint8_t, TEXTURE_SIZE>& pixels) override;
 private:
     void emulatorView();
+    void memoryView();
 };
 
 
