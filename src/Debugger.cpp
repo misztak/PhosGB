@@ -1,6 +1,6 @@
 #include "Debugger.h"
 
-Debugger::Debugger(SDL_Window* w, void* glContext, Emulator* emu, std::array<uint8_t, TEXTURE_SIZE>& pixel) {
+Debugger::Debugger(SDL_Window* w, void* glContext, Emulator* emu) {
     textureHandler = 0;
     show_demo_window = false;
 
@@ -16,7 +16,7 @@ Debugger::Debugger(SDL_Window* w, void* glContext, Emulator* emu, std::array<uin
 #else
     ImGui_ImplOpenGL3_Init(GLSL_VERSION);
 #endif
-    initTexture(pixel);
+    initTexture(emulator->getDisplayState());
 }
 
 Debugger::~Debugger() {
@@ -36,7 +36,7 @@ void Debugger::processEvent(SDL_Event& event) {
     ImGui_ImplSDL2_ProcessEvent(&event);
 }
 
-void Debugger::update(std::array<uint8_t, TEXTURE_SIZE>& pixel) {
+void Debugger::update(u8* pixel) {
 #if __APPLE__
     ImGui_ImplOpenGL2_NewFrame();
 #else
@@ -44,7 +44,7 @@ void Debugger::update(std::array<uint8_t, TEXTURE_SIZE>& pixel) {
 #endif
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 
     if (show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
     emulatorView();

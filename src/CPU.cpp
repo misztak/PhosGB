@@ -1,6 +1,6 @@
 #include "CPU.h"
 
-CPU::CPU() {
+CPU::CPU(): gpu(this, &mmu), halted(false) {
     r.af = 0;
     r.bc = 0;
     r.de = 0;
@@ -432,15 +432,16 @@ CPU::CPU() {
     instructionsCB[0xAE] = &CPU::RES_b_HL;  instructionsCB[0xBE] = &CPU::RES_b_HL;
     instructionsCB[0xAF] = &CPU::RES_b_r;   instructionsCB[0xBF] = &CPU::RES_b_r;
 
-    reset();
 }
 
 void CPU::reset() {
+    // startup values (https://problemkaputt.de/pandocs.htm#powerupsequence)
     r.af = 0x01B0;
     r.bc = 0x0013;
     r.de = 0x00D8;
     r.hl = 0x014D;
     r.sp = 0xFFFE;
+    r.pc = 0x0100; // ignore BIOS for now
 
     mmu.writeByte(0xFF05, 0x00);    // TIMA
     mmu.writeByte(0xFF06, 0x00);    // TMA
@@ -463,7 +464,7 @@ void CPU::reset() {
     mmu.writeByte(0xFF23, 0xBF);    // NR30
     mmu.writeByte(0xFF24, 0x77);    // NR50
     mmu.writeByte(0xFF25, 0xF3);    // NR51
-    mmu.writeByte(0xFF26, 0xF1);    // NR52
+    mmu.writeByte(0xFF26, 0xF1);    // NR52 (0xF0 for SGB)
 
     mmu.writeByte(0xFF40, 0x91);    // LCDC
     mmu.writeByte(0xFF42, 0x00);    // SCY
@@ -485,7 +486,52 @@ bool CPU::init(std::string& romPath) {
     std::string bootROM = "../../gb/BootROM.gb";
     success &= mmu.loadROM(bootROM, true);
     success &= mmu.loadROM(romPath);
+    reset();
     return success;
+}
+
+u32 CPU::tick() {
+    u32 ticks = 0;
+    u8 opcode = 0;
+    bool isCBInstruction = false;
+    if (halted) {
+        ticks = NOP(0x00);
+    } else {
+        opcode = mmu.readByte(r.pc++);
+        Instruction instruction;
+        if (opcode == 0xCB) {
+            isCBInstruction = true;
+            opcode = mmu.readByte(r.pc++);
+            instruction = instructionsCB[opcode];
+        } else {
+            instruction = instructions[opcode];
+        }
+
+        if (instruction == nullptr) {
+            printf("Invalid opcode 0x%02X at address 0x%04X\n", opcode, r.pc-1);
+            return 0;
+        }
+        ticks = (this->*instruction)(opcode);
+    }
+
+    if (ticks == 0) {
+        printf("Unimplemented opcode");
+        if (isCBInstruction) printf(" 0xCB");
+        printf(" 0x%02X at address 0x%02X\n", opcode, r.pc-1);
+        return 0;
+    }
+
+    gpu.tick(ticks);
+
+    // TODO: update internal timer
+
+    // TODO: Interrupts
+
+    if (mmu.fatalError) {
+        return 0;
+    }
+
+    return ticks;
 }
 
 void CPU::setFlag(FLAG flag) {
@@ -749,7 +795,7 @@ u32 CPU::SCF(const u8& opcode) {
 }
 
 u32 CPU::NOP(const u8& opcode) {
-    return 0;
+    return 4;
 }
 
 u32 CPU::HALT(const u8& opcode) {
@@ -785,7 +831,8 @@ u32 CPU::RRA(const u8& opcode) {
 }
 
 u32 CPU::JP_nn(const u8& opcode) {
-    return 0;
+    r.pc = mmu.readWord(r.pc);
+    return 16;
 }
 
 u32 CPU::JP_cc_nn(const u8& opcode) {

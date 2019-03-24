@@ -7,11 +7,11 @@
 
 class Display : public IDisplay {
 public:
-    Display(std::array<uint8_t, TEXTURE_SIZE>& pixel);
+    Display(u8* pixel);
     ~Display();
     void render() override;
     void processEvent(SDL_Event& event) override;
-    void update(std::array<uint8_t, TEXTURE_SIZE>& pixels) override;
+    void update(u8* pixels) override;
 };
 
 

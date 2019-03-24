@@ -1,6 +1,5 @@
 #include <GL/glew.h>
 #include <SDL.h>
-#include <array>
 
 #include "Common.h"
 #include "Debugger.h"
@@ -41,6 +40,16 @@ bool initGL() {
     return true;
 }
 
+void render(SDL_Window* window, SDL_GLContext* glContext, IDisplay* host, Emulator* emulator) {
+    host->update(emulator->getDisplayState());
+    SDL_GL_MakeCurrent(window, glContext);
+
+    glClear(GL_COLOR_BUFFER_BIT);
+    host->render();
+
+    SDL_GL_SwapWindow(window);
+}
+
 int main(int argc, char** argv) {
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER) != 0) {
@@ -70,15 +79,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::array<u8, TEXTURE_SIZE> pixel = {};
-    for (int i=1; i<=TEXTURE_SIZE; i++) {
-        if (i % 4 == 0) pixel[i-1] = 255;
-        else pixel[i-1] = 127;
-    }
     Emulator emulator;
     std::string filePath = "../../gb/Tetris.gb";
     if (!emulator.load(filePath)) {
-        printf("Failed to load BootROM or Cartridge\n");
+        fprintf(stderr, "Failed to load BootROM or Cartridge\n");
         return 2;
     }
 
@@ -87,8 +91,8 @@ int main(int argc, char** argv) {
     }
 
     IDisplay* host;
-    Display display(pixel);
-    Debugger debugger(window, glContext, &emulator, pixel);
+    Display display(emulator.getDisplayState());
+    Debugger debugger(window, glContext, &emulator);
 
     // Main loop
     host = &debugger;
@@ -121,7 +125,7 @@ int main(int argc, char** argv) {
                     printf("Switched to mode %d\n", frameTimer.getMode());
                 }
                 if (event.key.keysym.scancode == SDL_SCANCODE_H) {
-                    emulator.stop();
+                    emulator.toggle();
                 }
 
             }
@@ -131,18 +135,24 @@ int main(int argc, char** argv) {
         // emulator tick
         if (!emulator.isHalted) {
             while (ticks < ticksPerFrame) {
-                ticks += emulator.tick();
+                int cycles = emulator.tick();
+                if (cycles == 0) {
+                    fprintf(stderr, "Encountered a fatal error during execution\n");
+                    //return 3;
+                    emulator.kill();
+                    break;
+                }
+                if (emulator.hitVBlank()) {
+                    // Under normal circumstances the display should update at the start of every VBLANK period.
+                    render(window, &glContext, host, &emulator);
+                }
+                ticks += cycles;
             }
             ticks -= ticksPerFrame;
+        } else {
+            // Just keep rendering if the debugger has halted execution or if a fatal error has occurred.
+            render(window, &glContext, host, &emulator);
         }
-
-        host->update(pixel);
-        SDL_GL_MakeCurrent(window, glContext);
-
-        glClear(GL_COLOR_BUFFER_BIT);
-        host->render();
-
-        SDL_GL_SwapWindow(window);
 
         frameTimer.syncFrame();
     }

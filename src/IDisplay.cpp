@@ -1,11 +1,11 @@
 #include "IDisplay.h"
 
-bool IDisplay::initTexture(std::array<uint8_t, TEXTURE_SIZE> &pixel) {
+bool IDisplay::initTexture(u8* pixel) {
     glGenTextures(1, &textureHandler);
     glBindTexture(GL_TEXTURE_2D, textureHandler);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel.data());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
     glBindTexture(GL_TEXTURE_2D, 0);
     return !hasGLError();
 }

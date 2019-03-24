@@ -4,22 +4,19 @@
 #include <GL/glew.h>
 #include <SDL.h>
 
-#include <array>
+#include "Common.h"
 
-#define WIDTH 160
-#define HEIGHT 144
-#define SCALE 2
-#define SCALED_WIDTH (WIDTH * SCALE)
-#define SCALED_HEIGHT (HEIGHT * SCALE)
-#define TEXTURE_SIZE (WIDTH * HEIGHT * 4)
+constexpr int SCALE = 2;
+constexpr int SCALED_WIDTH = WIDTH * SCALE;
+constexpr int SCALED_HEIGHT = HEIGHT * SCALE;
 
 class IDisplay {
 public:
-    virtual void update(std::array<uint8_t, TEXTURE_SIZE>& pixel) = 0;
+    virtual void update(u8* pixel) = 0;
     virtual void render() = 0;
     virtual void processEvent(SDL_Event& event) = 0;
 
-    bool initTexture(std::array<uint8_t, TEXTURE_SIZE>& pixel);
+    bool initTexture(u8* pixel);
     bool hasGLError();
     bool loadMainTexture();
 public:

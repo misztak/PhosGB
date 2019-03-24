@@ -31,7 +31,7 @@ u16 MMU::readWord(u16 address) {
 
 void MMU::writeByte(u16 address, u8 value) {
     if (address < 0xC000) {
-        printf("Attempted to overwrite BootROM\n");
+        printf("Attempted to overwrite ROM\n");
         fatalError = true;
         return;
     }
@@ -63,7 +63,7 @@ bool MMU::loadROM(std::string& filename, bool isBIOS) {
     file.seekg(0, std::ifstream::beg);
 
     if (length == -1) {
-        printf("Failed to open file\n");
+        printf("Failed to open file %s\n", filename.c_str());
         return false;
     }
     if (length > INTERNAL_ROM_SIZE) {
@@ -84,7 +84,7 @@ bool MMU::loadROM(std::string& filename, bool isBIOS) {
     } else {
         std::memcpy(rom0, buffer, ROM0_SIZE);
         std::memcpy(rom1, buffer + ROM0_SIZE, ROM1_SIZE);
-        printf("Read file %s, size=%li\n", filename.substr(filename.find_last_of('/')+1, filename.length()).data(), length);
+        printf("Read file %s, size=%li\n", filename.substr(filename.find_last_of('/')+1, filename.length()).c_str(), length);
         return true;
     }
 }

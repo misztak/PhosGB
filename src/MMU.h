@@ -6,7 +6,7 @@
 
 #include "Common.h"
 
-constexpr int INTERNAL_ROM_SIZE = 65536;
+constexpr int INTERNAL_ROM_SIZE = 32768;
 constexpr int BIOS_SIZE = 256;
 constexpr int ROM0_SIZE = 16384;
 constexpr int ROM1_SIZE = 16384;

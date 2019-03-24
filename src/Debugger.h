@@ -1,12 +1,11 @@
 #ifndef PHOS_DEBUGGER_H
 #define PHOS_DEBUGGER_H
 
+#include <SDL.h>
+#include <GL/glew.h>
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_memory_editor.h"
-#include <GL/glew.h>
-#include <SDL.h>
-#include <array>
 
 #if __APPLE__
 #include "imgui_impl_opengl2.h"
@@ -24,11 +23,11 @@ public:
     Emulator* emulator;
     bool show_demo_window;
 public:
-    Debugger(SDL_Window* window, void* glContext, Emulator* emu, std::array<uint8_t, TEXTURE_SIZE>& pixel);
+    Debugger(SDL_Window* window, void* glContext, Emulator* emu);
     ~Debugger();
     void render() override;
     void processEvent(SDL_Event& event) override;
-    void update(std::array<uint8_t, TEXTURE_SIZE>& pixels) override;
+    void update(u8* pixels) override;
 private:
     void emulatorView();
     void memoryView();

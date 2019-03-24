@@ -3,6 +3,7 @@
 
 #include "Common.h"
 #include "MMU.h"
+#include "GPU.h"
 
 // bitmasks for flags stored in lower 8bit of AF register
 enum FLAG { ZERO = 0x80, ADD_SUB = 0x40, HALF_CARRY = 0x20, CARRY = 0x10 };
@@ -49,11 +50,15 @@ class CPU {
 public:
     registers r;
     MMU mmu;
+    GPU gpu;
 public:
     CPU();
     bool init(std::string& romPath);
     void reset();
+    u32 tick();
 private:
+    bool halted;
+
     u8* byteRegisterMap[8];
     u16* shortRegisterMap[4];
 

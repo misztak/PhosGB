@@ -1,16 +1,19 @@
 #include "Emulator.h"
 
-Emulator::Emulator(): isHalted(false), error(false) {}
+Emulator::Emulator(): isHalted(false), isDead(false) {}
 
 bool Emulator::load(std::string& romPath) {
     return cpu.init(romPath);
 }
 
 u32 Emulator::tick() {
-    return 1;
+    return cpu.tick();
 }
 
-void Emulator::stop() {
+void Emulator::toggle() {
+    if (isDead) {
+        return;
+    }
     isHalted = !isHalted;
     if (isHalted) {
         printf("Stopped execution\n");
@@ -19,6 +22,20 @@ void Emulator::stop() {
     }
 }
 
+void Emulator::kill() {
+    isDead = true;
+    isHalted = true;
+}
+
 u8* Emulator::getDisplayState() {
-    return nullptr;
+    return cpu.gpu.getDisplayState();
+}
+
+bool Emulator::hitVBlank() {
+    if (cpu.gpu.hitVBlank) {
+        cpu.gpu.hitVBlank = false;
+        return true;
+    } else {
+        return false;
+    }
 }
