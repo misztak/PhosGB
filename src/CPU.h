@@ -70,6 +70,11 @@ private:
     void clearFlag(FLAG flag);
     bool isFlagSet(FLAG flag);
 
+    u8 readByte(u16 address);
+    void writeByte(u16 address, u8 value);
+    u16 readWord(u16 address);
+    void writeWord(u16 address, u16 value);
+
     // Z80 Instructions //
 
     u32 LD_r_n(const u8& opcode);       // 0x06, 0x0E, 0x16, 0x1E, 0x26, 0x2E

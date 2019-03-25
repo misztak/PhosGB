@@ -1,5 +1,5 @@
-#include <GL/glew.h>
 #include <SDL.h>
+#include <GL/glew.h>
 
 #include "Common.h"
 #include "Debugger.h"
@@ -20,9 +20,9 @@
 #endif
 
 constexpr int ticksPerFrame = 70224;
-// TODO: accuracy of this (maybe try 69905?)
 
 bool initGL() {
+    // TODO: stop using fixed function pipeline
     glViewport(0, 0, SCALED_WIDTH, SCALED_HEIGHT);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();

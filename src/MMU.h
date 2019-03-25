@@ -45,9 +45,6 @@ private:
     u8 readWRAMshadow(u16 address);
     u8 readERAM(u16 address);
     u8 readZRAM(u16 address);
-    u8 readVRAM(u16 address);
-    // TODO: IO Control
-    // TODO: OAM
 };
 
 #endif //PHOS_MMU_H

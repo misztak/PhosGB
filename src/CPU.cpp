@@ -443,42 +443,42 @@ void CPU::reset() {
     r.sp = 0xFFFE;
     r.pc = 0x0100; // ignore BIOS for now
 
-    mmu.writeByte(0xFF05, 0x00);    // TIMA
-    mmu.writeByte(0xFF06, 0x00);    // TMA
-    mmu.writeByte(0xFF07, 0x00);    // TAC
+    writeByte(0xFF05, 0x00);    // TIMA
+    writeByte(0xFF06, 0x00);    // TMA
+    writeByte(0xFF07, 0x00);    // TAC
 
-    mmu.writeByte(0xFF10, 0x80);    // NR10
-    mmu.writeByte(0xFF11, 0xBF);    // NR11
-    mmu.writeByte(0xFF12, 0xF3);    // NR12
-    mmu.writeByte(0xFF14, 0xBF);    // NR14
-    mmu.writeByte(0xFF16, 0x3F);    // NR21
-    mmu.writeByte(0xFF17, 0x00);    // NR22
-    mmu.writeByte(0xFF19, 0xBF);    // NR24
-    mmu.writeByte(0xFF1A, 0x7F);    // NR30
-    mmu.writeByte(0xFF1B, 0xFF);    // NR31
-    mmu.writeByte(0xFF1C, 0x9F);    // NR32
-    mmu.writeByte(0xFF1E, 0xBF);    // NR33
-    mmu.writeByte(0xFF20, 0xFF);    // NR41
-    mmu.writeByte(0xFF21, 0x00);    // NR42
-    mmu.writeByte(0xFF22, 0x00);    // NR43
-    mmu.writeByte(0xFF23, 0xBF);    // NR30
-    mmu.writeByte(0xFF24, 0x77);    // NR50
-    mmu.writeByte(0xFF25, 0xF3);    // NR51
-    mmu.writeByte(0xFF26, 0xF1);    // NR52 (0xF0 for SGB)
+    writeByte(0xFF10, 0x80);    // NR10
+    writeByte(0xFF11, 0xBF);    // NR11
+    writeByte(0xFF12, 0xF3);    // NR12
+    writeByte(0xFF14, 0xBF);    // NR14
+    writeByte(0xFF16, 0x3F);    // NR21
+    writeByte(0xFF17, 0x00);    // NR22
+    writeByte(0xFF19, 0xBF);    // NR24
+    writeByte(0xFF1A, 0x7F);    // NR30
+    writeByte(0xFF1B, 0xFF);    // NR31
+    writeByte(0xFF1C, 0x9F);    // NR32
+    writeByte(0xFF1E, 0xBF);    // NR33
+    writeByte(0xFF20, 0xFF);    // NR41
+    writeByte(0xFF21, 0x00);    // NR42
+    writeByte(0xFF22, 0x00);    // NR43
+    writeByte(0xFF23, 0xBF);    // NR30
+    writeByte(0xFF24, 0x77);    // NR50
+    writeByte(0xFF25, 0xF3);    // NR51
+    writeByte(0xFF26, 0xF1);    // NR52 (0xF0 for SGB)
 
-    mmu.writeByte(0xFF40, 0x91);    // LCDC
-    mmu.writeByte(0xFF42, 0x00);    // SCY
-    mmu.writeByte(0xFF43, 0x00);    // SCY
-    mmu.writeByte(0xFF45, 0x00);    // LYC
-    mmu.writeByte(0xFF47, 0xFC);    // BGP
-    mmu.writeByte(0xFF48, 0xFF);    // OBP0
-    mmu.writeByte(0xFF49, 0xFF);    // OBP1
-    mmu.writeByte(0xFF4A, 0x00);    // WY
-    mmu.writeByte(0xFF4B, 0x00);    // WX
+    writeByte(0xFF40, 0x91);    // LCDC
+    writeByte(0xFF42, 0x00);    // SCY
+    writeByte(0xFF43, 0x00);    // SCY
+    writeByte(0xFF45, 0x00);    // LYC
+    writeByte(0xFF47, 0xFC);    // BGP
+    writeByte(0xFF48, 0xFF);    // OBP0
+    writeByte(0xFF49, 0xFF);    // OBP1
+    writeByte(0xFF4A, 0x00);    // WY
+    writeByte(0xFF4B, 0x00);    // WX
 
-    mmu.writeByte(0xFFFF, 0x00);    // IE
+    writeByte(0xFFFF, 0x00);    // IE
 
-    // TODO: GPU Boot
+    gpu.reset();
 }
 
 bool CPU::init(std::string& romPath) {
@@ -497,11 +497,11 @@ u32 CPU::tick() {
     if (halted) {
         ticks = NOP(0x00);
     } else {
-        opcode = mmu.readByte(r.pc++);
+        opcode = readByte(r.pc++);
         Instruction instruction;
         if (opcode == 0xCB) {
             isCBInstruction = true;
-            opcode = mmu.readByte(r.pc++);
+            opcode = readByte(r.pc++);
             instruction = instructionsCB[opcode];
         } else {
             instruction = instructions[opcode];
@@ -545,6 +545,32 @@ void CPU::clearFlag(FLAG flag) {
 bool CPU::isFlagSet(FLAG flag) {
     return r.f & flag;
 }
+
+u8 CPU::readByte(u16 address) {
+    if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
+        return gpu.readByte(address);
+    } else {
+        return mmu.readByte(address);
+    }
+}
+
+void CPU::writeByte(u16 address, u8 value) {
+    if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
+        gpu.writeByte(address, value);
+    } else {
+        mmu.writeByte(address, value);
+    }
+}
+
+u16 CPU::readWord(u16 address) {
+    return 0;
+}
+
+void CPU::writeWord(u16 address, u16 value) {
+
+}
+
+// CPU Instructions //
 
 u32 CPU::LD_r_n(const u8& opcode) {
     return 0;

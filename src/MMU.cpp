@@ -7,7 +7,7 @@ MMU::MMU(): inBIOS(false), fatalError(false) {
     memoryMap[0x2] = &MMU::readROM0; memoryMap[0x3] = &MMU::readROM0;
     memoryMap[0x4] = &MMU::readROM1; memoryMap[0x5] = &MMU::readROM1;
     memoryMap[0x6] = &MMU::readROM1; memoryMap[0x7] = &MMU::readROM1;
-    memoryMap[0x8] = &MMU::readVRAM; memoryMap[0x9] = &MMU::readVRAM;
+
     memoryMap[0xA] = &MMU::readERAM; memoryMap[0xB] = &MMU::readERAM;
     memoryMap[0xC] = &MMU::readWRAM; memoryMap[0xD] = &MMU::readWRAM;
     memoryMap[0xE] = &MMU::readWRAMshadow;
@@ -21,7 +21,6 @@ u8 MMU::readByte(u16 address) {
         printf("Reading shadow wram\n");
     }
     Memory mappedMemory = memoryMap[location];
-
     return (this->*mappedMemory)(address);
 }
 
@@ -36,7 +35,6 @@ void MMU::writeByte(u16 address, u8 value) {
         return;
     }
     // TODO: cartridge external RAM
-    // TODO: improved IO (0xFF0F, 0xFF50, 0xFF4D)
     // TODO: check for off by one errors
     if (address >= 0xC000 && address <= 0xDFFF) {
         workingRAM[address - 0xC000] = value;
@@ -116,36 +114,26 @@ u8 MMU::readERAM(const u16 address) {
     return externalRAM[address & 0x1FFF];
 }
 
-// TODO: rename this
+// TODO: rename / refactor this
 u8 MMU::readZRAM(const u16 address) {
     int location = address & 0x0F00;
     if (location < 0x0E00) {
         // WRAM shadow
         return workingRAM[address & 0x1FFF];
-    } else if (location == 0x0E00) {
-        // OAM
-        if (address < 0xFEA0) {
-            // return GPU.oam[address & 0xFF];
-        } else {
-            return 0;
-        }
     } else  if (location == 0x0F00){
         if (address >= 0xFF80) {
             // Zero-page
             return zeroPageRAM[address & 0x7F];
         } else {
             // IO Control
-            return 0;
+            return mappedIO[address - 0xFF00];
         }
+    } else if (location == 0x0E00) {
+        printf("Tried to access OAM memory from MMU\n");
+        // fall through to generic error message
     }
-    // should never be reached
-    printf("Invalid ZRAM address %d\n", address);
-    fatalError = true;
-    return 0;
-}
 
-u8 MMU::readVRAM(u16 address) {
-    // return GPU.vram[address & 0x1FFF];
+    printf("Invalid ZRAM address 0x%02X\n", address);
     fatalError = true;
     return 0;
 }
