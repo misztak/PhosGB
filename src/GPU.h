@@ -10,6 +10,7 @@ enum GPU_MODE { HBLANK, VBLANK, READ_OAM, READ_BOTH };
 
 enum COLORS { WHITE = 255, LIGHT_GREY = 192, DARK_GREY = 96, BLACK = 0 };
 
+// GPU Registers
 constexpr u16 LCD_CONTROL = 0xFF40;
 constexpr u16 LCDC_STATUS = 0xFF41;
 constexpr u16 SCROLL_Y = 0xFF42;
@@ -22,6 +23,23 @@ constexpr u16 BG_PALETTE_DATA = 0xFF47;
 constexpr u16 SPRITE_PALETTE_0_DATA = 0xFF48;
 constexpr u16 SPRITE_PALETTE_1_DATA = 0xFF49;
 constexpr u16 DMA_TRANSFER = 0xFF46;
+
+// FF40 LCD Control Flags (as bitmasks)
+constexpr u8 LCD_DISPLAY_ENABLE = 0x80;
+constexpr u8 WINDOW_TILE_MAP_SELECT = 0x40;
+constexpr u8 WINDOW_DISPLAY_ENABLE = 0x20;
+constexpr u8 BG_AND_WINDOW_TILE_SELECT = 0x10;
+constexpr u8 BG_TILE_MAP_SELECT = 0x08;
+constexpr u8 SPRITE_SIZE = 0x04;
+constexpr u8 SPRITE_DISPLAY_ENABLE = 0x02;
+constexpr u8 BG_DISPLAY = 0x01;
+
+// FF41 LCDC Status Flags (as bitmasks)
+constexpr u8 LYC_LY_COINCIDENCE_INTERRUPT = 0x40;
+constexpr u8 MODE_2_OAM_INTERRUPT = 0x20;
+constexpr u8 MODE_1_VBLANK_INTERRUPT = 0x10;
+constexpr u8 MODE_0_HBLANK_INTERRUPT = 0x08;
+constexpr u8 COINCIDENCE_FLAG = 0x04;
 
 class GPU {
 public:
@@ -54,6 +72,8 @@ private:
 private:
     u8 getReg(u16 regAddress);
     void setReg(u16 regAddress, u8 value);
+    u8 getMode();
+    void setMode(GPU_MODE mode);
 };
 
 #endif //PHOS_GPU_H

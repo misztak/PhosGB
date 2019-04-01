@@ -33,14 +33,14 @@ void GPU::tick(u32 ticks) {
             if (modeclock >= 80) {
                 // enter scanline mode 3 (READ_BOTH)
                 modeclock = 0;
-                mode = READ_BOTH;
+                setMode(READ_BOTH);
             }
             break;
         case READ_BOTH:
             if (modeclock >= 172) {
                 // beginning of HBLANK
                 modeclock = 0;
-                mode = HBLANK;
+                setMode(HBLANK);
 
                 // TODO: write a scanline from the framebuffer + interrupt
             }
@@ -51,11 +51,11 @@ void GPU::tick(u32 ticks) {
                 line++;
                 if (line == 143) {
                     // beginning of VBLANK
-                    mode = VBLANK;
+                    setMode(VBLANK);
                     hitVBlank = true;
                     // TODO: more interrupts
                 } else {
-                    mode = READ_OAM;
+                    setMode(READ_OAM);
                 }
             }
             break;
@@ -64,7 +64,7 @@ void GPU::tick(u32 ticks) {
                 modeclock = 0;
                 line++;
                 if (line > 153) {
-                    mode = READ_OAM;
+                    setMode(READ_OAM);
                     line = 0;
                     // TODO: even more interrupts
                 }
@@ -104,6 +104,15 @@ u8 GPU::getReg(u16 regAddress) {
 
 void GPU::setReg(u16 regAddress, u8 value) {
     mmu->writeByte(regAddress, value);
+}
+
+u8 GPU::getMode() {
+    return getReg(LCDC_STATUS) & (u8) 0x03;
+}
+
+void GPU::setMode(GPU_MODE newMode) {
+    setReg(LCDC_STATUS, (getReg(LCDC_STATUS) & ~((u8) 0x03)) | newMode);
+    mode = newMode;
 }
 
 u8* GPU::getDisplayState() {
