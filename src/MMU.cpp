@@ -16,7 +16,7 @@ MMU::MMU(): inBIOS(false), fatalError(false) {
 }
 
 u8 MMU::readByte(u16 address) {
-    int location = address & 0xF000;
+    int location = (address & 0xF000) >> 12;
     if (location == 0xE) {
         printf("Reading shadow wram\n");
     }
