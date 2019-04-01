@@ -97,6 +97,9 @@ int main(int argc, char** argv) {
     // Main loop
     host = &debugger;
     bool isDebugger = true;
+    if (isDebugger && debugger.singleStepMode) {
+        emulator.isHalted = true;
+    }
     bool done = false;
 
     int ticks = 0;
@@ -138,15 +141,25 @@ int main(int argc, char** argv) {
                 int cycles = emulator.tick();
                 if (cycles == 0) {
                     fprintf(stderr, "Encountered a fatal error during execution\n");
-                    //return 3;
                     emulator.kill();
                     break;
                 }
+
                 if (emulator.hitVBlank()) {
                     // Under normal circumstances the display should update at the start of every VBLANK period.
                     render(window, &glContext, host, &emulator);
                 }
+
                 ticks += cycles;
+
+                if (isDebugger && debugger.singleStepMode) {
+                    debugger.nextStep = false;
+                    emulator.isHalted = true;
+                    render(window, &glContext, host, &emulator);
+                    ticks = ticksPerFrame;
+                    printf("Step\n");
+                    break;
+                }
             }
             ticks -= ticksPerFrame;
         } else {

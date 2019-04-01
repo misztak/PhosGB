@@ -22,6 +22,8 @@ public:
     SDL_Window* window;
     Emulator* emulator;
     bool show_demo_window;
+    bool nextStep;
+    bool singleStepMode;
 public:
     Debugger(SDL_Window* window, void* glContext, Emulator* emu);
     ~Debugger();

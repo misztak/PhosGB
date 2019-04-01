@@ -15,9 +15,8 @@ public:
     bool hitVBlank();
 public:
     bool isHalted;
-    CPU cpu;
-private:
     bool isDead;
+    CPU cpu;
 };
 
 #endif //PHOS_EMULATOR_H

@@ -3,6 +3,9 @@
 Debugger::Debugger(SDL_Window* w, void* glContext, Emulator* emu) {
     textureHandler = 0;
     show_demo_window = false;
+    nextStep = false;
+    // TODO: debugger settings window
+    singleStepMode = false;
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -60,7 +63,12 @@ void Debugger::emulatorView() {
     ImGui::Begin("Emulator");
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::Image((void*)(intptr_t)textureHandler, ImVec2(SCALED_WIDTH, SCALED_HEIGHT));
-    ImGui::ShowMetricsWindow();
+    //ImGui::ShowMetricsWindow();
+    nextStep = ImGui::Button("Step");
+    if (singleStepMode && !emulator->isDead) {
+        emulator->isHalted = !nextStep;
+    }
+    ImGui::Text("PC: 0x%04X", emulator->cpu.r.pc);
     ImGui::End();
 }
 
