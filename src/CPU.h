@@ -44,6 +44,7 @@ typedef struct registers {
 
     u16 sp;
     u16 pc;
+    u8 ime;
 } registers;
 
 class CPU {
@@ -56,6 +57,7 @@ public:
     bool init(std::string& romPath);
     void reset();
     u32 tick();
+    void requestInterrupt(u8 interrupt);
 private:
     bool halted;
 
@@ -69,6 +71,12 @@ private:
     void setFlag(FLAG flag);
     void clearFlag(FLAG flag);
     bool isFlagSet(FLAG flag);
+    void checkInterrupts();
+
+    void pushByte(u8 value);
+    void pushWord(u16 value);
+    u8 popByte();
+    u16 popWord();
 
     u8 readByte(u16 address);
     void writeByte(u16 address, u8 value);

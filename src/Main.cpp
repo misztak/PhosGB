@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     }
 
     Emulator emulator;
-    std::string filePath = "../../gb/Tetris.gb";
+    std::string filePath = "../../gb/RenderTest.gb";
     if (!emulator.load(filePath)) {
         fprintf(stderr, "Failed to load BootROM or Cartridge\n");
         return 2;

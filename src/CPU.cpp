@@ -442,6 +442,7 @@ void CPU::reset() {
     r.hl = 0x014D;
     r.sp = 0xFFFE;
     r.pc = 0x0100; // ignore BIOS for now
+    r.ime = 0x0;
 
     writeByte(0xFF05, 0x00);    // TIMA
     writeByte(0xFF06, 0x00);    // TMA
@@ -525,13 +526,80 @@ u32 CPU::tick() {
 
     // TODO: update internal timer
 
-    // TODO: Interrupts
+    checkInterrupts();
 
     if (mmu.fatalError) {
         return 0;
     }
 
     return ticks;
+}
+
+void CPU::checkInterrupts() {
+    if (r.ime) {
+        u8 IE = mmu.readByte(0xFFFF);
+        u8 IF = mmu.readByte(0xFF0F);
+
+        // filter active interrupts
+        u8 activeInterrupts = (IE & IF) & 0x1F;
+        if (activeInterrupts > 0) {
+            r.ime = 0;
+            pushWord(r.pc);
+
+            if (isBitSet(activeInterrupts, 0x01)) {
+                r.pc = INTERRUPT_VBLANK;
+                IF = clearBit(IF, 0x01);
+            } else if (isBitSet(activeInterrupts, 0x02)) {
+                r.pc = INTERRUPT_LCD_STAT;
+                IF = clearBit(IF, 0x02);
+            } else if (isBitSet(activeInterrupts, 0x04)) {
+                r.pc = INTERRUPT_TIMER;
+                IF = clearBit(IF, 0x04);
+            } else if (isBitSet(activeInterrupts, 0x08)) {
+                r.pc = INTERRUPT_SERIAL;
+                IF = clearBit(IF, 0x08);
+            } else if (isBitSet(activeInterrupts, 0x10)) {
+                r.pc = INTERRUPT_JOYPAD;
+                IF = clearBit(IF, 0x10);
+            }
+            mmu.writeByte(0xFF0F, IF);
+        }
+    }
+}
+
+void CPU::requestInterrupt(u8 interrupt) {
+    u8 IF = mmu.readByte(0xFF0F);
+    if (interrupt == INTERRUPT_VBLANK) IF = setBit(IF, 0x01);
+    else if (interrupt == INTERRUPT_LCD_STAT) IF = setBit(IF, 0x02);
+    else if (interrupt == INTERRUPT_TIMER) IF = setBit(IF, 0x04);
+    else if (interrupt == INTERRUPT_SERIAL) IF = setBit(IF, 0x08);
+    else if (interrupt == INTERRUPT_JOYPAD) IF = setBit(IF, 0x10);
+
+    //halted = false;
+
+    mmu.writeByte(0xFF0F, IF);
+}
+
+void CPU::pushByte(u8 value) {
+    r.sp--;
+    mmu.writeByte(r.sp, value);
+}
+
+void CPU::pushWord(u16 value) {
+    pushByte((value >> 8) & 0xFF);
+    pushByte(value & 0xFF);
+}
+
+u8 CPU::popByte() {
+    u8 value = mmu.readByte(r.sp);
+    r.sp++;
+    return value;
+}
+
+u16 CPU::popWord() {
+    u16 value = mmu.readWord(r.sp);
+    r.sp += 2;
+    return value;
 }
 
 void CPU::setFlag(FLAG flag) {
@@ -833,11 +901,13 @@ u32 CPU::STOP(const u8& opcode) {
 }
 
 u32 CPU::DI(const u8& opcode) {
-    return 0;
+    r.ime = 0;
+    return 4;
 }
 
 u32 CPU::EI(const u8& opcode) {
-    return 0;
+    r.ime = 1;
+    return 4;
 }
 
 u32 CPU::RLCA(const u8& opcode) {
@@ -898,7 +968,9 @@ u32 CPU::RET_cc(const u8& opcode) {
 }
 
 u32 CPU::RETI(const u8& opcode) {
-    return 0;
+    r.ime = 1;
+    r.pc = popWord();
+    return 16;
 }
 
 u32 CPU::RLC_r(const u8& opcode) {

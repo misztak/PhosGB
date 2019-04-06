@@ -41,7 +41,11 @@ void MMU::writeByte(u16 address, u8 value) {
     } else if (address >= 0xE000 && address <= 0xFDFF) {
         workingRAM[address - 0xE000] = value;
     } else if (address >= 0xFF00 && address <= 0xFF7F) {
-        mappedIO[address - 0xFF00] = value;
+        if (address == 0xFF41) {
+            mappedIO[address - 0xFF00] = (value & (u8) 0xF8) | (mappedIO[address - 0xFF00] & (u8) 0x07);
+        } else {
+            mappedIO[address - 0xFF00] = value;
+        }
     } else if (address >= 0xFF80 && address <= 0xFFFF) {
         zeroPageRAM[address - 0xFF80] = value;
     } else {
@@ -106,7 +110,6 @@ u8 MMU::readWRAM(const u16 address) {
 }
 
 u8 MMU::readWRAMshadow(const u16 address) {
-    // TODO: what's the point of this?
     return workingRAM[address & 0x1FFF];
 }
 
