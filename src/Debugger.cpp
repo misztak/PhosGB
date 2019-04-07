@@ -68,7 +68,18 @@ void Debugger::emulatorView() {
     if (singleStepMode && !emulator->isDead) {
         emulator->isHalted = !nextStep;
     }
+    ImGui::Text("Registers:");
     ImGui::Text("PC: 0x%04X", emulator->cpu.r.pc);
+    ImGui::Text("SP: 0x%04X", emulator->cpu.r.sp);
+    ImGui::Text("AF: 0x%04X", emulator->cpu.r.af);
+    ImGui::Text("BC: 0x%04X", emulator->cpu.r.bc);
+    ImGui::Text("DE: 0x%04X", emulator->cpu.r.de);
+    ImGui::Text("HL: 0x%04X", emulator->cpu.r.hl);
+    ImGui::Text("Flags:");
+    ImGui::Text("ZERO %d", (emulator->cpu.r.f & ZERO) != 0);
+    ImGui::Text("ADD_SUB %d", (emulator->cpu.r.f & ADD_SUB) != 0);
+    ImGui::Text("HALF_CARRY %d", (emulator->cpu.r.f & HALF_CARRY) != 0);
+    ImGui::Text("CARRY %d", (emulator->cpu.r.f & CARRY) != 0);
     ImGui::End();
 }
 
@@ -76,7 +87,7 @@ void Debugger::memoryView() {
     static MemoryEditor editor;
     ImGui::Begin("Memory Editor");
 
-    const char* items[] = {"ROM0", "ROM1", "WRAM", "ERAM", "ZRAM", "IO", "BIOS"};
+    const char* items[] = {"ROM0", "ROM1", "WRAM", "ERAM", "ZRAM", "IO", "BIOS", "VRAM", "OAM"};
     static int currentItem = 0;
     ImGui::Combo("Location", &currentItem, items, IM_ARRAYSIZE(items));
 
@@ -101,6 +112,12 @@ void Debugger::memoryView() {
             break;
         case 6:
             editor.DrawContents(emulator->cpu.mmu.bios, BIOS_SIZE);
+            break;
+        case 7:
+            editor.DrawContents(emulator->cpu.gpu.getVRAM(), VRAM_SIZE);
+            break;
+        case 8:
+            editor.DrawContents(emulator->cpu.gpu.getOAM(), OAM_SIZE);
             break;
         default:
             break;

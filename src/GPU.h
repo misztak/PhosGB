@@ -10,6 +10,11 @@ enum GPU_MODE { HBLANK, VBLANK, READ_OAM, READ_BOTH };
 
 enum COLORS { WHITE = 255, LIGHT_GREY = 192, DARK_GREY = 96, BLACK = 0 };
 
+const u8 colors[] { 255, 192, 96, 0 };
+
+constexpr int VRAM_SIZE = 8192;
+constexpr int OAM_SIZE = 160;
+
 // GPU Registers
 constexpr u16 LCD_CONTROL = 0xFF40;
 constexpr u16 LCDC_STATUS = 0xFF41;
@@ -49,6 +54,8 @@ public:
     void reset();
     void tick(u32 ticks);
     u8* getDisplayState();
+    u8* getVRAM();
+    u8* getOAM();
 
     u8 readByte(u16 address);
     void writeByte(u16 address, u8 value);
@@ -60,13 +67,10 @@ private:
 
     GPU_MODE mode;
     int modeclock;
-    int line;
-
-    u8 scrollX;
-    u8 scrollY;
 
     std::vector<u8> displayState;
     std::vector<std::vector<u8>> background;
+    std::vector<std::vector<u8>> backgroundTmp;
     std::vector<u8> VRAM;
     std::vector<u8> OAM;
 private:
@@ -74,6 +78,14 @@ private:
     void setReg(u16 regAddress, u8 value);
     u8 getMode();
     void setMode(GPU_MODE mode);
+
+    void renderScanline();
+    void renderBGScanline();
+    void renderWindowScanline();
+    void renderSpriteScanline();
+
+    void setBGColor(COLORS color);
+    void updateDisplayState();
 };
 
 #endif //PHOS_GPU_H

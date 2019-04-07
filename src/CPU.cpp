@@ -30,6 +30,7 @@ CPU::CPU(): gpu(this, &mmu), halted(false) {
     instructions[0x1E] = &CPU::LD_r_n;
     instructions[0x26] = &CPU::LD_r_n;
     instructions[0x2E] = &CPU::LD_r_n;
+    instructions[0x3E] = &CPU::LD_r_n;
 
     instructions[0x7F] = &CPU::LD_r_r;
     instructions[0x78] = &CPU::LD_r_r;
@@ -101,7 +102,6 @@ CPU::CPU(): gpu(this, &mmu), halted(false) {
     instructions[0x0A] = &CPU::LD_A_BC;
     instructions[0x1A] = &CPU::LD_A_DE;
     instructions[0xFA] = &CPU::LD_A_nn;
-    instructions[0x3E] = &CPU::LD_A_sharp;
     instructions[0x02] = &CPU::LD_BC_A;
     instructions[0x12] = &CPU::LD_DE_A;
     instructions[0xEA] = &CPU::LD_nn_A;
@@ -140,7 +140,7 @@ CPU::CPU(): gpu(this, &mmu), halted(false) {
     instructions[0x84] = &CPU::ADD_A_r;
     instructions[0x85] = &CPU::ADD_A_r;
     instructions[0x86] = &CPU::ADD_A_HL;
-    instructions[0xC6] = &CPU::ADD_A_sharp;
+    instructions[0xC6] = &CPU::ADD_A_n;
 
     instructions[0x8F] = &CPU::ADC_A_r;
     instructions[0x88] = &CPU::ADC_A_r;
@@ -150,7 +150,7 @@ CPU::CPU(): gpu(this, &mmu), halted(false) {
     instructions[0x8C] = &CPU::ADC_A_r;
     instructions[0x8D] = &CPU::ADC_A_r;
     instructions[0x8E] = &CPU::ADC_A_HL;
-    instructions[0xCE] = &CPU::ADC_A_sharp;
+    instructions[0xCE] = &CPU::ADC_A_n;
 
     instructions[0x97] = &CPU::SUB_A_r;
     instructions[0x90] = &CPU::SUB_A_r;
@@ -160,7 +160,7 @@ CPU::CPU(): gpu(this, &mmu), halted(false) {
     instructions[0x94] = &CPU::SUB_A_r;
     instructions[0x95] = &CPU::SUB_A_r;
     instructions[0x96] = &CPU::SUB_A_HL;
-    instructions[0xD6] = &CPU::SUB_A_sharp;
+    instructions[0xD6] = &CPU::SUB_A_n;
 
     instructions[0x9F] = &CPU::SBC_A_r;
     instructions[0x98] = &CPU::SBC_A_r;
@@ -170,7 +170,7 @@ CPU::CPU(): gpu(this, &mmu), halted(false) {
     instructions[0x9C] = &CPU::SBC_A_r;
     instructions[0x9D] = &CPU::SBC_A_r;
     instructions[0x9E] = &CPU::SBC_A_HL;
-    instructions[0xDE] = &CPU::SBC_A_sharp;
+    instructions[0xDE] = &CPU::SBC_A_n;
 
     instructions[0xA7] = &CPU::AND_A_r;
     instructions[0xA0] = &CPU::AND_A_r;
@@ -180,7 +180,7 @@ CPU::CPU(): gpu(this, &mmu), halted(false) {
     instructions[0xA4] = &CPU::AND_A_r;
     instructions[0xA5] = &CPU::AND_A_r;
     instructions[0xA6] = &CPU::AND_A_HL;
-    instructions[0xE6] = &CPU::AND_A_sharp;
+    instructions[0xE6] = &CPU::AND_A_n;
 
     instructions[0xB7] = &CPU::OR_A_r;
     instructions[0xB0] = &CPU::OR_A_r;
@@ -190,7 +190,7 @@ CPU::CPU(): gpu(this, &mmu), halted(false) {
     instructions[0xB4] = &CPU::OR_A_r;
     instructions[0xB5] = &CPU::OR_A_r;
     instructions[0xB6] = &CPU::OR_A_HL;
-    instructions[0xF6] = &CPU::OR_A_sharp;
+    instructions[0xF6] = &CPU::OR_A_n;
 
     instructions[0xAF] = &CPU::XOR_A_r;
     instructions[0xA8] = &CPU::XOR_A_r;
@@ -200,17 +200,17 @@ CPU::CPU(): gpu(this, &mmu), halted(false) {
     instructions[0xAC] = &CPU::XOR_A_r;
     instructions[0xAD] = &CPU::XOR_A_r;
     instructions[0xAE] = &CPU::XOR_A_HL;
-    instructions[0xEE] = &CPU::XOR_A_sharp;
+    instructions[0xEE] = &CPU::XOR_A_n;
 
-    instructions[0xBF] = &CPU::CP_A_n;
-    instructions[0xB8] = &CPU::CP_A_n;
-    instructions[0xB9] = &CPU::CP_A_n;
-    instructions[0xBA] = &CPU::CP_A_n;
-    instructions[0xBB] = &CPU::CP_A_n;
-    instructions[0xBC] = &CPU::CP_A_n;
-    instructions[0xBD] = &CPU::CP_A_n;
+    instructions[0xBF] = &CPU::CP_A_r;
+    instructions[0xB8] = &CPU::CP_A_r;
+    instructions[0xB9] = &CPU::CP_A_r;
+    instructions[0xBA] = &CPU::CP_A_r;
+    instructions[0xBB] = &CPU::CP_A_r;
+    instructions[0xBC] = &CPU::CP_A_r;
+    instructions[0xBD] = &CPU::CP_A_r;
     instructions[0xBE] = &CPU::CP_A_HL;
-    instructions[0xFE] = &CPU::CP_A_sharp;
+    instructions[0xFE] = &CPU::CP_A_n;
 
     instructions[0x3C] = &CPU::INC_r;
     instructions[0x04] = &CPU::INC_r;
@@ -582,7 +582,7 @@ void CPU::requestInterrupt(u8 interrupt) {
 
 void CPU::pushByte(u8 value) {
     r.sp--;
-    mmu.writeByte(r.sp, value);
+    writeByte(r.sp, value);
 }
 
 void CPU::pushWord(u16 value) {
@@ -591,13 +591,13 @@ void CPU::pushWord(u16 value) {
 }
 
 u8 CPU::popByte() {
-    u8 value = mmu.readByte(r.sp);
+    u8 value = readByte(r.sp);
     r.sp++;
     return value;
 }
 
 u16 CPU::popWord() {
-    u16 value = mmu.readWord(r.sp);
+    u16 value = readWord(r.sp);
     r.sp += 2;
     return value;
 }
@@ -631,37 +631,75 @@ void CPU::writeByte(u16 address, u8 value) {
 }
 
 u16 CPU::readWord(u16 address) {
-    return 0;
+    if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
+        return gpu.readWord(address);
+    } else {
+        return mmu.readWord(address);
+    }
 }
 
 void CPU::writeWord(u16 address, u16 value) {
+    if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
+        gpu.writeWord(address, value);
+    } else {
+        mmu.writeWord(address, value);
+    }
+}
 
+u8* CPU::byteRegister(u8 opcode) {
+    return byteRegisterMap[opcode & 0x7];
+}
+
+u16* CPU::wordRegister(u8 opcode) {
+    return shortRegisterMap[opcode & 0x3];
+}
+
+// TODO: remove these two functions
+void CPU::checkHalfCarry(u8 reg) {
+    (r.a & 0x0F) < (reg & 0x0F) ? setFlag(HALF_CARRY) : clearFlag(HALF_CARRY);
+}
+
+void CPU::checkCarry(u8 reg) {
+    (r.a & 0xFF) < (reg & 0xFF) ? setFlag(CARRY) : clearFlag(CARRY);
 }
 
 // CPU Instructions //
 
 u32 CPU::LD_r_n(const u8& opcode) {
-    return 0;
+    u8 n = readByte(r.pc++);
+    u8* reg = byteRegister(opcode >> 3);
+    *reg = n;
+    return 8;
 }
 
 u32 CPU::LD_r_r(const u8& opcode) {
-    return 0;
+    u8* dest = byteRegister(opcode >> 3);
+    u8* src = byteRegister(opcode);
+    *dest = *src;
+    return 4;
 }
 
 u32 CPU::LD_r_HL(const u8& opcode) {
-    return 0;
+    u8* reg = byteRegister(opcode >> 3);
+    *reg = readByte(r.hl);
+    return 8;
 }
 
 u32 CPU::LD_HL_r(const u8& opcode) {
-    return 0;
+    u8* reg = byteRegister(opcode);
+    writeByte(r.hl, *reg);
+    return 8;
 }
 
 u32 CPU::LD_HL_n(const u8& opcode) {
-    return 0;
+    u8 n = readByte(r.pc++);
+    writeByte(r.hl, n);
+    return 12;
 }
 
 u32 CPU::LD_A_BC(const u8& opcode) {
-    return 0;
+    r.a = readByte(r.bc);
+    return 8;
 }
 
 u32 CPU::LD_A_DE(const u8& opcode) {
@@ -669,11 +707,10 @@ u32 CPU::LD_A_DE(const u8& opcode) {
 }
 
 u32 CPU::LD_A_nn(const u8& opcode) {
-    return 0;
-}
-
-u32 CPU::LD_A_sharp(const u8& opcode) {
-    return 0;
+    u16 address = readWord(r.pc);
+    r.pc += 2;
+    r.a = readByte(address);
+    return 16;
 }
 
 u32 CPU::LD_BC_A(const u8& opcode) {
@@ -685,7 +722,10 @@ u32 CPU::LD_DE_A(const u8& opcode) {
 }
 
 u32 CPU::LD_nn_A(const u8& opcode) {
-    return 0;
+    u16 address = readWord(r.pc);
+    r.pc += 2;
+    writeByte(address, r.a);
+    return 16;
 }
 
 u32 CPU::LD_A_Cff00(const u8& opcode) {
@@ -709,19 +749,29 @@ u32 CPU::LDI_A_HL(const u8& opcode) {
 }
 
 u32 CPU::LDI_HL_A(const u8& opcode) {
-    return 0;
+    writeByte(r.hl, r.a);
+    r.hl++;
+    return 8;
 }
 
 u32 CPU::LD_nff00_A(const u8& opcode) {
-    return 0;
+    u16 address = (u16) 0xFF00 + readByte(r.pc++);
+    writeByte(address, r.a);
+    return 12;
 }
 
 u32 CPU::LD_A_nff00(const u8& opcode) {
-    return 0;
+    u16 address = (u16) 0xFF00 + readByte(r.pc++);
+    r.a = readByte(address);
+    return 12;
 }
 
 u32 CPU::LD_r2_nn(const u8& opcode) {
-    return 0;
+    u16 nn = readWord(r.pc);
+    r.pc += 2;
+    u16* reg = wordRegister(opcode >> 4);
+    *reg = nn;
+    return 12;
 }
 
 u32 CPU::LD_SP_HL(const u8& opcode) {
@@ -737,11 +787,25 @@ u32 CPU::LD_nn_SP(const u8& opcode) {
 }
 
 u32 CPU::PUSH_r2(const u8& opcode) {
-    return 0;
+    u8 opcodeIndex = (opcode >> 4) & 0x3;
+    u16 reg;
+    if (opcodeIndex == 0x3) reg = r.af;
+    else reg = *(wordRegister(opcodeIndex));
+
+    pushWord(reg);
+    return 16;
 }
 
 u32 CPU::POP_r2(const u8& opcode) {
-    return 0;
+    u8 opcodeIndex = (opcode >> 4) & 0x3;
+    u16* reg;
+    if (opcodeIndex == 0x3) reg = &r.af;
+    else reg = wordRegister(opcodeIndex);
+
+    (*reg) = popWord();
+    if (opcodeIndex == 0x3) *reg &= 0xFFF0;
+
+    return 12;
 }
 
 u32 CPU::ADD_A_r(const u8& opcode) {
@@ -752,7 +816,7 @@ u32 CPU::ADD_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::ADD_A_sharp(const u8& opcode) {
+u32 CPU::ADD_A_n(const u8& opcode) {
     return 0;
 }
 
@@ -764,19 +828,25 @@ u32 CPU::ADC_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::ADC_A_sharp(const u8& opcode) {
+u32 CPU::ADC_A_n(const u8& opcode) {
     return 0;
 }
 
 u32 CPU::SUB_A_r(const u8& opcode) {
-    return 0;
+    u8* reg = byteRegister(opcode);
+    r.a = r.a - *reg;
+    (r.a == 0x0) ? setFlag(ZERO) : clearFlag(ZERO);
+    setFlag(ADD_SUB);
+    checkHalfCarry(*reg);
+    checkCarry(*reg);
+    return 4;
 }
 
 u32 CPU::SUB_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SUB_A_sharp(const u8& opcode) {
+u32 CPU::SUB_A_n(const u8& opcode) {
     return 0;
 }
 
@@ -788,7 +858,7 @@ u32 CPU::SBC_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::SBC_A_sharp(const u8& opcode) {
+u32 CPU::SBC_A_n(const u8& opcode) {
     return 0;
 }
 
@@ -800,8 +870,14 @@ u32 CPU::AND_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::AND_A_sharp(const u8& opcode) {
-    return 0;
+u32 CPU::AND_A_n(const u8& opcode) {
+    u8 n = readByte(r.pc++);
+    r.a &= n;
+    (r.a == 0x0) ? setFlag(ZERO) : clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    setFlag(HALF_CARRY);
+    clearFlag(CARRY);
+    return 8;
 }
 
 u32 CPU::OR_A_r(const u8& opcode) {
@@ -812,7 +888,7 @@ u32 CPU::OR_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::OR_A_sharp(const u8& opcode) {
+u32 CPU::OR_A_n(const u8& opcode) {
     return 0;
 }
 
@@ -824,11 +900,11 @@ u32 CPU::XOR_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::XOR_A_sharp(const u8& opcode) {
+u32 CPU::XOR_A_n(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::CP_A_n(const u8& opcode) {
+u32 CPU::CP_A_r(const u8& opcode) {
     return 0;
 }
 
@@ -836,12 +912,21 @@ u32 CPU::CP_A_HL(const u8& opcode) {
     return 0;
 }
 
-u32 CPU::CP_A_sharp(const u8& opcode) {
+u32 CPU::CP_A_n(const u8& opcode) {
     return 0;
 }
 
 u32 CPU::INC_r(const u8& opcode) {
-    return 0;
+    u8* reg = byteRegister(opcode >> 3);
+    u8 result = *reg + 1;
+
+    (result == 0) ? setFlag(ZERO) : clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    if ((*reg & 0xF) + 0x1 > 0xF) setFlag(HALF_CARRY);
+    else clearFlag(HALF_CARRY);
+
+    *reg = result;
+    return 4;
 }
 
 u32 CPU::INC_HL(const u8& opcode) {
@@ -849,7 +934,14 @@ u32 CPU::INC_HL(const u8& opcode) {
 }
 
 u32 CPU::DEC_r(const u8& opcode) {
-    return 0;
+    u8* reg = byteRegister(opcode >> 3);
+    u8 result = *reg - 1;
+    (result == 0) ? setFlag(ZERO) : clearFlag(ZERO);
+    setFlag(ADD_SUB);
+    if ((*reg & 0xF) - 0x1 < 0) setFlag(HALF_CARRY);
+    else clearFlag(HALF_CARRY);
+    *reg = result;
+    return 4;
 }
 
 u32 CPU::DEC_HL(const u8& opcode) {
@@ -865,7 +957,9 @@ u32 CPU::ADD_SP_sn(const u8& opcode) {
 }
 
 u32 CPU::INC_r2(const u8& opcode) {
-    return 0;
+    u16* reg = wordRegister(opcode >> 4);
+    (*reg)++;
+    return 8;
 }
 
 u32 CPU::DEC_r2(const u8& opcode) {
@@ -927,12 +1021,27 @@ u32 CPU::RRA(const u8& opcode) {
 }
 
 u32 CPU::JP_nn(const u8& opcode) {
-    r.pc = mmu.readWord(r.pc);
+    r.pc = readWord(r.pc);
     return 16;
 }
 
 u32 CPU::JP_cc_nn(const u8& opcode) {
-    return 0;
+    u16 nn = readWord(r.pc);
+    r.pc += 2;
+
+    bool jump = false;
+    u8 condition = (opcode >> 3) & 0x3;
+    if (condition == 0x0) jump = !isFlagSet(ZERO);
+    else if (condition == 0x1) jump = isFlagSet(ZERO);
+    else if (condition == 0x2) jump = !isFlagSet(CARRY);
+    else if (condition == 0x3) jump = isFlagSet(CARRY);
+
+    if (jump) {
+        r.pc = nn;
+        return 16;
+    } else {
+        return 12;
+    }
 }
 
 u32 CPU::JP_HL(const u8& opcode) {
@@ -944,11 +1053,29 @@ u32 CPU::JR_sn(const u8& opcode) {
 }
 
 u32 CPU::JR_cc_sn(const u8& opcode) {
-    return 0;
+    char sn = static_cast<char>(readByte(r.pc++));
+
+    bool jump = false;
+    u8 condition = (opcode >> 3) & 0x3;
+    if (condition == 0x00) jump = !isFlagSet(ZERO);
+    else if (condition == 0x01) jump = isFlagSet(ZERO);
+    else if (condition == 0x02) jump = !isFlagSet(CARRY);
+    else if (condition == 0x03) jump = isFlagSet(CARRY);
+
+    if (jump) {
+        r.pc += sn;
+        return 12;
+    } else {
+        return 8;
+    }
 }
 
 u32 CPU::CALL_nn(const u8& opcode) {
-    return 0;
+    u16 jumpAddress = readWord(r.pc);
+    r.pc += 2;
+    pushWord(r.pc);
+    r.pc = jumpAddress;
+    return 24;
 }
 
 u32 CPU::CALL_cc_nn(const u8& opcode) {
@@ -960,7 +1087,8 @@ u32 CPU::RST_n(const u8& opcode) {
 }
 
 u32 CPU::RET(const u8& opcode) {
-    return 0;
+    r.pc = popWord();
+    return 16;
 }
 
 u32 CPU::RET_cc(const u8& opcode) {

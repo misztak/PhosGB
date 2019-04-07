@@ -55,7 +55,10 @@ void MMU::writeByte(u16 address, u8 value) {
 }
 
 void MMU::writeWord(u16 address, u16 value) {
-
+    u8 low = value & 0xFF;
+    u8 high = (value >> 8) & 0xFF;
+    writeByte(address, low);
+    writeByte(address + 1, high);
 }
 
 bool MMU::loadROM(std::string& filename, bool isBIOS) {

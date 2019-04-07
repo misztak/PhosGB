@@ -77,6 +77,11 @@ private:
     void pushWord(u16 value);
     u8 popByte();
     u16 popWord();
+    u8* byteRegister(u8 opcode);
+    u16* wordRegister(u8 opcode);
+
+    void checkHalfCarry(u8 reg);
+    void checkCarry(u8 reg);
 
     u8 readByte(u16 address);
     void writeByte(u16 address, u8 value);
@@ -85,7 +90,7 @@ private:
 
     // Z80 Instructions //
 
-    u32 LD_r_n(const u8& opcode);       // 0x06, 0x0E, 0x16, 0x1E, 0x26, 0x2E
+    u32 LD_r_n(const u8& opcode);       // 0x06, 0x0E, 0x16, 0x1E, 0x26, 0x2E, 0x3E
     u32 LD_r_r(const u8& opcode);       // 0x7F, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D
                                         // 0x40, 0x41, 0x42, 0x43, 0x44, 0x45
                                         // 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D
@@ -100,7 +105,6 @@ private:
     u32 LD_A_BC(const u8& opcode);      // 0x0A
     u32 LD_A_DE(const u8& opcode);      // 0x1A
     u32 LD_A_nn(const u8& opcode);      // 0xFA
-    u32 LD_A_sharp(const u8& opcode);   // 0x3E
     u32 LD_BC_A(const u8& opcode);      // 0x02
     u32 LD_DE_A(const u8& opcode);      // 0x12
     u32 LD_nn_A(const u8& opcode);      // 0xEA
@@ -122,28 +126,28 @@ private:
 
     u32 ADD_A_r(const u8& opcode);      // 0x87, 0x80, 0x81, 0x82, 0x83, 0x84, 0x85
     u32 ADD_A_HL(const u8& opcode);     // 0x86
-    u32 ADD_A_sharp(const u8& opcode);  // 0xC6
+    u32 ADD_A_n(const u8& opcode);      // 0xC6
     u32 ADC_A_r(const u8& opcode);      // 0x8F, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D
     u32 ADC_A_HL(const u8& opcode);     // 0x8E
-    u32 ADC_A_sharp(const u8& opcode);  // 0xCE
+    u32 ADC_A_n(const u8& opcode);      // 0xCE
     u32 SUB_A_r(const u8& opcode);      // 0x97, 0x90, 0x91, 0x92, 0x93, 0x94, 0x95
     u32 SUB_A_HL(const u8& opcode);     // 0x96
-    u32 SUB_A_sharp(const u8& opcode);  // 0xD6
+    u32 SUB_A_n(const u8& opcode);      // 0xD6
     u32 SBC_A_r(const u8& opcode);      // 0x9F, 0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D
     u32 SBC_A_HL(const u8& opcode);     // 0x9E
-    u32 SBC_A_sharp(const u8& opcode);  // 0xDE // TODO: value of sharp
+    u32 SBC_A_n(const u8& opcode);      // 0xDE
     u32 AND_A_r(const u8& opcode);      // 0xA7, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5
     u32 AND_A_HL(const u8& opcode);     // 0xA6
-    u32 AND_A_sharp(const u8& opcode);  // 0xE6
+    u32 AND_A_n(const u8& opcode);      // 0xE6
     u32 OR_A_r(const u8& opcode);       // 0xB7, 0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5
     u32 OR_A_HL(const u8& opcode);      // 0xB6
-    u32 OR_A_sharp(const u8& opcode);   // 0xF6
+    u32 OR_A_n(const u8& opcode);       // 0xF6
     u32 XOR_A_r(const u8& opcode);      // 0xAF, 0xA8, 0xA9, 0xAA, 0xAB, 0xAC, 0xAD
     u32 XOR_A_HL(const u8& opcode);     // 0xAE
-    u32 XOR_A_sharp(const u8& opcode);  // 0xEE
-    u32 CP_A_n(const u8& opcode);       // 0xBF, 0xB8, 0xB9, 0xBA, 0xBB, 0xBC, 0xBD
+    u32 XOR_A_n(const u8& opcode);      // 0xEE
+    u32 CP_A_r(const u8& opcode);       // 0xBF, 0xB8, 0xB9, 0xBA, 0xBB, 0xBC, 0xBD
     u32 CP_A_HL(const u8& opcode);      // 0xBE
-    u32 CP_A_sharp(const u8& opcode);   // 0xFE
+    u32 CP_A_n(const u8& opcode);       // 0xFE
     u32 INC_r(const u8& opcode);        // 0x3C, 0x04, 0x0C, 0x14, 0x1C, 0x24, 0x2C
     u32 INC_HL(const u8& opcode);       // 0x34
     u32 DEC_r(const u8& opcode);        // 0x3D, 0x05, 0x0D, 0x15, 0x1D, 0x25, 0x2D
