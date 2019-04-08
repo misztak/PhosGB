@@ -703,7 +703,8 @@ u32 CPU::LD_A_BC(const u8& opcode) {
 }
 
 u32 CPU::LD_A_DE(const u8& opcode) {
-    return 0;
+    r.a = readByte(r.de);
+    return 8;
 }
 
 u32 CPU::LD_A_nn(const u8& opcode) {
@@ -714,11 +715,13 @@ u32 CPU::LD_A_nn(const u8& opcode) {
 }
 
 u32 CPU::LD_BC_A(const u8& opcode) {
-    return 0;
+    writeByte(r.bc, r.a);
+    return 8;
 }
 
 u32 CPU::LD_DE_A(const u8& opcode) {
-    return 0;
+    writeByte(r.de, r.a);
+    return 8;
 }
 
 u32 CPU::LD_nn_A(const u8& opcode) {
@@ -729,23 +732,31 @@ u32 CPU::LD_nn_A(const u8& opcode) {
 }
 
 u32 CPU::LD_A_Cff00(const u8& opcode) {
-    return 0;
+    r.a = readByte(0xFF00 + r.c);
+    return 2;
 }
 
 u32 CPU::LD_Cff00_A(const u8& opcode) {
-    return 0;
+    writeByte(0xFF00 + r.c, r.a);
+    return 2;
 }
 
 u32 CPU::LDD_A_HL(const u8& opcode) {
-    return 0;
+    r.a = readByte(r.hl);
+    r.hl--;
+    return 8;
 }
 
 u32 CPU::LDD_HL_A(const u8& opcode) {
-    return 0;
+    writeByte(r.hl, r.a);
+    r.hl--;
+    return 8;
 }
 
 u32 CPU::LDI_A_HL(const u8& opcode) {
-    return 0;
+    r.a = readByte(r.hl);
+    r.hl++;
+    return 8;
 }
 
 u32 CPU::LDI_HL_A(const u8& opcode) {
@@ -775,15 +786,34 @@ u32 CPU::LD_r2_nn(const u8& opcode) {
 }
 
 u32 CPU::LD_SP_HL(const u8& opcode) {
-    return 0;
+    r.sp = r.hl;
+    return 8;
 }
 
 u32 CPU::LD_HL_SPn(const u8& opcode) {
-    return 0;
+    u8 n = readByte(r.pc++);
+    char sn = static_cast<char>(n);
+    u16 result = r.sp + sn;
+
+    clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    if (sn >= 0) {
+        ((result & 0xFF) + sn) > 0xFF ? setFlag(CARRY) : clearFlag(CARRY);
+        ((result & 0xF) + (sn & 0xF)) > 0xF ? setFlag(HALF_CARRY) : clearFlag(HALF_CARRY);
+    } else {
+        ((result & 0xFF) <= (r.sp & 0xFF)) ? setFlag(CARRY) : clearFlag(CARRY);
+        ((result & 0xF) <= (r.sp & 0xF)) ? setFlag(HALF_CARRY) : clearFlag(HALF_CARRY);
+    }
+
+    r.hl = result;
+    return 12;
 }
 
 u32 CPU::LD_nn_SP(const u8& opcode) {
-    return 0;
+    u16 address = readWord(r.pc);
+    r.pc += 2;
+    writeWord(address, r.sp);
+    return 20;
 }
 
 u32 CPU::PUSH_r2(const u8& opcode) {
@@ -809,7 +839,16 @@ u32 CPU::POP_r2(const u8& opcode) {
 }
 
 u32 CPU::ADD_A_r(const u8& opcode) {
-    return 0;
+    u8* reg = byteRegister(opcode);
+    u8 result = r.a + *reg;
+
+    (result == 0) ? setFlag(ZERO) : clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    (((result ^ (*reg) ^ r.a) & 0x10) == 0x10) ? setFlag(HALF_CARRY) : clearFlag(HALF_CARRY);
+    (result < r.a) ? setFlag(CARRY) : clearFlag(CARRY);
+
+    r.a = result;
+    return 4;
 }
 
 u32 CPU::ADD_A_HL(const u8& opcode) {
@@ -863,11 +902,27 @@ u32 CPU::SBC_A_n(const u8& opcode) {
 }
 
 u32 CPU::AND_A_r(const u8& opcode) {
-    return 0;
+    u8* reg = byteRegister(opcode);
+    r.a &= *reg;
+    if (r.a == 0x0) setFlag(ZERO);
+    else clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    setFlag(HALF_CARRY);
+    clearFlag(CARRY);
+
+    return 4;
 }
 
 u32 CPU::AND_A_HL(const u8& opcode) {
-    return 0;
+    u8 value = readByte(r.hl);
+    r.a &= value;
+    if (r.a == 0x0) setFlag(ZERO);
+    else clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    setFlag(HALF_CARRY);
+    clearFlag(CARRY);
+
+    return 8;
 }
 
 u32 CPU::AND_A_n(const u8& opcode) {
@@ -881,39 +936,117 @@ u32 CPU::AND_A_n(const u8& opcode) {
 }
 
 u32 CPU::OR_A_r(const u8& opcode) {
-    return 0;
+    u8* reg = byteRegister(opcode);
+    r.a |= *reg;
+    if (r.a == 0x0) setFlag(ZERO);
+    else clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    clearFlag(HALF_CARRY);
+    clearFlag(CARRY);
+
+    return 4;
 }
 
 u32 CPU::OR_A_HL(const u8& opcode) {
-    return 0;
+    u8 value = readByte(r.hl);
+    r.a |= value;
+    if (r.a == 0x0) setFlag(ZERO);
+    else clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    clearFlag(HALF_CARRY);
+    clearFlag(CARRY);
+
+    return 8;
 }
 
 u32 CPU::OR_A_n(const u8& opcode) {
-    return 0;
+    u8 n = readByte(r.pc++);
+    r.a |= n;
+    if (r.a == 0x0) setFlag(ZERO);
+    else clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    clearFlag(HALF_CARRY);
+    clearFlag(CARRY);
+
+    return 8;
 }
 
 u32 CPU::XOR_A_r(const u8& opcode) {
-    return 0;
+    u8* reg = byteRegister(opcode);
+    r.a ^= *reg;
+    if (r.a == 0x0) setFlag(ZERO);
+    else clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    clearFlag(HALF_CARRY);
+    clearFlag(CARRY);
+
+    return 4;
 }
 
 u32 CPU::XOR_A_HL(const u8& opcode) {
-    return 0;
+    u8 value = readByte(r.hl);
+    r.a ^= value;
+    if (r.a == 0x0) setFlag(ZERO);
+    else clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    clearFlag(HALF_CARRY);
+    clearFlag(CARRY);
+
+    return 8;
 }
 
 u32 CPU::XOR_A_n(const u8& opcode) {
-    return 0;
+    u8 n = readByte(r.pc++);
+    r.a ^= n;
+    if (r.a == 0x0) setFlag(ZERO);
+    else clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    clearFlag(HALF_CARRY);
+    clearFlag(CARRY);
+
+    return 8;
 }
 
 u32 CPU::CP_A_r(const u8& opcode) {
-    return 0;
+    u8* reg = byteRegister(opcode);
+    u8 result = r.a - *reg;
+    if (result == 0x0) setFlag(ZERO);
+    else clearFlag(ZERO);
+    setFlag(ADD_SUB);
+    if (r.a < *reg) setFlag(CARRY);
+    else clearFlag(CARRY);
+    if ((r.a & 0xF) < (*reg & 0xF)) setFlag(HALF_CARRY);
+    else clearFlag(HALF_CARRY);
+
+    return 4;
 }
 
 u32 CPU::CP_A_HL(const u8& opcode) {
-    return 0;
+    u8 value = readByte(r.hl);
+    u8 result = r.a - value;
+    if (result == 0x0) setFlag(ZERO);
+    else clearFlag(ZERO);
+    setFlag(ADD_SUB);
+    if (r.a < value) setFlag(CARRY);
+    else clearFlag(CARRY);
+    if ((r.a & 0xF) < (value & 0xF)) setFlag(HALF_CARRY);
+    else clearFlag(HALF_CARRY);
+
+    return 8;
 }
 
 u32 CPU::CP_A_n(const u8& opcode) {
-    return 0;
+    u8 n = readByte(r.pc++);
+    u8 result = r.a - n;
+    if (result == 0x0) setFlag(ZERO);
+    else clearFlag(ZERO);
+    setFlag(ADD_SUB);
+    if (r.a < n) setFlag(CARRY);
+    else clearFlag(CARRY);
+    if ((r.a & 0xF) < (n & 0xF)) setFlag(HALF_CARRY);
+    else clearFlag(HALF_CARRY);
+
+    return 8;
 }
 
 u32 CPU::INC_r(const u8& opcode) {
@@ -930,7 +1063,15 @@ u32 CPU::INC_r(const u8& opcode) {
 }
 
 u32 CPU::INC_HL(const u8& opcode) {
-    return 0;
+    u8 result = readByte(r.hl) + 1;
+
+    (result == 0) ? setFlag(ZERO) : clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    if ((result & 0xF) + 0x1 > 0xF) setFlag(HALF_CARRY);
+    else clearFlag(HALF_CARRY);
+
+    r.hl = result;
+    return 12;
 }
 
 u32 CPU::DEC_r(const u8& opcode) {
@@ -945,11 +1086,27 @@ u32 CPU::DEC_r(const u8& opcode) {
 }
 
 u32 CPU::DEC_HL(const u8& opcode) {
-    return 0;
+    u8 result = readByte(r.hl) - 1;
+
+    (result == 0) ? setFlag(ZERO) : clearFlag(ZERO);
+    setFlag(ADD_SUB);
+    if ((result & 0xF) - 0x1 < 0) setFlag(HALF_CARRY);
+    else clearFlag(HALF_CARRY);
+
+    r.hl = result;
+    return 12;
 }
 
 u32 CPU::ADD_HL_r2(const u8& opcode) {
-    return 0;
+    u16* reg = wordRegister(opcode >> 4);
+    u16 result = r.hl + *reg;
+
+    clearFlag(ADD_SUB);
+    (result < r.hl) ? setFlag(CARRY) : clearFlag(CARRY);
+    ((result ^ r.hl ^ (*reg)) & 0x1000) ? setFlag(HALF_CARRY) : clearFlag(HALF_CARRY);
+
+    r.hl = result;
+    return 8;
 }
 
 u32 CPU::ADD_SP_sn(const u8& opcode) {
@@ -963,7 +1120,9 @@ u32 CPU::INC_r2(const u8& opcode) {
 }
 
 u32 CPU::DEC_r2(const u8& opcode) {
-    return 0;
+    u16* reg = wordRegister(opcode >> 4);
+    (*reg)--;
+    return 8;
 }
 
 u32 CPU::DAA(const u8& opcode) {
@@ -971,7 +1130,10 @@ u32 CPU::DAA(const u8& opcode) {
 }
 
 u32 CPU::CPL(const u8& opcode) {
-    return 0;
+    r.a ^= 0xFF;
+    setFlag(ADD_SUB);
+    setFlag(HALF_CARRY);
+    return 4;
 }
 
 u32 CPU::CCF(const u8& opcode) {
@@ -1045,7 +1207,8 @@ u32 CPU::JP_cc_nn(const u8& opcode) {
 }
 
 u32 CPU::JP_HL(const u8& opcode) {
-    return 0;
+    r.pc = r.hl;
+    return 4;
 }
 
 u32 CPU::JR_sn(const u8& opcode) {
@@ -1083,7 +1246,11 @@ u32 CPU::CALL_cc_nn(const u8& opcode) {
 }
 
 u32 CPU::RST_n(const u8& opcode) {
-    return 0;
+    u8 destination = ((opcode >> 3) & 0x07) * 0x08;
+    pushWord(r.pc);
+    r.pc = destination;
+
+    return 16;
 }
 
 u32 CPU::RET(const u8& opcode) {
@@ -1092,7 +1259,19 @@ u32 CPU::RET(const u8& opcode) {
 }
 
 u32 CPU::RET_cc(const u8& opcode) {
-    return 0;
+    bool jump = false;
+    u8 condition = (opcode >> 3) & 0x03;
+    if (condition == 0x00) jump = !isFlagSet(ZERO);
+    else if (condition == 0x01) jump = isFlagSet(ZERO);
+    else if (condition == 0x02) jump = !isFlagSet(CARRY);
+    else if (condition == 0x03) jump = isFlagSet(CARRY);
+
+    if (jump) {
+        r.pc = popWord();
+        return 20;
+    } else {
+        return 8;
+    }
 }
 
 u32 CPU::RETI(const u8& opcode) {
@@ -1174,7 +1353,12 @@ u32 CPU::SET_b_HL(const u8& opcode) {
 }
 
 u32 CPU::RES_b_r(const u8& opcode) {
-    return 0;
+    u8 bitPos = (opcode >> 3) & 0x7;
+    u8 bitMask = 0x1 << bitPos;
+    u8* reg = byteRegister(opcode);
+
+    clearBit(*reg, bitMask);
+    return 8;
 }
 
 u32 CPU::RES_b_HL(const u8& opcode) {
@@ -1182,7 +1366,17 @@ u32 CPU::RES_b_HL(const u8& opcode) {
 }
 
 u32 CPU::SWAP_r(const u8& opcode) {
-    return 0;
+    u8* reg = byteRegister(opcode);
+    u8 low = *reg & 0x0F;
+    u8 high = *reg & 0xF0;
+    *reg = (low << 4) | (high >> 4);
+
+    (*reg == 0x0) ? setFlag(ZERO) : clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    clearFlag(HALF_CARRY);
+    clearFlag(CARRY);
+
+    return 8;
 }
 
 u32 CPU::SWAP_HL(const u8& opcode) {

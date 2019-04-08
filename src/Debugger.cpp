@@ -71,6 +71,7 @@ void Debugger::emulatorView() {
     ImGui::Text("Registers:");
     ImGui::Text("PC: 0x%04X", emulator->cpu.r.pc);
     ImGui::Text("SP: 0x%04X", emulator->cpu.r.sp);
+    ImGui::Text("IME: %d", emulator->cpu.r.ime);
     ImGui::Text("AF: 0x%04X", emulator->cpu.r.af);
     ImGui::Text("BC: 0x%04X", emulator->cpu.r.bc);
     ImGui::Text("DE: 0x%04X", emulator->cpu.r.de);
