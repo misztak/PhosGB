@@ -17,9 +17,6 @@ MMU::MMU(): inBIOS(false), fatalError(false) {
 
 u8 MMU::readByte(u16 address) {
     int location = (address & 0xF000) >> 12;
-    if (location == 0xE) {
-        printf("Reading shadow wram\n");
-    }
     Memory mappedMemory = memoryMap[location];
     return (this->*mappedMemory)(address);
 }
@@ -30,8 +27,8 @@ u16 MMU::readWord(u16 address) {
 
 void MMU::writeByte(u16 address, u8 value) {
     if (address < 0xC000) {
-        printf("Attempted to overwrite ROM\n");
-        fatalError = true;
+        printf("Write to MBC address range\n");
+        //fatalError = true;
         return;
     }
     // TODO: cartridge external RAM
@@ -39,6 +36,8 @@ void MMU::writeByte(u16 address, u8 value) {
     if (address >= 0xC000 && address <= 0xDFFF) {
         workingRAM[address - 0xC000] = value;
     } else if (address >= 0xE000 && address <= 0xFDFF) {
+        // TODO: remove everything concerning shadow WRAM
+        printf("WRAM shadow shit\n");
         workingRAM[address - 0xE000] = value;
     } else if (address >= 0xFF00 && address <= 0xFF7F) {
         if (address == 0xFF41) {
@@ -48,8 +47,10 @@ void MMU::writeByte(u16 address, u8 value) {
         }
     } else if (address >= 0xFF80 && address <= 0xFFFF) {
         zeroPageRAM[address - 0xFF80] = value;
+    } else if (address >= 0xFEA0 && address <= 0xFEFF) {
+        // unused memory
     } else {
-        printf("Attempted to write to illegal address %d\n", address);
+        printf("Attempted to write to illegal address 0x%04X\n", address);
         fatalError = true;
     }
 }
@@ -105,7 +106,7 @@ u8 MMU::readROM0(const u16 address) {
 }
 
 u8 MMU::readROM1(const u16 address) {
-    return rom1[address];
+    return rom1[address - 0x4000];
 }
 
 u8 MMU::readWRAM(const u16 address) {
@@ -135,8 +136,13 @@ u8 MMU::readZRAM(const u16 address) {
             return mappedIO[address - 0xFF00];
         }
     } else if (location == 0x0E00) {
-        printf("Tried to access OAM memory from MMU\n");
-        // fall through to generic error message
+        if (address >= 0xFE00 && address <= 0xFE9F) {
+            printf("Tried to access OAM memory from MMU\n");
+            // fall through to generic error message
+        } else {
+            // unused memory space
+            return 0xFF;
+        }
     }
 
     printf("Invalid ZRAM address 0x%02X\n", address);
