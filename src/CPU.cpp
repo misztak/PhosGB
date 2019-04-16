@@ -491,6 +491,14 @@ bool CPU::init(std::string& romPath) {
     return success;
 }
 
+void CPU::handleInputDown(u8 column, u8 row) {
+    joypad.handleInputDown(column, row);
+}
+
+void CPU::handleInputUp(u8 column, u8 row) {
+    joypad.handleInputUp(column, row);
+}
+
 u32 CPU::tick() {
     u32 ticks = 0;
     u8 opcode = 0;
@@ -615,7 +623,10 @@ bool CPU::isFlagSet(FLAG flag) {
 }
 
 u8 CPU::readByte(u16 address) {
-    if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
+    if (address == JOYPAD_ADDRESS) {
+        return joypad.readByte();
+    }
+    else if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
         return gpu.readByte(address);
     } else {
         return mmu.readByte(address);
@@ -623,7 +634,10 @@ u8 CPU::readByte(u16 address) {
 }
 
 void CPU::writeByte(u16 address, u8 value) {
-    if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
+    if (address == JOYPAD_ADDRESS) {
+        joypad.writeByte(value);
+    }
+    else if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
         gpu.writeByte(address, value);
     } else {
         mmu.writeByte(address, value);
@@ -856,7 +870,16 @@ u32 CPU::ADD_A_HL(const u8& opcode) {
 }
 
 u32 CPU::ADD_A_n(const u8& opcode) {
-    return 0;
+    u8 value = readByte(r.pc++);
+    u8 result = r.a + value;
+
+    (result == 0) ? setFlag(ZERO) : clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    (((result ^ value ^ r.a) & 0x10) == 0x10) ? setFlag(HALF_CARRY) : clearFlag(HALF_CARRY);
+    (result < r.a) ? setFlag(CARRY) : clearFlag(CARRY);
+
+    r.a = result;
+    return 8;
 }
 
 u32 CPU::ADC_A_r(const u8& opcode) {
@@ -886,7 +909,13 @@ u32 CPU::SUB_A_HL(const u8& opcode) {
 }
 
 u32 CPU::SUB_A_n(const u8& opcode) {
-    return 0;
+    u8 value = readByte(r.pc++);
+    r.a = r.a - value;
+    (r.a == 0x0) ? setFlag(ZERO) : clearFlag(ZERO);
+    setFlag(ADD_SUB);
+    checkHalfCarry(value);
+    checkCarry(value);
+    return 8;
 }
 
 u32 CPU::SBC_A_r(const u8& opcode) {
@@ -1110,7 +1139,16 @@ u32 CPU::ADD_HL_r2(const u8& opcode) {
 }
 
 u32 CPU::ADD_SP_sn(const u8& opcode) {
-    return 0;
+    char sn = static_cast<char>(readByte(r.pc++));
+    u16 result = r.sp + sn;
+
+    clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    ((result & 0xF) < (r.sp & 0xF)) ? setFlag(HALF_CARRY) : clearFlag(HALF_CARRY);
+    ((result & 0xFF) < (r.sp & 0xFF)) ? setFlag(CARRY) : clearFlag(CARRY);
+
+    r.sp = result;
+    return 16;
 }
 
 u32 CPU::INC_r2(const u8& opcode) {
@@ -1212,7 +1250,10 @@ u32 CPU::JP_HL(const u8& opcode) {
 }
 
 u32 CPU::JR_sn(const u8& opcode) {
-    return 0;
+    char sn = static_cast<char>(readByte(r.pc++));
+    r.pc += sn;
+
+    return 12;
 }
 
 u32 CPU::JR_cc_sn(const u8& opcode) {
@@ -1242,7 +1283,23 @@ u32 CPU::CALL_nn(const u8& opcode) {
 }
 
 u32 CPU::CALL_cc_nn(const u8& opcode) {
-    return 0;
+    u16 nn = readWord(r.pc);
+    r.pc += 2;
+
+    bool jump = false;
+    u8 condition = (opcode >> 3) & 0x3;
+    if (condition == 0x00) jump = !isFlagSet(ZERO);
+    else if (condition == 0x01) jump = isFlagSet(ZERO);
+    else if (condition == 0x02) jump = !isFlagSet(CARRY);
+    else if (condition == 0x03) jump = isFlagSet(CARRY);
+
+    if (jump) {
+        pushWord(r.pc);
+        r.pc = nn;
+        return 24;
+    } else {
+        return 12;
+    }
 }
 
 u32 CPU::RST_n(const u8& opcode) {
@@ -1281,7 +1338,17 @@ u32 CPU::RETI(const u8& opcode) {
 }
 
 u32 CPU::RLC_r(const u8& opcode) {
-    return 0;
+    u8* reg = byteRegister(opcode);
+    isBitSet(*reg, 0x80) ? setFlag(CARRY) : clearFlag(CARRY);
+
+    (*reg) = *reg << 1;
+    (*reg) = isFlagSet(CARRY) ? setBit(*reg, 0x00) : clearBit(*reg, 0x00);
+
+    (*reg == 0) ? setFlag(ZERO) : clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    clearFlag(HALF_CARRY);
+
+    return 8;
 }
 
 u32 CPU::RLC_HL(const u8& opcode) {
@@ -1329,7 +1396,17 @@ u32 CPU::SRA_HL(const u8& opcode) {
 }
 
 u32 CPU::SRL_r(const u8& opcode) {
-    return 0;
+    u8* reg = byteRegister(opcode);
+    isBitSet(*reg, 0x01) ? setFlag(CARRY) : clearFlag(CARRY);
+
+    (*reg) = *reg >> 1;
+    (*reg) = clearBit(*reg, 0x80);
+
+    (*reg == 0x00) ? setFlag(ZERO) : clearFlag(ZERO);
+    clearFlag(ADD_SUB);
+    clearFlag(HALF_CARRY);
+
+    return 8;
 }
 
 u32 CPU::SRL_HL(const u8& opcode) {
@@ -1337,7 +1414,15 @@ u32 CPU::SRL_HL(const u8& opcode) {
 }
 
 u32 CPU::BIT_b_r(const u8& opcode) {
-    return 0;
+    u8 bit = (opcode >> 3) & 0x07;
+    u8* reg = byteRegister(opcode);
+
+    if (!isBitSet(*reg, 1 << bit)) setFlag(ZERO);
+    else clearFlag(ZERO);
+    setFlag(HALF_CARRY);
+    clearFlag(ADD_SUB);
+
+    return 8;
 }
 
 u32 CPU::BIT_b_HL(const u8& opcode) {

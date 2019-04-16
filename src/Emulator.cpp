@@ -39,3 +39,11 @@ bool Emulator::hitVBlank() {
         return false;
     }
 }
+
+void Emulator::handleInputDown(u8 column, u8 row) {
+    cpu.handleInputDown(column, row);
+}
+
+void Emulator::handleInputUp(u8 column, u8 row) {
+    cpu.handleInputUp(column, row);
+}

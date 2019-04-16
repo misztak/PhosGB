@@ -50,6 +50,27 @@ void render(SDL_Window* window, SDL_GLContext* glContext, IDisplay* host, Emulat
     SDL_GL_SwapWindow(window);
 }
 
+void handleJoypadInput(SDL_Event& event, Emulator& emulator) {
+    u8 row, col;
+    switch (event.key.keysym.scancode) {
+        case SDL_SCANCODE_SPACE: row = 0xB; col = 0; break;
+        case SDL_SCANCODE_RETURN: row = 0x7; col = 0; break;
+        case SDL_SCANCODE_X: row = 0xE; col = 0; break;
+        case SDL_SCANCODE_Y: row = 0xD; col = 0; break;
+        case SDL_SCANCODE_UP: row = 0xB; col = 1; break;
+        case SDL_SCANCODE_DOWN: row = 0x7; col = 1; break;
+        case SDL_SCANCODE_RIGHT: row = 0xE; col = 1; break;
+        case SDL_SCANCODE_LEFT: row = 0xD; col = 1; break;
+        default: return;
+    }
+    if (event.type == SDL_KEYDOWN) {
+        emulator.handleInputDown(col, row);
+    } else if (event.type == SDL_KEYUP) {
+        row = ~row;
+        emulator.handleInputUp(col, row);
+    }
+}
+
 int main(int argc, char** argv) {
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER) != 0) {
@@ -130,8 +151,8 @@ int main(int argc, char** argv) {
                 if (event.key.keysym.scancode == SDL_SCANCODE_H) {
                     emulator.toggle();
                 }
-
             }
+            handleJoypadInput(event, emulator);
             host->processEvent(event);
         }
 

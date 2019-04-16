@@ -4,6 +4,7 @@
 #include "Common.h"
 #include "MMU.h"
 #include "GPU.h"
+#include "Joypad.h"
 
 // bitmasks for flags stored in lower 8bit of AF register
 enum FLAG { ZERO = 0x80, ADD_SUB = 0x40, HALF_CARRY = 0x20, CARRY = 0x10 };
@@ -52,12 +53,15 @@ public:
     registers r;
     MMU mmu;
     GPU gpu;
+    Joypad joypad;
 public:
     CPU();
     bool init(std::string& romPath);
     void reset();
     u32 tick();
     void requestInterrupt(u8 interrupt);
+    void handleInputDown(u8 column, u8 row);
+    void handleInputUp(u8 column, u8 row);
 private:
     bool halted;
 

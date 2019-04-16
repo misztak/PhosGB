@@ -40,7 +40,11 @@ void MMU::writeByte(u16 address, u8 value) {
         printf("WRAM shadow shit\n");
         workingRAM[address - 0xE000] = value;
     } else if (address >= 0xFF00 && address <= 0xFF7F) {
-        if (address == 0xFF41) {
+        if (address == 0xFF00) {
+            printf("Attempted to write to joypad through MMU!\n");
+            mappedIO[address - 0xFF00] = (value & (u8) 0x30) | (mappedIO[address - 0xFF00] & (u8) 0x0F);
+        }
+        else if (address == 0xFF41) {
             mappedIO[address - 0xFF00] = (value & (u8) 0xF8) | (mappedIO[address - 0xFF00] & (u8) 0x07);
         } else {
             mappedIO[address - 0xFF00] = value;
