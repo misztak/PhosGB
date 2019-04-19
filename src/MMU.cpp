@@ -1,7 +1,6 @@
 #include "MMU.h"
 
-// TODO: add BIOS
-MMU::MMU(): inBIOS(false), fatalError(false) {
+MMU::MMU(): inBIOS(true), fatalError(false) {
     // init memory map
     memoryMap[0x0] = &MMU::readROM0; memoryMap[0x1] = &MMU::readROM0;
     memoryMap[0x2] = &MMU::readROM0; memoryMap[0x3] = &MMU::readROM0;
