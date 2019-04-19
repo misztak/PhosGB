@@ -28,13 +28,13 @@ public:
 public:
     bool inBIOS;
     bool fatalError;
-    u8 bios[BIOS_SIZE];
-    u8 rom0[ROM0_SIZE];
-    u8 rom1[ROM1_SIZE];
-    u8 workingRAM[WRAM_SIZE];
-    u8 externalRAM[ERAM_SIZE];
-    u8 mappedIO[IO_SIZE];
-    u8 zeroPageRAM[ZRAM_SIZE];
+    u8 bios[BIOS_SIZE] = {0};
+    u8 rom0[ROM0_SIZE] = {0};
+    u8 rom1[ROM1_SIZE] = {0};
+    u8 workingRAM[WRAM_SIZE] = {0};
+    u8 externalRAM[ERAM_SIZE] = {0};
+    u8 mappedIO[IO_SIZE] = {0};
+    u8 zeroPageRAM[ZRAM_SIZE] = {0};
 private:
     typedef u8 (MMU::*Memory)(const u16 address);
     Memory memoryMap[16];
