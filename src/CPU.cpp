@@ -1204,8 +1204,8 @@ u32 CPU::INC_r(const u8& opcode) {
     clearFlag(ADD_SUB);
     if ((*reg & 0xF) + 0x1 > 0xF) setFlag(HALF_CARRY);
     else clearFlag(HALF_CARRY);
-
     *reg = result;
+
     return 4;
 }
 
@@ -1217,7 +1217,7 @@ u32 CPU::INC_HL(const u8& opcode) {
     if ((result & 0xF) + 0x1 > 0xF) setFlag(HALF_CARRY);
     else clearFlag(HALF_CARRY);
 
-    r.hl = result;
+    writeByte(r.hl, result);
     return 12;
 }
 
@@ -1229,6 +1229,7 @@ u32 CPU::DEC_r(const u8& opcode) {
     if ((*reg & 0xF) - 0x1 < 0) setFlag(HALF_CARRY);
     else clearFlag(HALF_CARRY);
     *reg = result;
+
     return 4;
 }
 
@@ -1240,7 +1241,7 @@ u32 CPU::DEC_HL(const u8& opcode) {
     if ((result & 0xF) - 0x1 < 0) setFlag(HALF_CARRY);
     else clearFlag(HALF_CARRY);
 
-    r.hl = result;
+    writeByte(r.hl, result);
     return 12;
 }
 
@@ -1282,21 +1283,19 @@ u32 CPU::DEC_r2(const u8& opcode) {
 }
 
 u32 CPU::DAA(const u8& opcode) {
-    int accumulator = r.a;
     if (!isFlagSet(ADD_SUB)) {
-        if (isFlagSet(HALF_CARRY) || (accumulator & 0xF) > 9) accumulator += 0x06;
-        if (isFlagSet(CARRY) || (accumulator & 0xf) > 0x9F) accumulator += 0x60;
+        if (isFlagSet(CARRY) || r.a > 0x99) {
+            r.a += 0x60;
+            setFlag(CARRY);
+        }
+        if (isFlagSet(HALF_CARRY) || (r.a & 0x0F) > 0x09) r.a += 0x06;
     } else {
-        if (isFlagSet(HALF_CARRY)) accumulator = (accumulator - 0x06) & 0xFF;
-        if (isFlagSet(CARRY)) accumulator -= 0x60;
+        if (isFlagSet(CARRY)) r.a -= 0x60;
+        if (isFlagSet(HALF_CARRY)) r.a -= 0x06;
     }
 
+    (r.a == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(HALF_CARRY);
-    if ((accumulator & 0x100) == 0x100) setFlag(CARRY);
-
-    accumulator &= 0xFF;
-    (accumulator == 0) ? setFlag(ZERO) : clearFlag(ZERO);
-    r.a = accumulator;
 
     return 4;
 }
@@ -1352,7 +1351,7 @@ u32 CPU::RLCA(const u8& opcode) {
     isBitSet(r.a, 0x80) ? setFlag(CARRY) : clearFlag(CARRY);
 
     r.a <<= 1;
-    isFlagSet(CARRY) ? setBit(r.a, 0x01) : clearBit(r.a, 0x01);
+    r.a = isFlagSet(CARRY) ? setBit(r.a, 0x01) : clearBit(r.a, 0x01);
 
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
@@ -1362,9 +1361,11 @@ u32 CPU::RLCA(const u8& opcode) {
 }
 
 u32 CPU::RLA(const u8& opcode) {
+    bool oldCarry = isFlagSet(CARRY);
     isBitSet(r.a, 0x80) ? setFlag(CARRY) : clearFlag(CARRY);
 
     r.a <<= 1;
+    r.a = oldCarry ? setBit(r.a, 0x01) : clearBit(r.a, 0x01);
 
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
@@ -1377,7 +1378,7 @@ u32 CPU::RRCA(const u8& opcode) {
     isBitSet(r.a, 0x01) ? setFlag(CARRY) : clearFlag(CARRY);
 
     r.a >>= 1;
-    isFlagSet(CARRY) ? setBit(r.a, 0x80) : clearBit(r.a, 0x80);
+    r.a = isFlagSet(CARRY) ? setBit(r.a, 0x80) : clearBit(r.a, 0x80);
 
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
@@ -1387,9 +1388,11 @@ u32 CPU::RRCA(const u8& opcode) {
 }
 
 u32 CPU::RRA(const u8& opcode) {
+    bool oldCarry = isFlagSet(CARRY);
     isBitSet(r.a, 0x01) ? setFlag(CARRY) : clearFlag(CARRY);
 
     r.a >>= 1;
+    r.a = oldCarry ? setBit(r.a, 0x80) : clearBit(r.a, 0x80);
 
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
@@ -1759,7 +1762,7 @@ u32 CPU::SET_b_r(const u8& opcode) {
     u8 bitPos = (opcode >> 3) & 0x07;
     u8* reg = byteRegister(opcode);
 
-    setBit(*reg, 1 << bitPos);
+    *reg = setBit(*reg, 1 << bitPos);
 
     return 8;
 }
@@ -1768,7 +1771,7 @@ u32 CPU::SET_b_HL(const u8& opcode) {
     u8 bitPos = (opcode >> 3) & 0x07;
     u8 value = readByte(r.hl);
 
-    setBit(value, 1 << bitPos);
+    value = setBit(value, 1 << bitPos);
 
     writeByte(r.hl, value);
     return 16;
@@ -1778,7 +1781,7 @@ u32 CPU::RES_b_r(const u8& opcode) {
     u8 bitPos = (opcode >> 3) & 0x7;
     u8* reg = byteRegister(opcode);
 
-    clearBit(*reg, 1 << bitPos);
+    *reg = clearBit(*reg, 1 << bitPos);
 
     return 8;
 }
@@ -1787,7 +1790,7 @@ u32 CPU::RES_b_HL(const u8& opcode) {
     u8 bitPos = (opcode >> 3) & 0x07;
     u8 value = readByte(r.hl);
 
-    clearBit(value, 1 << bitPos);
+    value = clearBit(value, 1 << bitPos);
 
     writeByte(r.hl, value);
     return 16;
