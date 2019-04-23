@@ -811,13 +811,9 @@ u32 CPU::LD_HL_SPn(const u8& opcode) {
 
     clearFlag(ZERO);
     clearFlag(ADD_SUB);
-    if (sn >= 0) {
-        ((result & 0xFF) + sn) > 0xFF ? setFlag(CARRY) : clearFlag(CARRY);
-        ((result & 0xF) + (sn & 0xF)) > 0xF ? setFlag(HALF_CARRY) : clearFlag(HALF_CARRY);
-    } else {
-        ((result & 0xFF) <= (r.sp & 0xFF)) ? setFlag(CARRY) : clearFlag(CARRY);
-        ((result & 0xF) <= (r.sp & 0xF)) ? setFlag(HALF_CARRY) : clearFlag(HALF_CARRY);
-    }
+
+    (((r.sp ^ sn ^ result) & 0x10) != 0) ? setFlag(HALF_CARRY) : clearFlag(HALF_CARRY);
+    (((r.sp ^ sn ^ result) & 0x100) != 0) ? setFlag(CARRY) : clearFlag(CARRY);
 
     r.hl = result;
     return 12;
