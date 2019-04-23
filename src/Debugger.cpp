@@ -68,6 +68,11 @@ void Debugger::emulatorView() {
     if (singleStepMode && !emulator->isDead) {
         emulator->isHalted = !nextStep;
     }
+    if (ImGui::Button("Continue")) {
+        singleStepMode = false;
+        emulator->isHalted = false;
+    }
+
     ImGui::Text("Registers:");
     ImGui::Text("PC: 0x%04X", emulator->cpu.r.pc);
     ImGui::Text("SP: 0x%04X", emulator->cpu.r.sp);
