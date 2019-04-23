@@ -1541,7 +1541,7 @@ u32 CPU::RLC_HL(const u8& opcode) {
     isBitSet(value, 0x80) ? setFlag(CARRY) : clearFlag(CARRY);
 
     value <<= 1;
-    value = isFlagSet(CARRY) ? setBit(value, 0x00) : clearBit(value, 0x00);
+    value = isFlagSet(CARRY) ? setBit(value, 0x01) : clearBit(value, 0x01);
 
     (value == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(ADD_SUB);
