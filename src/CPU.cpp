@@ -670,11 +670,11 @@ u16* CPU::wordRegister(u8 opcode) {
 
 // TODO: remove these two functions
 void CPU::checkHalfCarry(u8 reg) {
-    (r.a & 0x0F) < (reg & 0x0F) ? setFlag(HALF_CARRY) : clearFlag(HALF_CARRY);
+    ((r.a & 0x0F) < (reg & 0x0F)) ? setFlag(HALF_CARRY) : clearFlag(HALF_CARRY);
 }
 
 void CPU::checkCarry(u8 reg) {
-    (r.a & 0xFF) < (reg & 0xFF) ? setFlag(CARRY) : clearFlag(CARRY);
+    ((r.a & 0xFF) < (reg & 0xFF)) ? setFlag(CARRY) : clearFlag(CARRY);
 }
 
 // CPU Instructions //
@@ -943,31 +943,37 @@ u32 CPU::ADC_A_n(const u8& opcode) {
 
 u32 CPU::SUB_A_r(const u8& opcode) {
     u8* reg = byteRegister(opcode);
-    r.a = r.a - *reg;
-    (r.a == 0x0) ? setFlag(ZERO) : clearFlag(ZERO);
+    u8 result  = r.a - *reg;
+    (result == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     setFlag(ADD_SUB);
     checkHalfCarry(*reg);
     checkCarry(*reg);
+    r.a = result;
     return 4;
 }
 
 u32 CPU::SUB_A_HL(const u8& opcode) {
     u8 value = readByte(r.hl);
-    r.a = r.a - value;
-    (r.a == 0) ? setFlag(ZERO) : clearFlag(ZERO);
+    u8 result = r.a - value;
+    (result == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     setFlag(ADD_SUB);
     checkHalfCarry(value);
     checkCarry(value);
+    r.a = result;
     return 8;
 }
 
 u32 CPU::SUB_A_n(const u8& opcode) {
     u8 value = readByte(r.pc++);
-    r.a = r.a - value;
-    (r.a == 0x0) ? setFlag(ZERO) : clearFlag(ZERO);
+    u8 result = r.a - value;
+
+    (result == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     setFlag(ADD_SUB);
     checkHalfCarry(value);
     checkCarry(value);
+
+    r.a = result;
+
     return 8;
 }
 
@@ -1521,7 +1527,7 @@ u32 CPU::RLC_r(const u8& opcode) {
     isBitSet(*reg, 0x80) ? setFlag(CARRY) : clearFlag(CARRY);
 
     (*reg) <<= 1;
-    (*reg) = isFlagSet(CARRY) ? setBit(*reg, 0x00) : clearBit(*reg, 0x00);
+    (*reg) = isFlagSet(CARRY) ? setBit(*reg, 0x01) : clearBit(*reg, 0x01);
 
     (*reg == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(ADD_SUB);
