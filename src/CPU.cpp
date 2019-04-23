@@ -1216,7 +1216,7 @@ u32 CPU::INC_HL(const u8& opcode) {
 
     (result == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(ADD_SUB);
-    if ((result & 0xF) + 0x1 > 0xF) setFlag(HALF_CARRY);
+    if ((readByte(r.hl) & 0xF) + 0x1 > 0xF) setFlag(HALF_CARRY);
     else clearFlag(HALF_CARRY);
 
     writeByte(r.hl, result);
@@ -1240,7 +1240,7 @@ u32 CPU::DEC_HL(const u8& opcode) {
 
     (result == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     setFlag(ADD_SUB);
-    if ((result & 0xF) - 0x1 < 0) setFlag(HALF_CARRY);
+    if ((readByte(r.hl) & 0xF) - 0x1 < 0) setFlag(HALF_CARRY);
     else clearFlag(HALF_CARRY);
 
     writeByte(r.hl, result);
