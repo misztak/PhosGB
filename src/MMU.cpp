@@ -42,8 +42,10 @@ void MMU::writeByte(u16 address, u8 value) {
         if (address == 0xFF00) {
             printf("Attempted to write to joypad through MMU!\n");
             mappedIO[address - 0xFF00] = (value & (u8) 0x30) | (mappedIO[address - 0xFF00] & (u8) 0x0F);
-        }
-        else if (address == 0xFF41) {
+        } else if (address == 0xFF04) {
+            // reset divider counter on write
+            mappedIO[address - 0xFF00] = 0;
+        } else if (address == 0xFF41) {
             mappedIO[address - 0xFF00] = (value & (u8) 0xF8) | (mappedIO[address - 0xFF00] & (u8) 0x07);
         } else {
             mappedIO[address - 0xFF00] = value;

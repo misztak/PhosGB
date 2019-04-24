@@ -62,8 +62,15 @@ public:
     void requestInterrupt(u8 interrupt);
     void handleInputDown(u8 column, u8 row);
     void handleInputUp(u8 column, u8 row);
+
+    u8 readByte(u16 address);
+    void writeByte(u16 address, u8 value);
+    u16 readWord(u16 address);
+    void writeWord(u16 address, u16 value);
 private:
     bool halted;
+    int timerCounter;
+    int dividerCounter;
 
     u8* byteRegisterMap[8];
     u16* shortRegisterMap[4];
@@ -75,7 +82,10 @@ private:
     void setFlag(FLAG flag);
     void clearFlag(FLAG flag);
     bool isFlagSet(FLAG flag);
+
     void checkInterrupts();
+    void updateTimer(u32 ticks);
+    void setTimerFreq();
 
     void pushByte(u8 value);
     void pushWord(u16 value);
@@ -86,11 +96,6 @@ private:
 
     void checkHalfCarry(u8 reg);
     void checkCarry(u8 reg);
-
-    u8 readByte(u16 address);
-    void writeByte(u16 address, u8 value);
-    u16 readWord(u16 address);
-    void writeWord(u16 address, u16 value);
 
     // Z80 Instructions //
 

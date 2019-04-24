@@ -1,6 +1,9 @@
 #include "CPU.h"
 
 CPU::CPU(): gpu(this, &mmu), halted(false) {
+    timerCounter = 1024;
+    dividerCounter = 0;
+
     r.af = 0;
     r.bc = 0;
     r.de = 0;
@@ -532,7 +535,7 @@ u32 CPU::tick() {
 
     gpu.tick(ticks);
 
-    // TODO: update internal timer
+    updateTimer(ticks);
 
     checkInterrupts();
 
@@ -541,6 +544,42 @@ u32 CPU::tick() {
     }
 
     return ticks;
+}
+
+void CPU::updateTimer(u32 ticks) {
+    dividerCounter += ticks;
+    if (dividerCounter >= 0xFF) {
+        dividerCounter = 0;
+        // access divider directly
+        mmu.mappedIO[0x4]++;
+    }
+
+    if (isBitSet(readByte(0xFF07), 0x4)) {
+        timerCounter -= ticks;
+
+        if (timerCounter <= 0) {
+            setTimerFreq();
+
+            if (readByte(0xFF05) == 0xFF) {
+                writeByte(0xFF05, readByte(0xFF06));
+                requestInterrupt(INTERRUPT_TIMER);
+            } else {
+                writeByte(0xFF05, readByte(0xFF05) + 1);
+            }
+        }
+    }
+
+}
+
+void CPU::setTimerFreq() {
+    u8 freq = readByte(0xFF07) & 0x03;
+    switch (freq) {
+        case 0: timerCounter = 1024; break;
+        case 1: timerCounter = 16; break;
+        case 2: timerCounter = 64; break;
+        case 3: timerCounter = 256; break;
+        default: printf("Invalid timer frequency\n");
+    }
 }
 
 void CPU::checkInterrupts() {
@@ -625,8 +664,7 @@ bool CPU::isFlagSet(FLAG flag) {
 u8 CPU::readByte(u16 address) {
     if (address == JOYPAD_ADDRESS) {
         return joypad.readByte();
-    }
-    else if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
+    } else if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
         return gpu.readByte(address);
     } else {
         return mmu.readByte(address);
@@ -636,8 +674,12 @@ u8 CPU::readByte(u16 address) {
 void CPU::writeByte(u16 address, u8 value) {
     if (address == JOYPAD_ADDRESS) {
         joypad.writeByte(value);
-    }
-    else if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
+    } else if (address == 0xFF07) {
+        u8 currentFreq = mmu.readByte(0xFF07) & (u8) 0x03;
+        mmu.writeByte(address, value);
+        u8 newFreq = mmu.readByte(0xFF07) & (u8) 0x03;
+        if (currentFreq != newFreq) setTimerFreq();
+    } else if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
         gpu.writeByte(address, value);
     } else {
         mmu.writeByte(address, value);
