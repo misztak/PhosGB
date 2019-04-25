@@ -1,6 +1,6 @@
 #include "CPU.h"
 
-CPU::CPU(): gpu(this, &mmu), halted(false) {
+CPU::CPU(): gpu(this, &mmu), joypad(this), halted(false) {
     timerCounter = 1024;
     dividerCounter = 0;
 
@@ -494,12 +494,12 @@ bool CPU::init(std::string& romPath) {
     return success;
 }
 
-void CPU::handleInputDown(u8 column, u8 row) {
-    joypad.handleInputDown(column, row);
+void CPU::handleInputDown(u8 key) {
+    joypad.handleInputDown(key);
 }
 
-void CPU::handleInputUp(u8 column, u8 row) {
-    joypad.handleInputUp(column, row);
+void CPU::handleInputUp(u8 key) {
+    joypad.handleInputUp(key);
 }
 
 u32 CPU::tick() {
@@ -622,7 +622,7 @@ void CPU::requestInterrupt(u8 interrupt) {
     else if (interrupt == INTERRUPT_SERIAL) IF = setBit(IF, 0x08);
     else if (interrupt == INTERRUPT_JOYPAD) IF = setBit(IF, 0x10);
 
-    //halted = false;
+    halted = false;
 
     mmu.writeByte(0xFF0F, IF);
 }
@@ -679,6 +679,8 @@ void CPU::writeByte(u16 address, u8 value) {
         mmu.writeByte(address, value);
         u8 newFreq = mmu.readByte(0xFF07) & (u8) 0x03;
         if (currentFreq != newFreq) setTimerFreq();
+    } else if (address == DMA_TRANSFER) {
+        gpu.writeByte(address, value);
     } else if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
         gpu.writeByte(address, value);
     } else {

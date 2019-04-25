@@ -40,10 +40,10 @@ bool Emulator::hitVBlank() {
     }
 }
 
-void Emulator::handleInputDown(u8 column, u8 row) {
-    cpu.handleInputDown(column, row);
+void Emulator::handleInputDown(u8 key) {
+    cpu.handleInputDown(key);
 }
 
-void Emulator::handleInputUp(u8 column, u8 row) {
-    cpu.handleInputUp(column, row);
+void Emulator::handleInputUp(u8 key) {
+    cpu.handleInputUp(key);
 }

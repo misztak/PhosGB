@@ -13,8 +13,8 @@ public:
     void kill();
     u8* getDisplayState();
     bool hitVBlank();
-    void handleInputDown(u8 column, u8 row);
-    void handleInputUp(u8 column, u8 row);
+    void handleInputDown(u8 key);
+    void handleInputUp(u8 key);
 public:
     bool isHalted;
     bool isDead;

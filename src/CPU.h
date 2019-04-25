@@ -60,8 +60,8 @@ public:
     void reset();
     u32 tick();
     void requestInterrupt(u8 interrupt);
-    void handleInputDown(u8 column, u8 row);
-    void handleInputUp(u8 column, u8 row);
+    void handleInputDown(u8 key);
+    void handleInputUp(u8 key);
 
     u8 readByte(u16 address);
     void writeByte(u16 address, u8 value);

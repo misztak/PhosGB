@@ -51,23 +51,23 @@ void render(SDL_Window* window, SDL_GLContext* glContext, IDisplay* host, Emulat
 }
 
 void handleJoypadInput(SDL_Event& event, Emulator& emulator) {
-    u8 row, col;
-    switch (event.key.keysym.scancode) {
-        case SDL_SCANCODE_SPACE: row = 0xB; col = 0; break;
-        case SDL_SCANCODE_RETURN: row = 0x7; col = 0; break;
-        case SDL_SCANCODE_X: row = 0xE; col = 0; break;
-        case SDL_SCANCODE_Y: row = 0xD; col = 0; break;
-        case SDL_SCANCODE_UP: row = 0xB; col = 1; break;
-        case SDL_SCANCODE_DOWN: row = 0x7; col = 1; break;
-        case SDL_SCANCODE_RIGHT: row = 0xE; col = 1; break;
-        case SDL_SCANCODE_LEFT: row = 0xD; col = 1; break;
+    u8 key;
+    switch (event.key.keysym.sym) {
+        case SDLK_RETURN: key = 7; break;   // Start
+        case SDLK_SPACE: key = 6; break;    // Select
+        case SDLK_s: key = 5; break;        // B
+        case SDLK_a: key = 4; break;        // A
+        case SDLK_DOWN: key = 3; break;
+        case SDLK_UP: key = 2; break;
+        case SDLK_LEFT: key = 1; break;
+        case SDLK_RIGHT: key = 0; break;
         default: return;
     }
+
     if (event.type == SDL_KEYDOWN) {
-        emulator.handleInputDown(col, row);
+        emulator.handleInputDown(key);
     } else if (event.type == SDL_KEYUP) {
-        row = ~row;
-        emulator.handleInputUp(col, row);
+        emulator.handleInputUp(key);
     }
 }
 
@@ -101,7 +101,8 @@ int main(int argc, char** argv) {
     }
 
     Emulator emulator;
-    std::string filePath = "../../gb/RenderTest.gb";
+    std::string filePath = "../../gb/Tetris.gb";
+    //std::string filePath = "../../gb/blargg/cpu_instrs/02.gb";
     if (!emulator.load(filePath)) {
         fprintf(stderr, "Failed to load BootROM or Cartridge\n");
         return 2;
@@ -173,7 +174,19 @@ int main(int argc, char** argv) {
 
                 ticks += cycles;
 
-                if (isDebugger && debugger.singleStepMode) {
+                // exit early if not in debugger
+                if (!isDebugger) continue;
+
+//                if (emulator.cpu.r.pc == 0x0100) {
+//                    emulator.isHalted = true;
+//                    debugger.singleStepMode = true;
+//                    debugger.nextStep = false;
+//                    ticks = ticksPerFrame;
+//                    printf("Break\n");
+//                    break;
+//                }
+
+                if (debugger.singleStepMode) {
                     debugger.nextStep = false;
                     emulator.isHalted = true;
                     render(window, &glContext, host, &emulator);
