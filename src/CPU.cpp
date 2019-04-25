@@ -528,7 +528,17 @@ void CPU::parseCartridgeHeader() {
     }
 
     u16 globalCRC = (mmu.rom0[0x14E] << 8) | mmu.rom0[0x14F];
-    printf("Global Checksum:     0x%02X\n", globalCRC);
+    printf("Global Checksum:     0x%04X", globalCRC);
+    u16 g = 0;
+    for (unsigned char i : mmu.rom0) g += i;
+    for (unsigned char i : mmu.rom1) g += i;
+    g -= mmu.rom0[0x14E];
+    g -= mmu.rom0[0x14F];
+    if (g != globalCRC) {
+        printf(" [INVALID - actual checksum is 0x%04X, but a real Gameboy would not care]\n", g);
+    } else {
+        printf(" [VALID]\n");
+    }
     printf("\n");
 }
 
