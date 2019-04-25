@@ -68,6 +68,9 @@ public:
     u16 readWord(u16 address);
     void writeWord(u16 address, u16 value);
 private:
+    std::string gameTitle;
+    u8 cartridgeType;
+
     bool halted;
     int timerCounter;
     int dividerCounter;
@@ -79,6 +82,7 @@ private:
     Instruction instructions[256];
     Instruction instructionsCB[256];
 private:
+    void parseCartridgeHeader();
     void setFlag(FLAG flag);
     void clearFlag(FLAG flag);
     bool isFlagSet(FLAG flag);
