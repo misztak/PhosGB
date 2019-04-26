@@ -77,6 +77,7 @@ int main(int argc, char** argv) {
         printf("Error: %s\n", SDL_GetError());
         return 1;
     }
+    SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0", SDL_HINT_OVERRIDE);
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profileMask);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, majorVersion);
