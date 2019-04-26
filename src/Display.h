@@ -11,7 +11,7 @@ public:
     ~Display();
     void render() override;
     void processEvent(SDL_Event& event) override;
-    void update(u8* pixels) override;
+    void update(u8* data) override;
 };
 
 

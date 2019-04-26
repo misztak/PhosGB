@@ -6,11 +6,14 @@ GPU::GPU(CPU* c, MMU* m):
     mmu(m),
     mode(VBLANK),
     modeclock(0),
-    displayState(DISPLAY_TEXTURE_SIZE, WHITE),
-    background(256, std::vector<u8>(256, WHITE)),
-    backgroundTmp(144, std::vector<u8>(160, WHITE)),
+    DMATicks(0),
+    displayState(DISPLAY_TEXTURE_SIZE, 255),
+    backgroundState(262144, 255),
+    background(256, std::vector<u8>(256, 255)),
+    //backgroundTmp(144, std::vector<u8>(160, 255)),
     VRAM(VRAM_SIZE),
-    OAM(OAM_SIZE) {}
+    OAM(OAM_SIZE),
+    tileData(6144 * 4 * 8, 255) {}
 
 void GPU::reset() {
     setReg(LCDC_Y_COORDINATE, 153);
@@ -22,10 +25,11 @@ void GPU::reset() {
     setReg(SPRITE_PALETTE_1_DATA, 0xFF);
     setReg(WINDOW_Y, 0x00);
     setReg(WINDOW_X_minus7, 0x00);
-
 }
 
 void GPU::tick(u32 ticks) {
+    //if (DMATicks > 0) DMATicks -= 0;
+
     modeclock += ticks;
     u8* line = &mmu->mappedIO[LCDC_Y_COORDINATE - 0xFF00];
     switch (mode) {
@@ -83,27 +87,42 @@ void GPU::tick(u32 ticks) {
             }
             break;
     }
-    // TODO: coincidence flag?
+
+    if (getReg(LY_COMPARE) == getReg(LCDC_Y_COORDINATE)) {
+        setReg(LCDC_STATUS, setBit(getReg(LCDC_STATUS), COINCIDENCE_FLAG));
+        if (isBitSet(getReg(LCDC_STATUS), LYC_LY_COINCIDENCE_INTERRUPT)) {
+            cpu->requestInterrupt(INTERRUPT_LCD_STAT);
+        }
+    } else {
+        setReg(LCDC_STATUS, clearBit(getReg(LCDC_STATUS), COINCIDENCE_FLAG));
+    }
 }
 
 void GPU::renderScanline() {
-    renderBGScanline();
+    renderBGScanline(getReg(LCDC_Y_COORDINATE));
 
     if (isBitSet(getReg(LCD_CONTROL), WINDOW_DISPLAY_ENABLE)) {
-        printf("Window enabled");
+        printf("Window enabled\n");
         renderWindowScanline();
     }
 
-    // TODO: copy SINGLE LINE into displayState
+    int y = getReg(LCDC_Y_COORDINATE);
+    int index = y * 160 * 4;
+    for (int x=0; x<160; x++) {
+        displayState[index] = background[y][x];
+        displayState[index + 1] = background[y][x];
+        displayState[index + 2] = background[y][x];
+        index += 4;
+    }
 
     if (isBitSet(getReg(LCD_CONTROL), SPRITE_DISPLAY_ENABLE)) {
         renderSpriteScanline();
     }
 }
 
-void GPU::renderBGScanline() {
+void GPU::renderBGScanline(u8 yCoord) {
     if (!isBitSet(getReg(LCD_CONTROL), BG_DISPLAY)) {
-        setBGColor(WHITE);
+        setBGColor(255);
         return;
     }
 
@@ -121,10 +140,10 @@ void GPU::renderBGScanline() {
     u16 tileData = isBitSet(getReg(LCD_CONTROL), BG_AND_WINDOW_TILE_SELECT) ? (u16) 0x8000 : (u16) 0x9000;
     tileData -= 0x8000;
 
-    u8 tileY = (u8)(((getReg(LCDC_Y_COORDINATE) + getReg(SCROLL_Y)) / 8) % 32);
-    u8 tileYOffset = (u8)((getReg(LCDC_Y_COORDINATE) + getReg(SCROLL_Y)) % 8);
+    u8 tileY = (u8)(((yCoord + getReg(SCROLL_Y)) / 8) % 32);
+    u8 tileYOffset = (u8)((yCoord + getReg(SCROLL_Y)) % 8);
 
-    for (u8 x=0; x<160; x++) {
+    for (u8 x=0; x<255; x++) {
         u8 tileX = (u8)(((getReg(SCROLL_X) + x) / 8) % 32);
         u8 tileNumber = VRAM[(u16)(tileNumberMap + (tileY * 32) + tileX)];
 
@@ -150,7 +169,7 @@ void GPU::renderBGScanline() {
         u8 color = palette[pLo + pHi];
 
         //int index = ((getReg(LCDC_Y_COORDINATE) * 160) + x) * 4;
-        backgroundTmp[getReg(LCDC_Y_COORDINATE)][x] = color;
+        background[yCoord][x] = color;
     }
 }
 
@@ -206,12 +225,76 @@ void GPU::renderWindowScanline() {
         u8 color = palette[pLo + pHi];
 
         //int index = ((getReg(LCDC_Y_COORDINATE) * 160) + x) * 4;
-        backgroundTmp[getReg(LCDC_Y_COORDINATE)][x] = color;
+        background[getReg(LCDC_Y_COORDINATE)][x] = color;
     }
 }
 
 void GPU::renderSpriteScanline() {
-    printf("Sprites not yet implemented\n");
+    const u8 SPRITE_SIZE_BYTES = 16;
+    const u8 bgPalette[] {
+        colors[getReg(BG_PALETTE_DATA) & 0x03],
+        colors[getReg(BG_PALETTE_DATA >> 2) & 0x03],
+        colors[getReg(BG_PALETTE_DATA >> 4) & 0x03],
+        colors[getReg(BG_PALETTE_DATA >> 6) & 0x03],
+    };
+
+    for (int i=156; i>=0; i-=4) {
+        u8 objY = OAM[i];
+        u8 spriteSize = isBitSet(getReg(LCD_CONTROL), SPRITE_SIZE) ? 0x10 : 0x08;
+        int height = spriteSize;
+
+        int y = objY - 16;
+        if ((y <= getReg(LCDC_Y_COORDINATE)) && ((y + height) > getReg(LCDC_Y_COORDINATE))) {
+            u8 objX = OAM[i + 1];
+            u8 spriteTileNumber = OAM[i + 2];
+            u8 spriteFlags = OAM[i + 3];
+
+            if (spriteSize == 0x10) {
+                spriteTileNumber &= 0xFE;
+            }
+
+            u8 paletteNumber = isBitSet(spriteFlags, 0x10) ? 0x01 : 0x00;
+            int x = objX - 8;
+
+            const u16 tileData = 0x0000;
+            u8 palette[] {
+                0x00,
+                colors[(paletteNumber == 0x00) ? (getReg(SPRITE_PALETTE_0_DATA) >> 2 & 0x03) : (getReg(SPRITE_PALETTE_1_DATA) >> 2 & 0x03)],
+                colors[(paletteNumber == 0x00) ? (getReg(SPRITE_PALETTE_0_DATA) >> 4 & 0x03) : (getReg(SPRITE_PALETTE_1_DATA) >> 4 & 0x03)],
+                colors[(paletteNumber == 0x00) ? (getReg(SPRITE_PALETTE_0_DATA) >> 6 & 0x03) : (getReg(SPRITE_PALETTE_1_DATA) >> 6 & 0x03)],
+            };
+
+            u16 tilePtr = tileData + (spriteTileNumber * SPRITE_SIZE_BYTES);
+            u8 tileYOffset = isBitSet(spriteFlags, 0x40) ? ((height - 1) - (getReg(LCDC_Y_COORDINATE) - y)) : (getReg(LCDC_Y_COORDINATE) - y);
+            tilePtr += (tileYOffset * 2);
+
+            u8 low = VRAM[tilePtr];
+            u8 high = VRAM[(u16)tilePtr + 1];
+
+            for (int indexX=0; indexX<8; indexX++) {
+                int pixelX = x + indexX;
+                if (pixelX >= 0 && pixelX < 160) {
+                    u8 bit = isBitSet(spriteFlags, 0x20) ? indexX : 7 - indexX;
+                    u8 bitMask = 0x01 << bit;
+                    u8 pixelVal = 0x00;
+                    if (isBitSet(high, bitMask)) pixelVal |= 2;
+                    if (isBitSet(low, bitMask)) pixelVal |= 1;
+                    u8 color = palette[pixelVal];
+
+                    if (pixelVal != 0x00) {
+                        int index = ((getReg(LCDC_Y_COORDINATE) * 160) + pixelX) * 4;
+                        if (!isBitSet(spriteFlags, 0x80) || (background[getReg(LCDC_Y_COORDINATE)][pixelX] == bgPalette[0x00])) {
+                            //backgroundTmp[getReg(LCDC_Y_COORDINATE)][pixelX] = color;
+                            displayState[index] = color;
+                            displayState[index + 1] = color;
+                            displayState[index + 2] = color;
+                        }
+                    }
+                }
+            }
+        }
+
+    }
 }
 
 u8 GPU::readByte(u16 address) {
@@ -223,7 +306,14 @@ u8 GPU::readByte(u16 address) {
 }
 
 void GPU::writeByte(u16 address, u8 value) {
-    if (address <= 0x9FFF) {
+    if (address == DMA_TRANSFER) {
+        DMATicks = 752;
+        u16 source = value << (u16) 8;
+        for (int i=0; i<0xA0; i++) {
+            cpu->writeByte(0xFE00 + i, cpu->readByte(source + i));
+        }
+        mmu->writeByte(address, value);
+    } else if (address <= 0x9FFF) {
         VRAM[address - 0x8000] = value;
     } else {
         OAM[address - 0xFE00] = value;
@@ -261,20 +351,40 @@ void GPU::setMode(GPU_MODE newMode) {
 }
 
 u8* GPU::getDisplayState() {
-    int counter = 0;
-    for (u32 i=0; i<DISPLAY_TEXTURE_SIZE; i+=4) {
-        int x = counter % WIDTH;
-        int y = counter / WIDTH;
-        counter++;
-        displayState[i] = backgroundTmp[y][x];
-        displayState[i+1] = backgroundTmp[y][x];
-        displayState[i+2] = backgroundTmp[y][x];
-        displayState[i+3] = 0xFF;
-    }
     return displayState.data();
 }
 
-void GPU::setBGColor(COLORS color) {
+u8* GPU::getBackgroundState() {
+    int counter = 0;
+    for (int i=144; i<256; i++) {
+        renderBGScanline(i);
+    }
+    for (int y=0; y<256; y++) {
+        for (int x=0; x<256; x++) {
+            backgroundState[counter] = background[y][x];
+            backgroundState[counter + 1] = background[y][x];
+            backgroundState[counter + 2] = background[y][x];
+            counter += 4;
+        }
+    }
+    return backgroundState.data();
+}
+
+u8* GPU::getTileData() {
+    int counter = 0;
+    for (int i=0; i<6144; i++) {
+        for (int b=7; b>=0; b--) {
+            u8 color = ((VRAM[i] >> b) & 0x01) ? 255 : 0;
+            tileData[counter] = color;
+            tileData[counter + 1] = color;
+            tileData[counter + 2] = color;
+            counter += 4;
+        }
+    }
+    return tileData.data();
+}
+
+void GPU::setBGColor(u8 color) {
     for (int y=0; y<256; y++) {
         for (int x=0; x<256; x++) {
             background[y][x] = color;
@@ -282,10 +392,10 @@ void GPU::setBGColor(COLORS color) {
     }
 }
 
-u8 *GPU::getVRAM() {
+u8* GPU::getVRAM() {
     return VRAM.data();
 }
 
-u8 *GPU::getOAM() {
+u8* GPU::getOAM() {
     return OAM.data();
 }

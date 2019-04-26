@@ -1,7 +1,10 @@
 #include "Debugger.h"
 
 Debugger::Debugger(SDL_Window* w, void* glContext, Emulator* emu) {
-    textureHandler = 0;
+    mainTextureHandler = 0;
+    bgTextureHandler = 0;
+    VRAMTextureHandler = 0;
+
     show_demo_window = false;
     nextStep = false;
     // TODO: debugger settings window
@@ -19,13 +22,23 @@ Debugger::Debugger(SDL_Window* w, void* glContext, Emulator* emu) {
 #else
     ImGui_ImplOpenGL3_Init(GLSL_VERSION);
 #endif
-    initTexture(emulator->getDisplayState());
+
+    initTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());
+    initTexture(&bgTextureHandler, 256, 256, emulator->cpu.gpu.getBackgroundState());
+    initTexture(&VRAMTextureHandler, 256, 192, emulator->cpu.gpu.getTileData());
 }
 
 Debugger::~Debugger() {
-    if (textureHandler != 0) {
-        glDeleteTextures(1, &textureHandler);
+    if (mainTextureHandler != 0) {
+        glDeleteTextures(1, &mainTextureHandler);
     }
+    if (bgTextureHandler != 0) {
+        glDeleteTextures(1, &bgTextureHandler);
+    }
+    if (VRAMTextureHandler != 0) {
+        glDeleteTextures(1, &VRAMTextureHandler);
+    }
+
 #if __APPLE__
     ImGui_ImplOpenGL2_Shutdown();
 #else
@@ -39,7 +52,7 @@ void Debugger::processEvent(SDL_Event& event) {
     ImGui_ImplSDL2_ProcessEvent(&event);
 }
 
-void Debugger::update(u8* pixel) {
+void Debugger::update(u8* data) {
 #if __APPLE__
     ImGui_ImplOpenGL2_NewFrame();
 #else
@@ -47,22 +60,24 @@ void Debugger::update(u8* pixel) {
 #endif
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 
     if (show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
-    emulatorView();
+    emulatorView(data);
     memoryView();
+    backgroundView();
+    VRAMView();
 
     // Rendering
     ImGui::Render();
 }
 
-void Debugger::emulatorView() {
-    loadMainTexture();
+void Debugger::emulatorView(u8* data) {
+    loadTexture(mainTextureHandler, WIDTH, HEIGHT);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
     ImGui::Begin("Emulator");
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-    ImGui::Image((void*)(intptr_t)textureHandler, ImVec2(SCALED_WIDTH, SCALED_HEIGHT));
+    ImGui::Image((void*)(intptr_t)mainTextureHandler, ImVec2(SCALED_WIDTH, SCALED_HEIGHT));
     //ImGui::ShowMetricsWindow();
     nextStep = ImGui::Button("Step");
     if (singleStepMode && !emulator->isDead) {
@@ -129,6 +144,24 @@ void Debugger::memoryView() {
             break;
     }
 
+    ImGui::End();
+}
+
+void Debugger::backgroundView() {
+    loadTexture(bgTextureHandler, 256, 256);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getBackgroundState());
+
+    ImGui::Begin("Background");
+    ImGui::Image((void*)(intptr_t)bgTextureHandler, ImVec2(256, 256));
+    ImGui::End();
+}
+
+void Debugger::VRAMView() {
+    loadTexture(VRAMTextureHandler, 256, 192);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 192, 0, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getTileData());
+
+    ImGui::Begin("VRAM Viewer");
+    ImGui::Image((void*)(intptr_t)VRAMTextureHandler, ImVec2(256, 192));
     ImGui::End();
 }
 

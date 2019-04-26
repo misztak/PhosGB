@@ -8,8 +8,6 @@ class CPU;
 
 enum GPU_MODE { HBLANK, VBLANK, READ_OAM, READ_BOTH };
 
-enum COLORS { WHITE = 255, LIGHT_GREY = 192, DARK_GREY = 96, BLACK = 0 };
-
 const u8 colors[] { 255, 192, 96, 0 };
 
 constexpr int VRAM_SIZE = 8192;
@@ -54,6 +52,8 @@ public:
     void reset();
     void tick(u32 ticks);
     u8* getDisplayState();
+    u8* getBackgroundState();
+    u8* getTileData();
     u8* getVRAM();
     u8* getOAM();
 
@@ -67,12 +67,15 @@ private:
 
     GPU_MODE mode;
     int modeclock;
+    int DMATicks;
 
     std::vector<u8> displayState;
+    std::vector<u8> backgroundState;
     std::vector<std::vector<u8>> background;
-    std::vector<std::vector<u8>> backgroundTmp;
+    //std::vector<std::vector<u8>> backgroundTmp;
     std::vector<u8> VRAM;
     std::vector<u8> OAM;
+    std::vector<u8> tileData;
 private:
     u8 getReg(u16 regAddress);
     void setReg(u16 regAddress, u8 value);
@@ -80,12 +83,11 @@ private:
     void setMode(GPU_MODE mode);
 
     void renderScanline();
-    void renderBGScanline();
+    void renderBGScanline(u8 yCoord);
     void renderWindowScanline();
     void renderSpriteScanline();
 
-    void setBGColor(COLORS color);
-    void updateDisplayState();
+    void setBGColor(u8 color);
 };
 
 #endif //PHOS_GPU_H

@@ -1,13 +1,13 @@
 #include "Display.h"
 
 Display::Display(u8* pixel) {
-    textureHandler = 0;
-    initTexture(pixel);
+    mainTextureHandler = 0;
+    initTexture(&mainTextureHandler, WIDTH, HEIGHT, pixel);
 }
 
 Display::~Display() {
-    if (textureHandler != 0) {
-        glDeleteTextures(1, &textureHandler);
+    if (mainTextureHandler != 0) {
+        glDeleteTextures(1, &mainTextureHandler);
     }
 }
 
@@ -16,7 +16,7 @@ void Display::update(u8* pixels) {
 }
 
 void Display::render() {
-    loadMainTexture();
+    loadTexture(mainTextureHandler, WIDTH, HEIGHT);
 }
 
 void Display::processEvent(SDL_Event &event) {

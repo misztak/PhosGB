@@ -12,15 +12,15 @@ constexpr int SCALED_HEIGHT = HEIGHT * SCALE;
 
 class IDisplay {
 public:
-    virtual void update(u8* pixel) = 0;
+    virtual void update(u8* data) = 0;
     virtual void render() = 0;
     virtual void processEvent(SDL_Event& event) = 0;
 
-    bool initTexture(u8* pixel);
+    bool initTexture(GLuint* textureHandler, u32 width, u32 height, u8* data);
     bool hasGLError();
-    bool loadMainTexture();
+    bool loadTexture(GLuint textureHandler, u32 width, u32 height);
 public:
-    GLuint textureHandler;
+    GLuint mainTextureHandler;
 };
 
 #endif //PHOS_IDISPLAY_H

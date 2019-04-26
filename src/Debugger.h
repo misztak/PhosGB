@@ -29,10 +29,15 @@ public:
     ~Debugger();
     void render() override;
     void processEvent(SDL_Event& event) override;
-    void update(u8* pixels) override;
+    void update(u8* data) override;
 private:
-    void emulatorView();
+    GLuint bgTextureHandler;
+    GLuint VRAMTextureHandler;
+private:
+    void emulatorView(u8* data);
     void memoryView();
+    void backgroundView();
+    void VRAMView();
 };
 
 
