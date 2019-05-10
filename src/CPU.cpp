@@ -502,9 +502,9 @@ void CPU::parseCartridgeHeader() {
 
     printf("\n");
     printf("Game Title:          %s\n", gameTitle.c_str());
-    printf("Cartridge Type:      0x%02X\n", cartridgeType);
-    printf("ROM Size Type:       0x%02X\n", mmu.ROM_0[0x148]);
-    printf("RAM Size Type:       0x%02X\n", mmu.ROM_0[0x149]);
+    printf("Cartridge Type:      0x%02X (%s)\n", cartridgeType, mmu.cartridgeTypes[cartridgeType].c_str());
+    printf("ROM Size Type:       0x%02X (%d Byte)\n", mmu.ROM_0[0x148], mmu.ROMSizeTypes[mmu.ROM_0[0x148]]);
+    printf("RAM Size Type:       0x%02X (%d Byte)\n", mmu.ROM_0[0x149], mmu.RAMSizeTypes[mmu.ROM_0[0x149]]);
     printf("Destination Code:    %d", mmu.ROM_0[0x14A]);
     mmu.ROM_0[0x14A] ? printf(" (Non-Japanese)\n") : printf(" (Japanese)\n");
     u8 licenceCode = mmu.ROM_0[0x14B];

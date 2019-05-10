@@ -30,6 +30,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     std::copy(buffer.begin() + ROM_BANK_SIZE, buffer.end(), ROM.begin());
     printf("Read file %s, size=%li\n", romPath.substr(romPath.find_last_of('/')+1, romPath.length()).c_str(), buffer.size());
 
+    initTables();
     return true;
 }
 
@@ -189,4 +190,55 @@ u8 MMU::readBankedRAM(u16 address) {
 
 void MMU::writeBankedRAM(u16 address, u8 value) {
 
+}
+
+void MMU::initTables() {
+    // https://problemkaputt.de/pandocs.htm#memorybankcontrollers
+
+    cartridgeTypes[0x00] = "ROM ONLY";
+    cartridgeTypes[0x01] = "MBC1";
+    cartridgeTypes[0x02] = "MBC1+RAM";
+    cartridgeTypes[0x03] = "MBC1+RAM+BATTERY";
+    cartridgeTypes[0x05] = "MBC2";
+    cartridgeTypes[0x06] = "MBC2+BATTERY";
+    cartridgeTypes[0x08] = "ROM+RAM";
+    cartridgeTypes[0x09] = "ROM+RAM+BATTERY";
+    cartridgeTypes[0x0B] = "MMM01";
+    cartridgeTypes[0x0C] = "MMM01+RAM";
+    cartridgeTypes[0x0D] = "MMM01+RAM+BATTERY";
+    cartridgeTypes[0x0F] = "MBC3+TIMER+BATTERY";
+    cartridgeTypes[0x10] = "MBC3+TIMER+RAM+BATTERY";
+    cartridgeTypes[0x11] = "MBC3";
+    cartridgeTypes[0x12] = "MBC3+RAM";
+    cartridgeTypes[0x13] = "MBC3+RAM+BATTERY";
+    cartridgeTypes[0x15] = "MBC4";
+    cartridgeTypes[0x16] = "MBC4+RAM";
+    cartridgeTypes[0x17] = "MBC4+RAM+BATTERY";
+    cartridgeTypes[0x19] = "MBC5";
+    cartridgeTypes[0x1A] = "MBC5+RAM";
+    cartridgeTypes[0x1B] = "MBC5+RAM+BATTERY";
+    cartridgeTypes[0x1C] = "MBC5+RUMBLE";
+    cartridgeTypes[0x1D] = "MBC5+RUMBLE+RAM";
+    cartridgeTypes[0x1E] = "MBC5+RUMBLE+RAM+BATTERY";
+    cartridgeTypes[0xFC] = "POCKET CAMERA";
+    cartridgeTypes[0xFD] = "BANDAI TAMA5";
+    cartridgeTypes[0xFE] = "HuC3";
+    cartridgeTypes[0xFF] = "HuC1+RAM+BATTERY";
+
+    ROMSizeTypes[0x00] = 32768;
+    ROMSizeTypes[0x01] = 65536;
+    ROMSizeTypes[0x02] = 131072;
+    ROMSizeTypes[0x03] = 262144;
+    ROMSizeTypes[0x04] = 524288;
+    ROMSizeTypes[0x05] = 1048576;
+    ROMSizeTypes[0x06] = 2097152;
+    ROMSizeTypes[0x07] = 4194304;
+    ROMSizeTypes[0x52] = 1179648;
+    ROMSizeTypes[0x53] = 1310720;
+    ROMSizeTypes[0x54] = 1572864;
+
+    RAMSizeTypes[0x00] = 0;
+    RAMSizeTypes[0x01] = 2048;
+    RAMSizeTypes[0x02] = 8192;
+    RAMSizeTypes[0x03] = 32768;
 }
