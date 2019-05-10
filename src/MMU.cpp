@@ -35,9 +35,7 @@ void MMU::writeByte(u16 address, u8 value) {
     if (address >= 0xC000 && address <= 0xDFFF) {
         workingRAM[address - 0xC000] = value;
     } else if (address >= 0xE000 && address <= 0xFDFF) {
-        // TODO: remove everything concerning shadow WRAM
-        printf("WRAM shadow shit\n");
-        workingRAM[address - 0xE000] = value;
+        //workingRAM[address - 0xE000] = value;
     } else if (address >= 0xFF00 && address <= 0xFF7F) {
         if (address == 0xFF00) {
             printf("Attempted to write to joypad through MMU!\n");
