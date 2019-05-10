@@ -1,7 +1,8 @@
 #include "GPU.h"
 #include "CPU.h"
 
-GPU::GPU(CPU* c, MMU* m):
+GPU::GPU(CPU* c, MMU* m) :
+    hitVBlank(false),
     cpu(c),
     mmu(m),
     mode(VBLANK),
@@ -11,8 +12,6 @@ GPU::GPU(CPU* c, MMU* m):
     backgroundState(262144, 255),
     background(256, std::vector<u8>(256, 255)),
     //backgroundTmp(144, std::vector<u8>(160, 255)),
-    VRAM(VRAM_SIZE),
-    OAM(OAM_SIZE),
     tileData(6144 * 4 * 8, 255) {}
 
 void GPU::reset() {
@@ -31,7 +30,7 @@ void GPU::tick(u32 ticks) {
     //if (DMATicks > 0) DMATicks -= 0;
 
     modeclock += ticks;
-    u8* line = &mmu->mappedIO[LCDC_Y_COORDINATE - 0xFF00];
+    u8 line = getReg(LCDC_Y_COORDINATE);
     switch (mode) {
         case READ_OAM:
             if (modeclock >= 80) {
@@ -55,8 +54,8 @@ void GPU::tick(u32 ticks) {
         case HBLANK:
             if (modeclock >= 204) {
                 modeclock = 0;
-                (*line)++;
-                if ((*line) == 144) {
+                line++;
+                if (line == 144) {
                     // beginning of VBLANK
                     setMode(VBLANK);
                     hitVBlank = true;
@@ -76,10 +75,10 @@ void GPU::tick(u32 ticks) {
         case VBLANK:
             if (modeclock >= 456) {
                 modeclock = 0;
-                (*line)++;
-                if ((*line) > 153) {
+                line++;
+                if (line > 153) {
                     setMode(READ_OAM);
-                    (*line) = 0;
+                    line = 0;
                     if (isBitSet(getReg(LCDC_STATUS), MODE_2_OAM_INTERRUPT)) {
                         cpu->requestInterrupt(INTERRUPT_LCD_STAT);
                     }
@@ -96,6 +95,8 @@ void GPU::tick(u32 ticks) {
     } else {
         setReg(LCDC_STATUS, clearBit(getReg(LCDC_STATUS), COINCIDENCE_FLAG));
     }
+
+    setReg(LCDC_Y_COORDINATE, line);
 }
 
 void GPU::renderScanline() {
@@ -144,7 +145,7 @@ void GPU::renderBGScanline(u8 yCoord) {
 
     for (u8 x=0; x<255; x++) {
         u8 tileX = (u8)(((getReg(SCROLL_X) + x) / 8) % 32);
-        u8 tileNumber = VRAM[(u16)(tileNumberMap + (tileY * 32) + tileX)];
+        u8 tileNumber = mmu->VRAM[(u16)(tileNumberMap + (tileY * 32) + tileX)];
 
         u16 tileDataPtr = 0;
         if (isBitSet(getReg(LCD_CONTROL), BG_AND_WINDOW_TILE_SELECT)) {
@@ -154,8 +155,8 @@ void GPU::renderBGScanline(u8 yCoord) {
         }
 
         tileDataPtr += (u16)(tileYOffset * 2);
-        u8 b1 = VRAM[tileDataPtr];
-        u8 b2 = VRAM[tileDataPtr + 1];
+        u8 b1 = mmu->VRAM[tileDataPtr];
+        u8 b2 = mmu->VRAM[tileDataPtr + 1];
 
         u8 bit = (u8)(7 - ((getReg(SCROLL_X) + x) % 8));
         if (bit > 7) {
@@ -201,7 +202,7 @@ void GPU::renderWindowScanline() {
         }
 
         u8 tileX = (u8)((x - winX) / 8);
-        u8 tileNumber = VRAM[tileNumberMap + (tileY * 32) + tileX];
+        u8 tileNumber = mmu->VRAM[tileNumberMap + (tileY * 32) + tileX];
         u16 tileDataPtr = 0;
 
         if (isBitSet(getReg(LCD_CONTROL), BG_AND_WINDOW_TILE_SELECT)) {
@@ -211,8 +212,8 @@ void GPU::renderWindowScanline() {
         }
         tileDataPtr += (u16)(tileYOffset * 2);
 
-        u8 b1 = VRAM[tileDataPtr];
-        u8 b2 = VRAM[tileDataPtr + 1];
+        u8 b1 = mmu->VRAM[tileDataPtr];
+        u8 b2 = mmu->VRAM[tileDataPtr + 1];
 
         u8 bit = (u8)(7 - x % 8);
         if (bit > 7) {
@@ -238,15 +239,15 @@ void GPU::renderSpriteScanline() {
     };
 
     for (int i=156; i>=0; i-=4) {
-        u8 objY = OAM[i];
+        u8 objY = mmu->OAM[i];
         u8 spriteSize = isBitSet(getReg(LCD_CONTROL), SPRITE_SIZE) ? 0x10 : 0x08;
         int height = spriteSize;
 
         int y = objY - 16;
         if ((y <= getReg(LCDC_Y_COORDINATE)) && ((y + height) > getReg(LCDC_Y_COORDINATE))) {
-            u8 objX = OAM[i + 1];
-            u8 spriteTileNumber = OAM[i + 2];
-            u8 spriteFlags = OAM[i + 3];
+            u8 objX = mmu->OAM[i + 1];
+            u8 spriteTileNumber = mmu->OAM[i + 2];
+            u8 spriteFlags = mmu->OAM[i + 3];
 
             if (spriteSize == 0x10) {
                 spriteTileNumber &= 0xFE;
@@ -267,8 +268,8 @@ void GPU::renderSpriteScanline() {
             u8 tileYOffset = isBitSet(spriteFlags, 0x40) ? ((height - 1) - (getReg(LCDC_Y_COORDINATE) - y)) : (getReg(LCDC_Y_COORDINATE) - y);
             tilePtr += (tileYOffset * 2);
 
-            u8 low = VRAM[tilePtr];
-            u8 high = VRAM[(u16)tilePtr + 1];
+            u8 low = mmu->VRAM[tilePtr];
+            u8 high = mmu->VRAM[(u16)tilePtr + 1];
 
             for (int indexX=0; indexX<8; indexX++) {
                 int pixelX = x + indexX;
@@ -296,40 +297,6 @@ void GPU::renderSpriteScanline() {
     }
 }
 
-u8 GPU::readByte(u16 address) {
-    if (address <= 0x9FFF) {
-        return VRAM[address - 0x8000];
-    } else {
-        return OAM[address - 0xFE00];
-    }
-}
-
-void GPU::writeByte(u16 address, u8 value) {
-    if (address == DMA_TRANSFER) {
-        DMATicks = 752;
-        u16 source = value << (u16) 8;
-        for (int i=0; i<0xA0; i++) {
-            cpu->writeByte(0xFE00 + i, cpu->readByte(source + i));
-        }
-        mmu->writeByte(address, value);
-    } else if (address <= 0x9FFF) {
-        VRAM[address - 0x8000] = value;
-    } else {
-        OAM[address - 0xFE00] = value;
-    }
-}
-
-u16 GPU::readWord(u16 address) {
-    return readByte(address) | (readByte(address + 1) << 8);
-}
-
-void GPU::writeWord(u16 address, u16 value) {
-    u8 low = value & 0xFF;
-    u8 high = (value >> 8) & 0xFF;
-    writeByte(address, low);
-    writeByte(address + 1, high);
-}
-
 u8 GPU::getReg(u16 regAddress) {
     return mmu->readByte(regAddress);
 }
@@ -343,8 +310,8 @@ u8 GPU::getMode() {
 }
 
 void GPU::setMode(GPU_MODE newMode) {
-    u8 oldValue = mmu->mappedIO[LCDC_STATUS - 0xFF00];
-    mmu->mappedIO[LCDC_STATUS - 0xFF00] = (oldValue & ~((u8) 0x03)) | newMode;
+    u8 oldValue = mmu->IO[LCDC_STATUS - 0xFF00];
+    mmu->IO[LCDC_STATUS - 0xFF00] = (oldValue & ~((u8) 0x03)) | newMode;
     //setReg(LCDC_STATUS, (getReg(LCDC_STATUS) & ~((u8) 0x03)) | newMode);
     mode = newMode;
 }
@@ -373,7 +340,7 @@ u8* GPU::getTileData() {
     int counter = 0;
     for (int i=0; i<6144; i++) {
         for (int b=7; b>=0; b--) {
-            u8 color = ((VRAM[i] >> b) & 0x01) ? 255 : 0;
+            u8 color = ((mmu->VRAM[i] >> b) & 0x01) ? 255 : 0;
             tileData[counter] = color;
             tileData[counter + 1] = color;
             tileData[counter + 2] = color;
@@ -391,10 +358,3 @@ void GPU::setBGColor(u8 color) {
     }
 }
 
-u8* GPU::getVRAM() {
-    return VRAM.data();
-}
-
-u8* GPU::getOAM() {
-    return OAM.data();
-}

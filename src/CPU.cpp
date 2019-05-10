@@ -439,10 +439,9 @@ CPU::CPU(): gpu(this, &mmu), joypad(this), halted(false) {
 }
 
 bool CPU::init(std::string& romPath) {
-    bool success = true;
-    std::string bootROM = "../../gb/BootROM.gb";
-    success &= mmu.loadROM(bootROM, true);
-    success &= mmu.loadROM(romPath);
+    bool success;
+    std::string biosPath = "../../gb/BootROM.gb";
+    success = mmu.init(romPath, biosPath);
     reset();
     return success;
 }
@@ -498,42 +497,42 @@ void CPU::reset() {
 }
 
 void CPU::parseCartridgeHeader() {
-    gameTitle = std::string(&mmu.rom0[0x134], &mmu.rom0[0x134] + 0xF);
-    cartridgeType = mmu.rom0[0x147];
+    gameTitle = std::string(&mmu.ROM_0[0x134], &mmu.ROM_0[0x134] + 0xF);
+    cartridgeType = mmu.ROM_0[0x147];
 
     printf("\n");
     printf("Game Title:          %s\n", gameTitle.c_str());
     printf("Cartridge Type:      0x%02X\n", cartridgeType);
-    printf("ROM Size Type:       0x%02X\n", mmu.rom0[0x148]);
-    printf("RAM Size Type:       0x%02X\n", mmu.rom0[0x149]);
-    printf("Destination Code:    %d", mmu.rom0[0x14A]);
-    mmu.rom0[0x14A] ? printf(" (Non-Japanese)\n") : printf(" (Japanese)\n");
-    u8 licenceCode = mmu.rom0[0x14B];
+    printf("ROM Size Type:       0x%02X\n", mmu.ROM_0[0x148]);
+    printf("RAM Size Type:       0x%02X\n", mmu.ROM_0[0x149]);
+    printf("Destination Code:    %d", mmu.ROM_0[0x14A]);
+    mmu.ROM_0[0x14A] ? printf(" (Non-Japanese)\n") : printf(" (Japanese)\n");
+    u8 licenceCode = mmu.ROM_0[0x14B];
     if (licenceCode == 0x33) {
-        std::string newCode = std::string(&mmu.rom0[0x144], &mmu.rom0[0x144] + 1);
+        std::string newCode = std::string(&mmu.ROM_0[0x144], &mmu.ROM_0[0x144] + 1);
         printf("Licensee Code (New): %s\n", newCode.c_str());
     } else {
         printf("Licensee Code (Old): 0x%02X\n", licenceCode);
     }
-    printf("Game Version:        %d\n", mmu.rom0[0x14C]);
+    printf("Game Version:        %d\n", mmu.ROM_0[0x14C]);
 
-    u8 headerCRC = mmu.rom0[0x14D];
+    u8 headerCRC = mmu.ROM_0[0x14D];
     printf("Header Checksum:     0x%02X", headerCRC);
     u8 x = 0;
-    for (int i=0x134; i<=0x14C; i++) x = x - mmu.rom0[i] -1;
+    for (int i=0x134; i<=0x14C; i++) x = x - mmu.ROM_0[i] -1;
     if (x != headerCRC) {
         printf("   [INVALID - actual checksum is 0x%02X, a real Gameboy would halt execution]\n", x);
     } else {
         printf("   [VALID]\n");
     }
 
-    u16 globalCRC = (mmu.rom0[0x14E] << 8) | mmu.rom0[0x14F];
+    u16 globalCRC = (mmu.ROM_0[0x14E] << 8) | mmu.ROM_0[0x14F];
     printf("Global Checksum:     0x%04X", globalCRC);
     u16 g = 0;
-    for (unsigned char i : mmu.rom0) g += i;
-    for (unsigned char i : mmu.rom1) g += i;
-    g -= mmu.rom0[0x14E];
-    g -= mmu.rom0[0x14F];
+    for (unsigned char i : mmu.ROM_0) g += i;
+    for (unsigned char i : mmu.ROM) g += i;
+    g -= mmu.ROM_0[0x14E];
+    g -= mmu.ROM_0[0x14F];
     if (g != globalCRC) {
         printf(" [INVALID - actual checksum is 0x%04X, but a real Gameboy would not care]\n", g);
     } else {
@@ -587,10 +586,6 @@ u32 CPU::tick() {
 
     checkInterrupts();
 
-    if (mmu.fatalError) {
-        return 0;
-    }
-
     return ticks;
 }
 
@@ -599,7 +594,7 @@ void CPU::updateTimer(u32 ticks) {
     if (dividerCounter >= 0xFF) {
         dividerCounter = 0;
         // access divider directly
-        mmu.mappedIO[0x4]++;
+        mmu.IO[0x4]++;
     }
 
     if (isBitSet(readByte(0xFF07), 0x4)) {
@@ -713,8 +708,6 @@ bool CPU::isFlagSet(FLAG flag) {
 u8 CPU::readByte(u16 address) {
     if (address == JOYPAD_ADDRESS) {
         return joypad.readByte();
-    } else if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
-        return gpu.readByte(address);
     } else {
         return mmu.readByte(address);
     }
@@ -728,29 +721,17 @@ void CPU::writeByte(u16 address, u8 value) {
         mmu.writeByte(address, value);
         u8 newFreq = mmu.readByte(0xFF07) & (u8) 0x03;
         if (currentFreq != newFreq) setTimerFreq();
-    } else if (address == DMA_TRANSFER) {
-        gpu.writeByte(address, value);
-    } else if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
-        gpu.writeByte(address, value);
     } else {
         mmu.writeByte(address, value);
     }
 }
 
 u16 CPU::readWord(u16 address) {
-    if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
-        return gpu.readWord(address);
-    } else {
-        return mmu.readWord(address);
-    }
+    return mmu.readWord(address);
 }
 
 void CPU::writeWord(u16 address, u16 value) {
-    if ((address >= 0x8000 && address <= 0x9FFF) || (address >= 0xFE00 && address <= 0xFE9F)) {
-        gpu.writeWord(address, value);
-    } else {
-        mmu.writeWord(address, value);
-    }
+    mmu.writeWord(address, value);
 }
 
 u8* CPU::byteRegister(u8 opcode) {

@@ -114,31 +114,33 @@ void Debugger::memoryView() {
 
     switch (currentItem) {
         case 0:
-            editor.DrawContents(emulator->cpu.mmu.rom0, ROM0_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.ROM_0.data(), ROM_BANK_SIZE);
             break;
         case 1:
-            editor.DrawContents(emulator->cpu.mmu.rom1, ROM1_SIZE);
+            // TODO: show all banks
+            editor.DrawContents(emulator->cpu.mmu.ROM.data(), ROM_BANK_SIZE);
             break;
         case 2:
-            editor.DrawContents(emulator->cpu.mmu.workingRAM, WRAM_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.WRAM.data(), WRAM_SIZE);
             break;
         case 3:
-            editor.DrawContents(emulator->cpu.mmu.externalRAM, ERAM_SIZE);
+            // TODO: show all banks
+            editor.DrawContents(emulator->cpu.mmu.RAM.data(), RAM_BANK_SIZE);
             break;
         case 4:
-            editor.DrawContents(emulator->cpu.mmu.zeroPageRAM, ZRAM_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.ZRAM.data(), ZRAM_SIZE);
             break;
         case 5:
-            editor.DrawContents(emulator->cpu.mmu.mappedIO, IO_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.IO.data(), IO_SIZE);
             break;
         case 6:
-            editor.DrawContents(emulator->cpu.mmu.bios, BIOS_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.BIOS.data(), BIOS_SIZE);
             break;
         case 7:
-            editor.DrawContents(emulator->cpu.gpu.getVRAM(), VRAM_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.VRAM.data(), VRAM_SIZE);
             break;
         case 8:
-            editor.DrawContents(emulator->cpu.gpu.getOAM(), OAM_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.OAM.data(), OAM_SIZE);
             break;
         default:
             break;

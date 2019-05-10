@@ -10,9 +10,6 @@ enum GPU_MODE { HBLANK, VBLANK, READ_OAM, READ_BOTH };
 
 const u8 colors[] { 255, 192, 96, 0 };
 
-constexpr int VRAM_SIZE = 8192;
-constexpr int OAM_SIZE = 160;
-
 // GPU Registers
 constexpr u16 LCD_CONTROL = 0xFF40;
 constexpr u16 LCDC_STATUS = 0xFF41;
@@ -54,8 +51,6 @@ public:
     u8* getDisplayState();
     u8* getBackgroundState();
     u8* getTileData();
-    u8* getVRAM();
-    u8* getOAM();
 
     u8 readByte(u16 address);
     void writeByte(u16 address, u8 value);
@@ -73,8 +68,6 @@ private:
     std::vector<u8> backgroundState;
     std::vector<std::vector<u8>> background;
     //std::vector<std::vector<u8>> backgroundTmp;
-    std::vector<u8> VRAM;
-    std::vector<u8> OAM;
     std::vector<u8> tileData;
 private:
     u8 getReg(u16 regAddress);

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <cassert>
 
 typedef unsigned char u8;
 typedef unsigned short u16;

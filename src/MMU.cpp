@@ -1,155 +1,192 @@
 #include "MMU.h"
 
-MMU::MMU(): inBIOS(true), fatalError(false) {
-    // init memory map
-    memoryMap[0x0] = &MMU::readROM0; memoryMap[0x1] = &MMU::readROM0;
-    memoryMap[0x2] = &MMU::readROM0; memoryMap[0x3] = &MMU::readROM0;
-    memoryMap[0x4] = &MMU::readROM1; memoryMap[0x5] = &MMU::readROM1;
-    memoryMap[0x6] = &MMU::readROM1; memoryMap[0x7] = &MMU::readROM1;
+MMU::MMU() :
+    inBIOS(true),
+    BIOS(BIOS_SIZE, 0),
+    ROM_0(ROM_BANK_SIZE, 0),
+    // init ROM and RAM with capacity of MBC0 cartridge
+    ROM(ROM_BANK_SIZE, 0),
+    RAM(RAM_BANK_SIZE, 0),
+    WRAM(WRAM_SIZE, 0),
+    IO(IO_SIZE, 0),
+    ZRAM(ZRAM_SIZE, 0),
+    VRAM(VRAM_SIZE, 0),
+    OAM(OAM_SIZE, 0) {}
 
-    memoryMap[0xA] = &MMU::readERAM; memoryMap[0xB] = &MMU::readERAM;
-    memoryMap[0xC] = &MMU::readWRAM; memoryMap[0xD] = &MMU::readWRAM;
-    memoryMap[0xE] = &MMU::readWRAMshadow;
-    memoryMap[0xF] = &MMU::readZRAM;
+bool MMU::init(std::string& romPath, std::string& biosPath) {
+    std::vector<u8> buffer;
 
-}
-
-u8 MMU::readByte(u16 address) {
-    int location = (address & 0xF000) >> 12;
-    Memory mappedMemory = memoryMap[location];
-    return (this->*mappedMemory)(address);
-}
-
-u16 MMU::readWord(u16 address) {
-    return readByte(address) | (readByte(address + 1) << 8);
-}
-
-void MMU::writeByte(u16 address, u8 value) {
-    if (address < 0xC000) {
-        printf("Write to MBC address range\n");
-        //fatalError = true;
-        return;
-    }
-    // TODO: cartridge external RAM
-    // TODO: check for off by one errors
-    if (address >= 0xC000 && address <= 0xDFFF) {
-        workingRAM[address - 0xC000] = value;
-    } else if (address >= 0xE000 && address <= 0xFDFF) {
-        //workingRAM[address - 0xE000] = value;
-    } else if (address >= 0xFF00 && address <= 0xFF7F) {
-        if (address == 0xFF00) {
-            printf("Attempted to write to joypad through MMU!\n");
-            mappedIO[address - 0xFF00] = (value & (u8) 0x30) | (mappedIO[address - 0xFF00] & (u8) 0x0F);
-        } else if (address == 0xFF04) {
-            // reset divider counter on write
-            mappedIO[address - 0xFF00] = 0;
-        } else if (address == 0xFF41) {
-            mappedIO[address - 0xFF00] = (value & (u8) 0xF8) | (mappedIO[address - 0xFF00] & (u8) 0x07);
-        } else {
-            mappedIO[address - 0xFF00] = value;
-        }
-    } else if (address >= 0xFF80 && address <= 0xFFFF) {
-        zeroPageRAM[address - 0xFF80] = value;
-    } else if (address >= 0xFEA0 && address <= 0xFEFF) {
-        // unused memory
+    if (!biosPath.empty()) {
+        if (!loadFile(biosPath, true, buffer)) return false;
+        std::copy_n(buffer.begin(), BIOS_SIZE, BIOS.begin());
     } else {
-        printf("Attempted to write to illegal address 0x%04X\n", address);
-        fatalError = true;
+        inBIOS = false;
     }
+
+    buffer.clear();
+    if (!loadFile(romPath, false, buffer)) return false;
+
+    std::copy_n(buffer.begin(), ROM_BANK_SIZE, ROM_0.begin());
+    std::copy(buffer.begin() + ROM_BANK_SIZE, buffer.end(), ROM.begin());
+    printf("Read file %s, size=%li\n", romPath.substr(romPath.find_last_of('/')+1, romPath.length()).c_str(), buffer.size());
+
+    return true;
 }
 
-void MMU::writeWord(u16 address, u16 value) {
-    u8 low = value & 0xFF;
-    u8 high = (value >> 8) & 0xFF;
-    writeByte(address, low);
-    writeByte(address + 1, high);
-}
-
-bool MMU::loadROM(std::string& filename, bool isBIOS) {
-    std::ifstream file(filename);
+bool MMU::loadFile(std::string& path, bool isBIOS, std::vector<u8>& buffer) {
+    std::ifstream file(path);
     file.seekg(0, std::ifstream::end);
     long length = file.tellg();
     file.seekg(0, std::ifstream::beg);
 
     if (length == -1) {
-        printf("Failed to open file %s\n", filename.c_str());
-        return false;
-    }
-    if (length > INTERNAL_ROM_SIZE) {
-        printf("Unsupported ROM size %li\n", length);
+        printf("Failed to open file %s\n", path.c_str());
         return false;
     }
 
-    char buffer[INTERNAL_ROM_SIZE];
-    file.read(&buffer[0], length);
+    // TODO: max length limit
+    buffer.resize(length);
+    file.read((char *) buffer.data(), length);
 
     if (isBIOS) {
         if (length != BIOS_SIZE) {
             printf("Invalid BootROM size: %li\n", length);
             return false;
         }
-        std::memcpy(bios, buffer, BIOS_SIZE);
         return true;
     } else {
-        std::memcpy(rom0, buffer, ROM0_SIZE);
-        std::memcpy(rom1, buffer + ROM0_SIZE, ROM1_SIZE);
-        printf("Read file %s, size=%li\n", filename.substr(filename.find_last_of('/')+1, filename.length()).c_str(), length);
+        // TODO: check if length fits cartridge type
         return true;
     }
 }
 
-u8 MMU::readROM0(const u16 address) {
-    if (inBIOS && address < 0x0100) {
-        return bios[address];
-    } else if (inBIOS && address == 0x0100) {
-        inBIOS = false;
-        // TODO: find out if this is correct
-    }
-    return rom0[address];
-}
-
-u8 MMU::readROM1(const u16 address) {
-    return rom1[address - 0x4000];
-}
-
-u8 MMU::readWRAM(const u16 address) {
-    return workingRAM[address & 0x1FFF];
-}
-
-u8 MMU::readWRAMshadow(const u16 address) {
-    return workingRAM[address & 0x1FFF];
-}
-
-u8 MMU::readERAM(const u16 address) {
-    return externalRAM[address & 0x1FFF];
-}
-
-// TODO: rename / refactor this
-u8 MMU::readZRAM(const u16 address) {
-    int location = address & 0x0F00;
-    if (location < 0x0E00) {
-        // WRAM shadow
-        return workingRAM[address & 0x1FFF];
-    } else  if (location == 0x0F00){
-        if (address >= 0xFF80) {
-            // Zero-page
-            return zeroPageRAM[address & 0x7F];
-        } else {
-            // IO Control
-            return mappedIO[address - 0xFF00];
-        }
-    } else if (location == 0x0E00) {
-        if (address >= 0xFE00 && address <= 0xFE9F) {
-            printf("Tried to access OAM memory from MMU\n");
-            // fall through to generic error message
-        } else {
-            // unused memory space
+u8 MMU::readByte(u16 address) {
+    switch (address & 0xF000) {
+        case 0x0000:
+        case 0x1000:
+        case 0x2000:
+        case 0x3000:
+            if (inBIOS && address < 0x0100) return BIOS[address];
+            else if (inBIOS && address == 0x0100) inBIOS = false;
+            return ROM_0[address];
+        case 0x4000:
+        case 0x5000:
+        case 0x6000:
+        case 0x7000:
+            return ROM[address - 0x4000];
+        case 0x8000:
+        case 0x9000:
+            return VRAM[address - 0x8000];
+        case 0xA000:
+        case 0xB000:
+            return RAM[address - 0xA000];
+        case 0xC000:
+        case 0xD000:
+            return WRAM[address - 0xC000];
+        case 0xE000:
+            return WRAM[address - 0xE000];
+        case 0xF000:
+            if (address <= 0xFDFF) return WRAM[address - 0xE000];
+            if (address <= 0xFE9F) {
+                return OAM[address - 0xFE00];
+            }
+            if (address <= 0xFEFF) {
+                // unused memory
+                return 0xFF;
+            }
+            if (address <= 0xFF7F) {
+                return IO[address - 0xFF00];
+            }
+            return ZRAM[address - 0xFF80];
+        default:
+            printf("You should not be here\n");
             return 0xFF;
-        }
     }
+}
 
-    printf("Invalid ZRAM address 0x%02X\n", address);
-    fatalError = true;
+u16 MMU::readWord(u16 address) {
+    assert(address + 1 <= 0xFFFF);
+    return readByte(address) | (readByte(address + 1) << 8);
+}
+
+void MMU::writeByte(u16 address, u8 value) {
+    switch (address & 0xF000) {
+        case 0x0000:
+        case 0x1000:
+        case 0x2000:
+        case 0x3000:
+            printf("Write to ROM_0 address range\n");
+            return;
+        case 0x4000:
+        case 0x5000:
+        case 0x6000:
+        case 0x7000:
+            printf("Write to ROM_x address range\n");
+            return;
+        case 0x8000:
+        case 0x9000:
+            VRAM[address - 0x8000] = value;
+            return;
+        case 0xA000:
+        case 0xB000:
+            RAM[address - 0xA000] = value;
+            return;
+        case 0xC000:
+        case 0xD000:
+            WRAM[address - 0xC000] = value;
+            return;
+        case 0xF000:
+            if (address <= 0xFDFF) return;
+            if (address <= 0xFE9F) {
+                OAM[address - 0xFE00] = value;
+                return;
+            }
+            if (address <= 0xFEFF) {
+                // unused memory
+                return;
+            }
+            if (address <= 0xFF7F) {
+                assert(address != 0xFF00);
+                if (address == 0xFF04) {
+                    // reset divider counter on write
+                    IO[address - 0xFF00] = 0;
+                } else if (address == 0xFF41) {
+                    IO[address - 0xFF00] = (value & (u8) 0xF8) | (IO[address - 0xFF00] & (u8) 0x07);
+                } else if (address == 0xFF46) {
+                    // start DMA transfer
+                    u16 source = value << (u16) 8;
+                    for (int i=0; i<0xA0; i++) {
+                        writeByte(0xFE00 + i, readByte(source + i));
+                    }
+                    IO[address - 0xFF00] = value;
+                } else {
+                    IO[address - 0xFF00] = value;
+                }
+                return;
+            }
+            ZRAM[address - 0xFF80] = value;
+            return;
+        default:
+            return;
+    }
+}
+
+void MMU::writeWord(u16 address, u16 value) {
+    assert(address + 1 <= 0xFFFF);
+    u8 low = value & 0xFF;
+    u8 high = (value >> 8) & 0xFF;
+    writeByte(address, low);
+    writeByte(address + 1, high);
+}
+
+u8 MMU::readBankedROM(u16 address) {
     return 0;
 }
 
+u8 MMU::readBankedRAM(u16 address) {
+    return 0;
+}
+
+void MMU::writeBankedRAM(u16 address, u8 value) {
+
+}
