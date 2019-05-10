@@ -102,7 +102,6 @@ void GPU::renderScanline() {
     renderBGScanline(getReg(LCDC_Y_COORDINATE));
 
     if (isBitSet(getReg(LCD_CONTROL), WINDOW_DISPLAY_ENABLE)) {
-        printf("Window enabled\n");
         renderWindowScanline();
     }
 
