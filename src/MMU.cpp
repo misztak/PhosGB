@@ -93,7 +93,7 @@ u8 MMU::readByte(u16 address) {
             }
             if (address <= 0xFEFF) {
                 // unused memory
-                return 0xFF;
+                return 0x00;
             }
             if (address <= 0xFF7F) {
                 return IO[address - 0xFF00];
@@ -193,16 +193,12 @@ void MMU::writeBankedRAM(u16 address, u8 value) {
 }
 
 void MMU::initTables() {
-    // https://problemkaputt.de/pandocs.htm#memorybankcontrollers
-
     cartridgeTypes[0x00] = "ROM ONLY";
     cartridgeTypes[0x01] = "MBC1";
     cartridgeTypes[0x02] = "MBC1+RAM";
     cartridgeTypes[0x03] = "MBC1+RAM+BATTERY";
     cartridgeTypes[0x05] = "MBC2";
     cartridgeTypes[0x06] = "MBC2+BATTERY";
-    cartridgeTypes[0x08] = "ROM+RAM";
-    cartridgeTypes[0x09] = "ROM+RAM+BATTERY";
     cartridgeTypes[0x0B] = "MMM01";
     cartridgeTypes[0x0C] = "MMM01+RAM";
     cartridgeTypes[0x0D] = "MMM01+RAM+BATTERY";
@@ -211,9 +207,6 @@ void MMU::initTables() {
     cartridgeTypes[0x11] = "MBC3";
     cartridgeTypes[0x12] = "MBC3+RAM";
     cartridgeTypes[0x13] = "MBC3+RAM+BATTERY";
-    cartridgeTypes[0x15] = "MBC4";
-    cartridgeTypes[0x16] = "MBC4+RAM";
-    cartridgeTypes[0x17] = "MBC4+RAM+BATTERY";
     cartridgeTypes[0x19] = "MBC5";
     cartridgeTypes[0x1A] = "MBC5+RAM";
     cartridgeTypes[0x1B] = "MBC5+RAM+BATTERY";
@@ -233,6 +226,8 @@ void MMU::initTables() {
     ROMSizeTypes[0x05] = 1048576;
     ROMSizeTypes[0x06] = 2097152;
     ROMSizeTypes[0x07] = 4194304;
+    ROMSizeTypes[0x08] = 8388608;
+    // ROM size types 0x52, 0x53 and 0x54 don't exist in official games
     ROMSizeTypes[0x52] = 1179648;
     ROMSizeTypes[0x53] = 1310720;
     ROMSizeTypes[0x54] = 1572864;
@@ -241,4 +236,5 @@ void MMU::initTables() {
     RAMSizeTypes[0x01] = 2048;
     RAMSizeTypes[0x02] = 8192;
     RAMSizeTypes[0x03] = 32768;
+    RAMSizeTypes[0x05] = 65536;
 }
