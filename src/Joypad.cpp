@@ -26,11 +26,11 @@ void Joypad::handleInputUp(u8 key) {
 }
 
 u8 Joypad::readByte() {
-    u8 state = 0xCF;
+    u8 state = 0xFF;
     if (lane == BUTTON_KEYS) {
-        state = 0x10 | (joypadState >> 4);
+        state = 0xD0 | (joypadState >> 4);
     } else if (lane == DIRECTION_KEYS){
-        state = 0x20 | (joypadState & 0xF);
+        state = 0xE0 | (joypadState & 0xF);
     }
     return state;
 }
