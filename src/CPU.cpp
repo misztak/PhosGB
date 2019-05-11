@@ -1,7 +1,6 @@
 #include "CPU.h"
 
 CPU::CPU(): gpu(this, &mmu), joypad(this), halted(false) {
-    cartridgeType = 0;
     timerCounter = 1024;
     dividerCounter = 0;
 
@@ -439,11 +438,10 @@ CPU::CPU(): gpu(this, &mmu), joypad(this), halted(false) {
 }
 
 bool CPU::init(std::string& romPath) {
-    bool success;
     std::string biosPath = "../../gb/BootROM.gb";
-    success = mmu.init(romPath, biosPath);
+    if (!mmu.init(romPath, biosPath)) return false;
     reset();
-    return success;
+    return true;
 }
 
 void CPU::reset() {
@@ -491,54 +489,7 @@ void CPU::reset() {
 
     writeByte(0xFFFF, 0x00);    // IE
 
-    parseCartridgeHeader();
-
     gpu.reset();
-}
-
-void CPU::parseCartridgeHeader() {
-    gameTitle = std::string(&mmu.ROM_0[0x134], &mmu.ROM_0[0x134] + 0xF);
-    cartridgeType = mmu.ROM_0[0x147];
-
-    printf("\n");
-    printf("Game Title:          %s\n", gameTitle.c_str());
-    printf("Cartridge Type:      0x%02X (%s)\n", cartridgeType, mmu.cartridgeTypes[cartridgeType].c_str());
-    printf("ROM Size Type:       0x%02X (%d Byte)\n", mmu.ROM_0[0x148], mmu.ROMSizeTypes[mmu.ROM_0[0x148]]);
-    printf("RAM Size Type:       0x%02X (%d Byte)\n", mmu.ROM_0[0x149], mmu.RAMSizeTypes[mmu.ROM_0[0x149]]);
-    printf("Destination Code:    %d", mmu.ROM_0[0x14A]);
-    mmu.ROM_0[0x14A] ? printf(" (Non-Japanese)\n") : printf(" (Japanese)\n");
-    u8 licenceCode = mmu.ROM_0[0x14B];
-    if (licenceCode == 0x33) {
-        std::string newCode = std::string(&mmu.ROM_0[0x144], &mmu.ROM_0[0x144] + 1);
-        printf("Licensee Code (New): %s\n", newCode.c_str());
-    } else {
-        printf("Licensee Code (Old): 0x%02X\n", licenceCode);
-    }
-    printf("Game Version:        %d\n", mmu.ROM_0[0x14C]);
-
-    u8 headerCRC = mmu.ROM_0[0x14D];
-    printf("Header Checksum:     0x%02X", headerCRC);
-    u8 x = 0;
-    for (int i=0x134; i<=0x14C; i++) x = x - mmu.ROM_0[i] -1;
-    if (x != headerCRC) {
-        printf("   [INVALID - actual checksum is 0x%02X, a real Gameboy would halt execution]\n", x);
-    } else {
-        printf("   [VALID]\n");
-    }
-
-    u16 globalCRC = (mmu.ROM_0[0x14E] << 8) | mmu.ROM_0[0x14F];
-    printf("Global Checksum:     0x%04X", globalCRC);
-    u16 g = 0;
-    for (unsigned char i : mmu.ROM_0) g += i;
-    for (unsigned char i : mmu.ROM) g += i;
-    g -= mmu.ROM_0[0x14E];
-    g -= mmu.ROM_0[0x14F];
-    if (g != globalCRC) {
-        printf(" [INVALID - actual checksum is 0x%04X, but a real Gameboy would not care]\n", g);
-    } else {
-        printf(" [VALID]\n");
-    }
-    printf("\n");
 }
 
 void CPU::handleInputDown(u8 key) {
