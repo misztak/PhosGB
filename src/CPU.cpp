@@ -1354,13 +1354,11 @@ u32 CPU::NOP(const u8& opcode) {
 
 u32 CPU::HALT(const u8& opcode) {
     halted = true;
-    printf("HALT\n");
     return 4;
 }
 
 u32 CPU::STOP(const u8& opcode) {
     halted = true;
-    printf("STOP\n");
     return 4;
 }
 
