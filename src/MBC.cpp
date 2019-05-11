@@ -8,7 +8,7 @@ NO_MBC::NO_MBC(MMU *mmu) : MBC(mmu) {
 }
 
 u8 NO_MBC::readROMByte(u16 address) {
-    return mmu->ROM[address + ROMBankPtr * ROM_BANK_SIZE];
+    return mmu->ROM[address];
 }
 
 void NO_MBC::writeROMByte(u16 address, u8 value) {
@@ -17,10 +17,10 @@ void NO_MBC::writeROMByte(u16 address, u8 value) {
 }
 
 u8 NO_MBC::readRAMByte(u16 address) {
-    return mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE];
+    return mmu->RAM[address];
 }
 
 void NO_MBC::writeRAMByte(u16 address, u8 value) {
-    mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE] = value;
+    mmu->RAM[address] = value;
 }
 
