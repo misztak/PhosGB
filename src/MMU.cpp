@@ -193,30 +193,42 @@ void MMU::writeBankedRAM(u16 address, u8 value) {
 }
 
 void MMU::initTables() {
+    // NO MBC
     cartridgeTypes[0x00] = "ROM ONLY";
+    cartridgeTypes[0x08] = "ROM+RAM";
+    cartridgeTypes[0x09] = "ROM+RAM+BATTERY";
+    // MBC1
     cartridgeTypes[0x01] = "MBC1";
     cartridgeTypes[0x02] = "MBC1+RAM";
     cartridgeTypes[0x03] = "MBC1+RAM+BATTERY";
+    cartridgeTypes[0xFF] = "HuC1+RAM+BATTERY";
+    // MBC2
     cartridgeTypes[0x05] = "MBC2";
     cartridgeTypes[0x06] = "MBC2+BATTERY";
-    cartridgeTypes[0x0B] = "MMM01";
-    cartridgeTypes[0x0C] = "MMM01+RAM";
-    cartridgeTypes[0x0D] = "MMM01+RAM+BATTERY";
-    cartridgeTypes[0x0F] = "MBC3+TIMER+BATTERY";
-    cartridgeTypes[0x10] = "MBC3+TIMER+RAM+BATTERY";
+    // MBC3
     cartridgeTypes[0x11] = "MBC3";
     cartridgeTypes[0x12] = "MBC3+RAM";
     cartridgeTypes[0x13] = "MBC3+RAM+BATTERY";
+    cartridgeTypes[0x0F] = "MBC3+TIMER+BATTERY";
+    cartridgeTypes[0x10] = "MBC3+TIMER+RAM+BATTERY";
+    cartridgeTypes[0xFC] = "POCKET CAMERA";
+    // MBC5
     cartridgeTypes[0x19] = "MBC5";
     cartridgeTypes[0x1A] = "MBC5+RAM";
     cartridgeTypes[0x1B] = "MBC5+RAM+BATTERY";
     cartridgeTypes[0x1C] = "MBC5+RUMBLE";
     cartridgeTypes[0x1D] = "MBC5+RUMBLE+RAM";
     cartridgeTypes[0x1E] = "MBC5+RUMBLE+RAM+BATTERY";
-    cartridgeTypes[0xFC] = "POCKET CAMERA";
+    // MISC
+    cartridgeTypes[0x0B] = "MMM01";
+    cartridgeTypes[0x0C] = "MMM01+RAM";
+    cartridgeTypes[0x0D] = "MMM01+RAM+BATTERY";
+    cartridgeTypes[0x20] = "MBC6+RAM+BATTERY+FLASH";
+    cartridgeTypes[0x22] = "MBC7+RAM+BATTERY";
+    cartridgeTypes[0x55] = "GG";
+    cartridgeTypes[0x56] = "GS3";
     cartridgeTypes[0xFD] = "BANDAI TAMA5";
     cartridgeTypes[0xFE] = "HuC3";
-    cartridgeTypes[0xFF] = "HuC1+RAM+BATTERY";
 
     ROMSizeTypes[0x00] = 32768;
     ROMSizeTypes[0x01] = 65536;
