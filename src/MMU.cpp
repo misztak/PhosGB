@@ -33,6 +33,8 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     std::copy(buffer.begin() + ROM_BANK_SIZE, buffer.end(), ROM.begin());
     printf("Read file %s, size=%li\n", romPath.substr(romPath.find_last_of('/')+1, romPath.length()).c_str(), buffer.size());
 
+    RAM.resize(RAMSizeTypes[ROM_0[0x149]], 0);
+
     u8 cartridgeType = ROM_0[0x147];
     switch (cartridgeType) {
         case 0x00:
@@ -44,9 +46,8 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         case 0x02:
         case 0x03:
         case 0xFF:
-            printCartridgeInfo();
-            printf("No support for MBC1 cartridges yet\n");
-            return false;
+            mbc = std::make_unique<MBC1>(this);
+            break;
         case 0x05:
         case 0x06:
             printCartridgeInfo();
