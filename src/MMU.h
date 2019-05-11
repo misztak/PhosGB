@@ -4,8 +4,10 @@
 #include <fstream>
 #include <algorithm>
 #include <map>
+#include <memory>
 
 #include "Common.h"
+#include "MBC.h"
 
 constexpr int BIOS_SIZE     = 256;
 constexpr int ROM_BANK_SIZE = 16384;
@@ -25,6 +27,8 @@ public:
     u16 readWord(u16 address);
     void writeByte(u16 address, u8 value);
     void writeWord(u16 address, u16 value);
+
+    void printCartridgeInfo();
 public:
     bool inBIOS;
 
@@ -38,16 +42,15 @@ public:
     std::vector<u8> VRAM;
     std::vector<u8> OAM;
 
+    std::string cartridgeTitle;
     std::map<u8, std::string> cartridgeTypes;
     std::map<u8, int> ROMSizeTypes;
     std::map<u8, int> RAMSizeTypes;
 private:
     bool loadFile(std::string& path, bool isBIOS, std::vector<u8>& buffer);
-
-    u8 readBankedROM(u16 address);
-    u8 readBankedRAM(u16 address);
-    void writeBankedRAM(u16 address, u8 value);
     void initTables();
+private:
+    std::unique_ptr<MBC> mbc;
 };
 
 #endif //PHOS_MMU_H

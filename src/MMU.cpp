@@ -4,16 +4,18 @@ MMU::MMU() :
     inBIOS(true),
     BIOS(BIOS_SIZE, 0),
     ROM_0(ROM_BANK_SIZE, 0),
-    // init ROM and RAM with capacity of MBC0 cartridge
+    // init ROM and RAM with capacity of NO_MBC cartridge
     ROM(ROM_BANK_SIZE, 0),
     RAM(RAM_BANK_SIZE, 0),
     WRAM(WRAM_SIZE, 0),
     IO(IO_SIZE, 0),
     ZRAM(ZRAM_SIZE, 0),
     VRAM(VRAM_SIZE, 0),
-    OAM(OAM_SIZE, 0) {}
+    OAM(OAM_SIZE, 0),
+    mbc(nullptr) {}
 
 bool MMU::init(std::string& romPath, std::string& biosPath) {
+    initTables();
     std::vector<u8> buffer;
 
     if (!biosPath.empty()) {
@@ -27,10 +29,68 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     if (!loadFile(romPath, false, buffer)) return false;
 
     std::copy_n(buffer.begin(), ROM_BANK_SIZE, ROM_0.begin());
+    ROM.resize(buffer.size() - ROM_BANK_SIZE);
     std::copy(buffer.begin() + ROM_BANK_SIZE, buffer.end(), ROM.begin());
     printf("Read file %s, size=%li\n", romPath.substr(romPath.find_last_of('/')+1, romPath.length()).c_str(), buffer.size());
 
-    initTables();
+    u8 cartridgeType = ROM_0[0x147];
+    switch (cartridgeType) {
+        case 0x00:
+        case 0x08:
+        case 0x09:
+            mbc = std::make_unique<NO_MBC>(this);
+            break;
+        case 0x01:
+        case 0x02:
+        case 0x03:
+        case 0xFF:
+            printCartridgeInfo();
+            printf("No support for MBC1 cartridges yet\n");
+            return false;
+        case 0x05:
+        case 0x06:
+            printCartridgeInfo();
+            printf("No support for MBC2 cartridges yet\n");
+            return false;
+        case 0x0F:
+        case 0x10:
+        case 0x11:
+        case 0x12:
+        case 0x13:
+        case 0xFC:
+            printCartridgeInfo();
+            printf("No support for MBC3 cartridges yet\n");
+            return false;
+        case 0x19:
+        case 0x1A:
+        case 0x1B:
+        case 0x1C:
+        case 0x1D:
+        case 0x1E:
+            printCartridgeInfo();
+            printf("No support for MBC5 cartridges yet\n");
+            return false;
+        case 0x0B:
+        case 0x0C:
+        case 0x0D:
+        case 0x20:
+        case 0x22:
+        case 0xFD:
+        case 0xFE:
+            printCartridgeInfo();
+            printf("No support for cartridge type '%s'\n", cartridgeTypes[cartridgeType].c_str());
+            return false;
+        default:
+            printf("Unknown cartridge type 0x%2X detected\n", cartridgeType);
+            return false;
+    }
+
+    if (!mbc) {
+        printf("Failed to initialize MBC for cartridge type 0x%2X\n", cartridgeType);
+        return false;
+    }
+
+    printCartridgeInfo();
     return true;
 }
 
@@ -56,7 +116,11 @@ bool MMU::loadFile(std::string& path, bool isBIOS, std::vector<u8>& buffer) {
         }
         return true;
     } else {
-        // TODO: check if length fits cartridge type
+        if (ROMSizeTypes.count(length) == 0) {
+            // TODO: turn this into an option or a warning
+            printf("Cartridge size (%li) is invalid\n", length);
+            return false;
+        }
         return true;
     }
 }
@@ -74,13 +138,13 @@ u8 MMU::readByte(u16 address) {
         case 0x5000:
         case 0x6000:
         case 0x7000:
-            return ROM[address - 0x4000];
+            return mbc->readROMByte(address - 0x4000);
         case 0x8000:
         case 0x9000:
             return VRAM[address - 0x8000];
         case 0xA000:
         case 0xB000:
-            return RAM[address - 0xA000];
+            return mbc->readRAMByte(address - 0xA000);
         case 0xC000:
         case 0xD000:
             return WRAM[address - 0xC000];
@@ -116,13 +180,11 @@ void MMU::writeByte(u16 address, u8 value) {
         case 0x1000:
         case 0x2000:
         case 0x3000:
-            printf("Write to ROM_0 address range\n");
-            return;
         case 0x4000:
         case 0x5000:
         case 0x6000:
         case 0x7000:
-            printf("Write to ROM_x address range\n");
+            mbc->writeROMByte(address, value);
             return;
         case 0x8000:
         case 0x9000:
@@ -130,7 +192,7 @@ void MMU::writeByte(u16 address, u8 value) {
             return;
         case 0xA000:
         case 0xB000:
-            RAM[address - 0xA000] = value;
+            mbc->writeRAMByte(address - 0xA000, value);
             return;
         case 0xC000:
         case 0xD000:
@@ -178,18 +240,6 @@ void MMU::writeWord(u16 address, u16 value) {
     u8 high = (value >> 8) & 0xFF;
     writeByte(address, low);
     writeByte(address + 1, high);
-}
-
-u8 MMU::readBankedROM(u16 address) {
-    return 0;
-}
-
-u8 MMU::readBankedRAM(u16 address) {
-    return 0;
-}
-
-void MMU::writeBankedRAM(u16 address, u8 value) {
-
 }
 
 void MMU::initTables() {
@@ -249,4 +299,49 @@ void MMU::initTables() {
     RAMSizeTypes[0x02] = 8192;
     RAMSizeTypes[0x03] = 32768;
     RAMSizeTypes[0x05] = 65536;
+}
+
+void MMU::printCartridgeInfo() {
+    cartridgeTitle = std::string(&ROM_0[0x134], &ROM_0[0x134] + 0xF);
+    u8 cartridgeType = ROM_0[0x147];
+
+    printf("\n");
+    printf("Game Title:          %s\n", cartridgeTitle.c_str());
+    printf("Cartridge Type:      0x%02X (%s)\n", cartridgeType, cartridgeTypes[cartridgeType].c_str());
+    printf("ROM Size Type:       0x%02X (%d Byte)\n", ROM_0[0x148], ROMSizeTypes[ROM_0[0x148]]);
+    printf("RAM Size Type:       0x%02X (%d Byte)\n", ROM_0[0x149], RAMSizeTypes[ROM_0[0x149]]);
+    printf("Destination Code:    %d", ROM_0[0x14A]);
+    ROM_0[0x14A] ? printf(" (Non-Japanese)\n") : printf(" (Japanese)\n");
+    u8 licenceCode = ROM_0[0x14B];
+    if (licenceCode == 0x33) {
+        std::string newCode = std::string(&ROM_0[0x144], &ROM_0[0x144] + 1);
+        printf("Licensee Code (New): %s\n", newCode.c_str());
+    } else {
+        printf("Licensee Code (Old): 0x%02X\n", licenceCode);
+    }
+    printf("Game Version:        %d\n", ROM_0[0x14C]);
+
+    u8 headerCRC = ROM_0[0x14D];
+    printf("Header Checksum:     0x%02X", headerCRC);
+    u8 x = 0;
+    for (int i=0x134; i<=0x14C; i++) x = x - ROM_0[i] -1;
+    if (x != headerCRC) {
+        printf("   [INVALID - actual checksum is 0x%02X, a real Gameboy would halt execution]\n", x);
+    } else {
+        printf("   [VALID]\n");
+    }
+
+    u16 globalCRC = (ROM_0[0x14E] << 8) | ROM_0[0x14F];
+    printf("Global Checksum:     0x%04X", globalCRC);
+    u16 g = 0;
+    for (unsigned char i : ROM_0) g += i;
+    for (unsigned char i : ROM) g += i;
+    g -= ROM_0[0x14E];
+    g -= ROM_0[0x14F];
+    if (g != globalCRC) {
+        printf(" [INVALID - actual checksum is 0x%04X, but a real Gameboy would not care]\n", g);
+    } else {
+        printf(" [VALID]\n");
+    }
+    printf("\n");
 }
