@@ -32,10 +32,18 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     ROM.resize(buffer.size() - ROM_BANK_SIZE);
     std::copy(buffer.begin() + ROM_BANK_SIZE, buffer.end(), ROM.begin());
     printf("Read file %s, size=%li\n", romPath.substr(romPath.find_last_of('/')+1, romPath.length()).c_str(), buffer.size());
-
-    RAM.resize(RAMSizeTypes[ROM_0[0x149]], 0);
-
     u8 cartridgeType = ROM_0[0x147];
+
+    if (RAMSizeTypes.count(ROM_0[0x149]) == 0) {
+        printf("Invalid RAM type: %d\n", ROM_0[0x149]);
+        return false;
+    }
+    if (cartridgeType == 0x05 || cartridgeType == 0x06) {
+        RAM.resize(512, 0);
+    } else {
+        RAM.resize(RAMSizeTypes[ROM_0[0x149]], 0);
+    }
+
     switch (cartridgeType) {
         case 0x00:
         case 0x08:
@@ -50,9 +58,8 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
             break;
         case 0x05:
         case 0x06:
-            printCartridgeInfo();
-            printf("No support for MBC2 cartridges yet\n");
-            return false;
+            mbc = std::make_unique<MBC2>(this);
+            break;
         case 0x0F:
         case 0x10:
         case 0x11:
@@ -97,12 +104,16 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
 
 bool MMU::loadFile(std::string& path, bool isBIOS, std::vector<u8>& buffer) {
     std::ifstream file(path);
+    if (!file || !file.good()) {
+        printf("Failed to open file %s\n", path.c_str());
+        return false;
+    }
     file.seekg(0, std::ifstream::end);
     long length = file.tellg();
     file.seekg(0, std::ifstream::beg);
 
-    if (length == -1) {
-        printf("Failed to open file %s\n", path.c_str());
+    if (length == -1 || length == 0x7FFFFFFFFFFFFFFF) {
+        printf("Failed to load file %s\n", path.c_str());
         return false;
     }
 
@@ -117,12 +128,11 @@ bool MMU::loadFile(std::string& path, bool isBIOS, std::vector<u8>& buffer) {
         }
         return true;
     } else {
-        if (ROMSizeTypes.count(length) == 0) {
-            // TODO: turn this into an option or a warning
-            printf("Cartridge size (%li) is invalid\n", length);
-            return false;
-        }
-        return true;
+        // check type id and underlying value
+        if (ROMSizeTypes.count(buffer[0x148]) && ROMSizeTypes[buffer[0x148]] == length) return true;
+        // TODO: turn this into an option or a warning
+        printf("Cartridge type %d with size %li is invalid\n", buffer[0x148], length);
+        return false;
     }
 }
 
@@ -290,10 +300,10 @@ void MMU::initTables() {
     ROMSizeTypes[0x06] = 2097152;
     ROMSizeTypes[0x07] = 4194304;
     ROMSizeTypes[0x08] = 8388608;
-    // ROM size types 0x52, 0x53 and 0x54 don't exist in official games
-    ROMSizeTypes[0x52] = 1179648;
-    ROMSizeTypes[0x53] = 1310720;
-    ROMSizeTypes[0x54] = 1572864;
+    // ROM size types 0x52, 0x53 and 0x54 don't exist in official games but are mentioned in some documents
+    // ROMSizeTypes[0x52] = 1179648;
+    // ROMSizeTypes[0x53] = 1310720;
+    // ROMSizeTypes[0x54] = 1572864;
 
     RAMSizeTypes[0x00] = 0;
     RAMSizeTypes[0x01] = 2048;
@@ -310,7 +320,9 @@ void MMU::printCartridgeInfo() {
     printf("Game Title:          %s\n", cartridgeTitle.c_str());
     printf("Cartridge Type:      0x%02X (%s)\n", cartridgeType, cartridgeTypes[cartridgeType].c_str());
     printf("ROM Size Type:       0x%02X (%d Byte)\n", ROM_0[0x148], ROMSizeTypes[ROM_0[0x148]]);
-    printf("RAM Size Type:       0x%02X (%d Byte)\n", ROM_0[0x149], RAMSizeTypes[ROM_0[0x149]]);
+    printf("RAM Size Type:       0x%02X (%d Byte)", ROM_0[0x149], RAMSizeTypes[ROM_0[0x149]]);
+    if (cartridgeType == 0x05 || cartridgeType == 0x06) printf(" -- (%li Byte MBC2 internal)\n", RAM.size());
+    else printf("\n");
     printf("Destination Code:    %d", ROM_0[0x14A]);
     ROM_0[0x14A] ? printf(" (Non-Japanese)\n") : printf(" (Japanese)\n");
     u8 licenceCode = ROM_0[0x14B];

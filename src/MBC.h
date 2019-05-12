@@ -39,4 +39,15 @@ private:
     u8 ROM_RAM_ModeSelect;
 };
 
+class MBC2 : public MBC {
+public:
+    MBC2(MMU* mmu);
+    u8 readROMByte(u16 address) override;
+    void writeROMByte(u16 address, u8 value) override;
+    u8 readRAMByte(u16 address) override;
+    void writeRAMByte(u16 address, u8 value) override;
+private:
+    bool RAMEnable;
+};
+
 #endif //PHOS_MBC_H

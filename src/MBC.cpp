@@ -74,9 +74,46 @@ void MBC1::writeROMByte(u16 address, u8 value) {
 
 u8 MBC1::readRAMByte(u16 address) {
     if (RAMEnable) return mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE];
+    // TODO: find out if zero is returned when RAM is disabled
     return 0;
 }
 
 void MBC1::writeRAMByte(u16 address, u8 value) {
     if (RAMEnable) mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE] = value;
+}
+
+MBC2::MBC2(MMU *mmu) : MBC(mmu), RAMEnable(false) {}
+
+u8 MBC2::readROMByte(u16 address) {
+    return mmu->ROM[address + ROMBankPtr * ROM_BANK_SIZE];
+}
+
+void MBC2::writeROMByte(u16 address, u8 value) {
+    u16 type = address & 0xF000;
+    switch (type) {
+        case 0x0000:
+        case 0x1000:
+            if ((address & 0x0100) != 0) break;
+            RAMEnable = (value & 0xF) == 0x0A;
+            break;
+        case 0x2000:
+        case 0x3000:
+            if ((address & 0x0100) == 0) break;
+            assert((value & 0x0F) != 0);
+            ROMBankPtr = (value & 0x0F) - 1;
+            break;
+        default:
+            printf("Invalid MBC2 Control Register address: 0x%4X\n", address);
+    }
+}
+
+u8 MBC2::readRAMByte(u16 address) {
+    assert(address < 0x0200);
+    if (RAMEnable) return mmu->RAM[address] & 0x0F;
+    return 0;
+}
+
+void MBC2::writeRAMByte(u16 address, u8 value) {
+    assert(address < 0x0200);
+    if (RAMEnable) mmu->RAM[address] = value & 0x0F;
 }
