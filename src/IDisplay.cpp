@@ -4,7 +4,7 @@ bool IDisplay::initTexture(GLuint* textureHandler, u32 width, u32 height, u8* da
     glGenTextures(1, textureHandler);
     glBindTexture(GL_TEXTURE_2D, *textureHandler);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     glBindTexture(GL_TEXTURE_2D, 0);
     return !hasGLError();
