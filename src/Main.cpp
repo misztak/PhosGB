@@ -71,6 +71,19 @@ void handleJoypadInput(SDL_Event& event, Emulator& emulator) {
     }
 }
 
+void resize(SDL_Window* window, bool isDebugger) {
+    if (isDebugger) {
+        SDL_SetWindowSize(window, 1200, 900);
+        ImGui::GetStyle().WindowPadding = ImVec2(1, 1);
+        ImGui::GetStyle().WindowRounding = 5;
+    } else {
+        SDL_SetWindowSize(window, SCALED_WIDTH, SCALED_HEIGHT);
+        ImGui::GetStyle().WindowPadding = ImVec2(0, 0);
+        ImGui::GetStyle().WindowRounding = 0;
+    }
+    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+}
+
 int main(int argc, char** argv) {
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER) != 0) {
@@ -93,7 +106,7 @@ int main(int argc, char** argv) {
             1200, 900,
             SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE );
     SDL_GLContext glContext = SDL_GL_CreateContext(window);
-    SDL_GL_SetSwapInterval(0); // Vsync
+    SDL_GL_SetSwapInterval(0);  // Vsync
 
     bool err = glewInit() != GLEW_OK;
     if (err) {
@@ -102,8 +115,16 @@ int main(int argc, char** argv) {
     }
 
     Emulator emulator;
-    std::string filePath = "../../gb/Tetris.gb";
-    //std::string filePath = "../../gb/blargg/cpu_instrs/02.gb";
+    std::string filePath = "../../gb/";
+
+    // GAMES
+    //filePath.append("KirbyPinballLand.gb");
+    //filePath.append("Tetris.gb");
+    //filePath.append("F1-Race.gb");
+    //filePath.append("Opus.gb");
+    //filePath.append("TicTacToe.gb");
+    filePath.append("SuperMarioLand.gb");
+
     if (!emulator.load(filePath)) {
         fprintf(stderr, "Failed to load BootROM or Cartridge\n");
         return 2;
@@ -113,9 +134,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    IDisplay::ImGuiInit(window, glContext);
     IDisplay* host;
-    Display display(emulator.getDisplayState());
-    Debugger debugger(window, glContext, &emulator);
+    Display display(window, &emulator);
+    Debugger debugger(window, &emulator);
 
     // Main loop
     host = &debugger;
@@ -144,6 +166,7 @@ int main(int argc, char** argv) {
                         isDebugger = true;
                         host = &debugger;
                     }
+                    resize(window, isDebugger);
                 }
                 if (event.key.keysym.scancode == SDL_SCANCODE_M) {
                     frameTimer.toggleMode();
@@ -206,6 +229,7 @@ int main(int argc, char** argv) {
     }
 
     // Cleanup
+    IDisplay::ImGuiDestroy();
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
     SDL_Quit();

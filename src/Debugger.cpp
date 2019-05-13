@@ -1,27 +1,8 @@
 #include "Debugger.h"
 
-Debugger::Debugger(SDL_Window* w, void* glContext, Emulator* emu) {
-    mainTextureHandler = 0;
-    bgTextureHandler = 0;
-    VRAMTextureHandler = 0;
-
-    show_demo_window = false;
-    nextStep = false;
-    // TODO: debugger settings window
-    singleStepMode = false;
-
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui::StyleColorsDark();
-
-    window = w;
-    emulator = emu;
-    ImGui_ImplSDL2_InitForOpenGL(window, glContext);
-#if __APPLE__
-    ImGui_ImplOpenGL2_Init();
-#else
-    ImGui_ImplOpenGL3_Init(GLSL_VERSION);
-#endif
+Debugger::Debugger(SDL_Window* w, Emulator* emu) :
+    IDisplay(w, emu), show_demo_window(true), nextStep(false), singleStepMode(false),
+    bgTextureHandler(0), VRAMTextureHandler(0) {
 
     initTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());
     initTexture(&bgTextureHandler, 256, 256, emulator->cpu.gpu.getBackgroundState());
@@ -38,14 +19,6 @@ Debugger::~Debugger() {
     if (VRAMTextureHandler != 0) {
         glDeleteTextures(1, &VRAMTextureHandler);
     }
-
-#if __APPLE__
-    ImGui_ImplOpenGL2_Shutdown();
-#else
-    ImGui_ImplOpenGL3_Shutdown();
-#endif
-    ImGui_ImplSDL2_Shutdown();
-    ImGui::DestroyContext();
 }
 
 void Debugger::processEvent(SDL_Event& event) {
