@@ -117,7 +117,6 @@ bool MMU::loadFile(std::string& path, bool isBIOS, std::vector<u8>& buffer) {
         return false;
     }
 
-    // TODO: max length limit
     buffer.resize(length);
     file.read((char *) buffer.data(), length);
 
