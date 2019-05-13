@@ -74,13 +74,14 @@ void MBC1::writeROMByte(u16 address, u8 value) {
 
 u8 MBC1::readRAMByte(u16 address) {
     if (RAMEnable) return mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE];
-    // TODO: find out if zero is returned when RAM is disabled
-    return 0;
+    return 0xFF;
 }
 
 void MBC1::writeRAMByte(u16 address, u8 value) {
     if (RAMEnable) mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE] = value;
 }
+
+// MBC2
 
 MBC2::MBC2(MMU *mmu) : MBC(mmu), RAMEnable(false) {}
 
@@ -110,7 +111,7 @@ void MBC2::writeROMByte(u16 address, u8 value) {
 u8 MBC2::readRAMByte(u16 address) {
     assert(address < 0x0200);
     if (RAMEnable) return mmu->RAM[address] & 0x0F;
-    return 0;
+    return 0xFF;
 }
 
 void MBC2::writeRAMByte(u16 address, u8 value) {
