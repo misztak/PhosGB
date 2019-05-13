@@ -21,25 +21,6 @@
 
 constexpr int ticksPerFrame = 70224;
 
-bool initGL() {
-    // TODO: stop using fixed function pipeline
-    glViewport(0, 0, SCALED_WIDTH, SCALED_HEIGHT);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0.0, WIDTH, HEIGHT, 0.0, 1.0, -1.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glClearColor(0,0,0,255);
-    glEnable(GL_TEXTURE_2D);
-
-    GLenum error;
-    if ((error = glGetError()) != GL_NO_ERROR) {
-        printf("OpenGL Error: %u", error);
-        return false;
-    }
-    return true;
-}
-
 void render(SDL_Window* window, SDL_GLContext* glContext, IDisplay* host, Emulator* emulator) {
     host->update(emulator->getDisplayState());
     SDL_GL_MakeCurrent(window, glContext);
@@ -128,10 +109,6 @@ int main(int argc, char** argv) {
     if (!emulator.load(filePath)) {
         fprintf(stderr, "Failed to load BootROM or Cartridge\n");
         return 2;
-    }
-
-    if (!initGL()) {
-        return 1;
     }
 
     IDisplay::ImGuiInit(window, glContext);

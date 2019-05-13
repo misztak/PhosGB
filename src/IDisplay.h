@@ -27,9 +27,7 @@ public:
     virtual void render() = 0;
     virtual void processEvent(SDL_Event& event) = 0;
 
-    bool initTexture(GLuint* textureHandler, u32 width, u32 height, u8* data);
-    bool hasGLError();
-    bool loadTexture(GLuint textureHandler, u32 width, u32 height);
+    bool loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* data);
 
     static void ImGuiInit(SDL_Window* window, void* glContext);
     static void ImGuiDestroy();

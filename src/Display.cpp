@@ -1,7 +1,7 @@
 #include "Display.h"
 
 Display::Display(SDL_Window* w, Emulator* emu) : IDisplay(w, emu) {
-    initTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());
+    loadTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());
 }
 
 Display::~Display() {
@@ -15,7 +15,6 @@ void Display::processEvent(SDL_Event &event) {
 }
 
 void Display::update(u8* data) {
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 #if __APPLE__
     ImGui_ImplOpenGL2_NewFrame();
 #else
@@ -24,7 +23,7 @@ void Display::update(u8* data) {
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
 
-    loadTexture(mainTextureHandler, WIDTH, HEIGHT);
+    glBindTexture(GL_TEXTURE_2D, mainTextureHandler);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
     bool open = true;

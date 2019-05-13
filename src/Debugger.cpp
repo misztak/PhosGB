@@ -1,12 +1,12 @@
 #include "Debugger.h"
 
 Debugger::Debugger(SDL_Window* w, Emulator* emu) :
-    IDisplay(w, emu), show_demo_window(true), nextStep(false), singleStepMode(false),
+    IDisplay(w, emu), show_demo_window(false), nextStep(false), singleStepMode(false),
     bgTextureHandler(0), VRAMTextureHandler(0) {
 
-    initTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());
-    initTexture(&bgTextureHandler, 256, 256, emulator->cpu.gpu.getBackgroundState());
-    initTexture(&VRAMTextureHandler, 256, 192, emulator->cpu.gpu.getTileData());
+    loadTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());
+    loadTexture(&bgTextureHandler, 256, 256, emulator->cpu.gpu.getBackgroundState());
+    loadTexture(&VRAMTextureHandler, 256, 192, emulator->cpu.gpu.getTileData());
 }
 
 Debugger::~Debugger() {
@@ -45,7 +45,7 @@ void Debugger::update(u8* data) {
 }
 
 void Debugger::emulatorView(u8* data) {
-    loadTexture(mainTextureHandler, WIDTH, HEIGHT);
+    glBindTexture(GL_TEXTURE_2D, mainTextureHandler);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
     ImGui::Begin("Emulator");
@@ -123,7 +123,7 @@ void Debugger::memoryView() {
 }
 
 void Debugger::backgroundView() {
-    loadTexture(bgTextureHandler, 256, 256);
+    glBindTexture(GL_TEXTURE_2D, bgTextureHandler);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getBackgroundState());
 
     ImGui::Begin("Background");
@@ -132,7 +132,7 @@ void Debugger::backgroundView() {
 }
 
 void Debugger::VRAMView() {
-    loadTexture(VRAMTextureHandler, 256, 192);
+    glBindTexture(GL_TEXTURE_2D, VRAMTextureHandler);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 192, 0, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getTileData());
 
     ImGui::Begin("VRAM Viewer");
