@@ -10,8 +10,6 @@ wget -O imstb_rectpack.h https://raw.githubusercontent.com/ocornut/imgui/master/
 wget -O imstb_textedit.h https://raw.githubusercontent.com/ocornut/imgui/master/imstb_textedit.h
 wget -O imstb_truetype.h https://raw.githubusercontent.com/ocornut/imgui/master/imstb_truetype.h
 wget -O imgui.h https://raw.githubusercontent.com/ocornut/imgui/master/imgui.h
-wget -O imgui_impl_opengl2.cpp https://raw.githubusercontent.com/ocornut/imgui/master/examples/imgui_impl_opengl2.cpp
-wget -O imgui_impl_opengl2.h https://raw.githubusercontent.com/ocornut/imgui/master/examples/imgui_impl_opengl2.h
 wget -O imgui_impl_opengl3.cpp https://raw.githubusercontent.com/ocornut/imgui/master/examples/imgui_impl_opengl3.cpp
 wget -O imgui_impl_opengl3.h https://raw.githubusercontent.com/ocornut/imgui/master/examples/imgui_impl_opengl3.h
 wget -O imgui_impl_sdl.cpp https://raw.githubusercontent.com/ocornut/imgui/master/examples/imgui_impl_sdl.cpp

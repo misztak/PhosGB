@@ -15,11 +15,7 @@ void Display::processEvent(SDL_Event &event) {
 }
 
 void Display::update(u8* data) {
-#if __APPLE__
-    ImGui_ImplOpenGL2_NewFrame();
-#else
     ImGui_ImplOpenGL3_NewFrame();
-#endif
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
 
@@ -55,11 +51,7 @@ void Display::update(u8* data) {
 }
 
 void Display::render() {
-#if __APPLE__
-    ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
-#else
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-#endif
 }
 
 void Display::showMenuPopup() {

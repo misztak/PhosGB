@@ -5,12 +5,12 @@
 #include <SDL.h>
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
+#include "imgui_impl_opengl3.h"
 
 #if __APPLE__
-#include "imgui_impl_opengl2.h"
+#define GLSL_VERSION "#version 150"
 #else
 #define GLSL_VERSION "#version 130"
-#include "imgui_impl_opengl3.h"
 #endif
 
 #include "Common.h"

@@ -8,20 +8,20 @@
 #include "Emulator.h"
 
 #if __APPLE__
-    // GL 2.2
-    const int majorVersion = 2;
+    // GL 3.2
+    const int majorVersion = 3;
     const int minorVersion = 2;
-    const int profileMask = 0;
+    const int compatFlag = SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG;
 #else
     // GL 3.0
     const int majorVersion = 3;
     const int minorVersion = 0;
-    const int profileMask = SDL_GL_CONTEXT_PROFILE_CORE;
+    const int compatFlag = 0;
 #endif
 
 constexpr int ticksPerFrame = 70224;
 
-void render(SDL_Window* window, SDL_GLContext* glContext, IDisplay* host, Emulator* emulator) {
+void render(SDL_Window* window, SDL_GLContext& glContext, IDisplay* host, Emulator* emulator) {
     host->update(emulator->getDisplayState());
     SDL_GL_MakeCurrent(window, glContext);
 
@@ -73,19 +73,18 @@ int main(int argc, char** argv) {
     }
     SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0", SDL_HINT_OVERRIDE);
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profileMask);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, compatFlag);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, majorVersion);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minorVersion);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    // Create window with graphics context
+    // Create window and openGL context
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_DisplayMode current;
-    SDL_GetCurrentDisplayMode(0, &current);
     SDL_Window* window = SDL_CreateWindow(
             "PhosGB",
             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
             1200, 900,
-            SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE );
+            SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE|SDL_WINDOW_ALLOW_HIGHDPI );
     SDL_GLContext glContext = SDL_GL_CreateContext(window);
     SDL_GL_SetSwapInterval(0);  // Vsync
 
@@ -100,11 +99,11 @@ int main(int argc, char** argv) {
 
     // GAMES
     //filePath.append("KirbyPinballLand.gb");
-    //filePath.append("Tetris.gb");
+    filePath.append("Tetris.gb");
     //filePath.append("F1-Race.gb");
     //filePath.append("Opus.gb");
     //filePath.append("TicTacToe.gb");
-    filePath.append("SuperMarioLand.gb");
+    //filePath.append("SuperMarioLand.gb");
 
     if (!emulator.load(filePath)) {
         fprintf(stderr, "Failed to load BootROM or Cartridge\n");
@@ -170,7 +169,7 @@ int main(int argc, char** argv) {
 
                 if (emulator.hitVBlank()) {
                     // Under normal circumstances the display should update at the start of every VBLANK period.
-                    render(window, &glContext, host, &emulator);
+                    render(window, glContext, host, &emulator);
                 }
 
                 ticks += cycles;
@@ -190,7 +189,7 @@ int main(int argc, char** argv) {
                 if (debugger.singleStepMode) {
                     debugger.nextStep = false;
                     emulator.isHalted = true;
-                    render(window, &glContext, host, &emulator);
+                    render(window, glContext, host, &emulator);
                     ticks = ticksPerFrame;
                     printf("Step\n");
                     break;
@@ -199,7 +198,7 @@ int main(int argc, char** argv) {
             ticks -= ticksPerFrame;
         } else {
             // Just keep rendering if the debugger has halted execution or if a fatal error has occurred.
-            render(window, &glContext, host, &emulator);
+            render(window, glContext, host, &emulator);
         }
 
         frameTimer.syncFrame();

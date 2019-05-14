@@ -26,20 +26,12 @@ void IDisplay::ImGuiInit(SDL_Window *window, void *glContext) {
     ImGui::StyleColorsDark();
 
     ImGui_ImplSDL2_InitForOpenGL(window, glContext);
-#if __APPLE__
-    ImGui_ImplOpenGL2_Init();
-#else
     ImGui_ImplOpenGL3_Init(GLSL_VERSION);
-#endif
     ImGui::GetStyle().WindowBorderSize = 0;
 }
 
 void IDisplay::ImGuiDestroy() {
-#if __APPLE__
-    ImGui_ImplOpenGL2_Shutdown();
-#else
     ImGui_ImplOpenGL3_Shutdown();
-#endif
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 }
