@@ -8,6 +8,7 @@ class MMU;
 class MBC {
 public:
     MBC(MMU* mmu);
+    virtual ~MBC() = default;
     virtual u8 readROMByte(u16 address) = 0;
     virtual void writeROMByte(u16 address, u8 value) = 0;
     virtual u8 readRAMByte(u16 address) = 0;
