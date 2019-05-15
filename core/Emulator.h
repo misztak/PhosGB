@@ -19,6 +19,8 @@ public:
     bool isHalted;
     bool isDead;
     CPU cpu;
+    std::string currentFile;
+    std::vector<std::string> recentFiles;
 };
 
 #endif //PHOS_EMULATOR_H

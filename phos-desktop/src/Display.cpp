@@ -55,45 +55,32 @@ void Display::render() {
 }
 
 void Display::showMenuPopup() {
-    ImGui::MenuItem("(dummy menu)", NULL, false, false);
-    if (ImGui::MenuItem("New")) {}
-    if (ImGui::MenuItem("Open", "Ctrl+O")) {}
-    if (ImGui::BeginMenu("Open Recent"))
-    {
-        ImGui::MenuItem("fish_hat.c");
-        ImGui::MenuItem("fish_hat.inl");
-        ImGui::MenuItem("fish_hat.h");
-        if (ImGui::BeginMenu("More.."))
-        {
-            ImGui::MenuItem("Hello");
-            ImGui::MenuItem("Sailor");
-            if (ImGui::BeginMenu("Recurse.."))
-            {
-                showMenuPopup();
-                ImGui::EndMenu();
+    ImGui::MenuItem("Menu", nullptr, false, false);
+    if (ImGui::MenuItem("Open ROM..")) {}
+    if (ImGui::MenuItem("Reset ROM", "F6")) {
+        emulator->load(emulator->currentFile);
+    }
+    if (ImGui::BeginMenu("Open Recent")) {
+        for (std::string& recentFile : emulator->recentFiles) {
+            if (ImGui::MenuItem(recentFile.c_str())) {
+                emulator->load(recentFile);
+                break;
             }
-            ImGui::EndMenu();
         }
         ImGui::EndMenu();
     }
-    if (ImGui::MenuItem("Save", "Ctrl+S")) {}
-    if (ImGui::MenuItem("Save As..")) {}
     ImGui::Separator();
-    if (ImGui::BeginMenu("Options"))
-    {
-        static bool enabled = true;
-        ImGui::MenuItem("Enabled", "", &enabled);
-        ImGui::BeginChild("child", ImVec2(0, 60), true);
-        for (int i = 0; i < 10; i++)
-            ImGui::Text("Scrolling Text %d", i);
-        ImGui::EndChild();
-        static float f = 0.5f;
-        static int n = 0;
-        static bool b = true;
-        ImGui::SliderFloat("Value", &f, 0.0f, 1.0f);
-        ImGui::InputFloat("Input", &f, 0.1f);
-        ImGui::Combo("Combo", &n, "Yes\0No\0Maybe\0\0");
-        ImGui::Checkbox("Check", &b);
+    if (ImGui::MenuItem("Save State", "F5")) {}
+    if (ImGui::MenuItem("Save State As..")) {}
+    if (ImGui::BeginMenu("Options")) {
+        if (ImGui::BeginMenu("Window Size")) {
+            static bool selection[4] = {false, false, true, false};
+            ImGui::MenuItem("1x1", nullptr, selection[0]);
+            ImGui::MenuItem("2x2", nullptr, selection[1]);
+            ImGui::MenuItem("3x3", nullptr, selection[2]);
+            ImGui::MenuItem("4x4", nullptr, selection[3]);
+            ImGui::EndMenu();
+        }
         ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Colors"))
@@ -110,10 +97,4 @@ void Display::showMenuPopup() {
         }
         ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu("Disabled", false)) // Disabled
-    {
-        IM_ASSERT(0);
-    }
-    if (ImGui::MenuItem("Checked", NULL, true)) {}
-    if (ImGui::MenuItem("Quit", "Alt+F4")) {}
 }

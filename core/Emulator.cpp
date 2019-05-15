@@ -7,6 +7,10 @@ bool Emulator::load(std::string& romPath) {
     if (success) {
         isHalted = false;
         isDead = false;
+        currentFile = romPath;
+        if (std::find(recentFiles.begin(), recentFiles.end(), romPath) == recentFiles.end()) {
+            recentFiles.push_back(romPath);
+        }
     }
     return success;
 }
