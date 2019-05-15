@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
     bool done = false;
 
     int ticks = 0;
-    Timer frameTimer(ACCURACY);
+    Timer frameTimer(PERFORMANCE);
 
     while (!done) {
         SDL_Event event;
