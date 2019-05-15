@@ -438,9 +438,18 @@ CPU::CPU(): gpu(this, &mmu), joypad(this), halted(false) {
 }
 
 bool CPU::init(std::string& romPath) {
+    // TODO: remove hardcoded BIOS path
     std::string biosPath = "../../gb/BootROM.gb";
+
+    // MMU reset
     if (!mmu.init(romPath, biosPath)) return false;
+    // CPU reset
     reset();
+    // GPU reset
+    gpu.reset();
+    // Joypad reset
+    joypad.reset();
+
     return true;
 }
 
@@ -454,6 +463,9 @@ void CPU::reset() {
     r.pc = 0x0100;
     mmu.inBIOS = false;
     r.ime = 0x0;
+
+    timerCounter = 1024;
+    dividerCounter = 0;
 
     writeByte(0xFF05, 0x00);    // TIMA
     writeByte(0xFF06, 0x00);    // TMA
@@ -489,8 +501,6 @@ void CPU::reset() {
     writeByte(0xFF4B, 0x00);    // WX
 
     writeByte(0xFFFF, 0x00);    // IE
-
-    gpu.reset();
 }
 
 void CPU::handleInputDown(u8 key) {

@@ -3,6 +3,8 @@
 Emulator::Emulator(): isHalted(false), isDead(false) {}
 
 bool Emulator::load(std::string& romPath) {
+    isHalted = false;
+    isDead = false;
     return cpu.init(romPath);
 }
 

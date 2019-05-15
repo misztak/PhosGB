@@ -12,6 +12,7 @@ enum JOYPAD_LANE { BUTTON_KEYS, DIRECTION_KEYS, BOTH };
 class Joypad {
 public:
     Joypad(CPU* c);
+    void reset();
     void handleInputDown(u8 key);
     void handleInputUp(u8 key);
     u8 readByte();

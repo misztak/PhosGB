@@ -3,6 +3,11 @@
 
 Joypad::Joypad(CPU* c) : cpu(c), joypadState(0xFF), lane(BUTTON_KEYS) {}
 
+void Joypad::reset() {
+    joypadState = 0xFF;
+    lane = BUTTON_KEYS;
+}
+
 void Joypad::handleInputDown(u8 key) {
     bool prevStateON = false;
     u8 keyMask = (u8) 1 << key;

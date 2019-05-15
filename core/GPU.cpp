@@ -15,6 +15,15 @@ GPU::GPU(CPU* c, MMU* m) :
     tileData(6144 * 4 * 8, 255) {}
 
 void GPU::reset() {
+    hitVBlank = false;
+    setMode(VBLANK);
+    modeclock = 0;
+    DMATicks = 0;
+    std::fill(displayState.begin(), displayState.end(), 255);
+    std::fill(backgroundState.begin(), backgroundState.end(), 255);
+    for (std::vector<u8>& v : background) std::fill(v.begin(), v.end(), 255);
+    std::fill(tileData.begin(), tileData.end(), 255);
+
     setReg(LCDC_Y_COORDINATE, 153);
     setReg(SCROLL_Y, 0x00);
     setReg(SCROLL_X, 0x00);

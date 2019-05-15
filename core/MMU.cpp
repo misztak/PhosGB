@@ -12,10 +12,11 @@ MMU::MMU() :
     ZRAM(ZRAM_SIZE, 0),
     VRAM(VRAM_SIZE, 0),
     OAM(OAM_SIZE, 0),
-    mbc(nullptr) {}
+    mbc(nullptr) {
+    initTables();
+}
 
 bool MMU::init(std::string& romPath, std::string& biosPath) {
-    initTables();
     std::vector<u8> buffer;
 
     if (!biosPath.empty()) {
@@ -43,6 +44,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     } else {
         RAM.resize(RAMSizeTypes[ROM_0[0x149]], 0);
     }
+    std::fill(RAM.begin(), RAM.end(), 0);
 
     switch (cartridgeType) {
         case 0x00:
@@ -97,6 +99,12 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         printf("Failed to initialize MBC for cartridge type 0x%2X\n", cartridgeType);
         return false;
     }
+
+    std::fill(WRAM.begin(), WRAM.end(), 0);
+    std::fill(IO.begin(), IO.end(), 0);
+    std::fill(ZRAM.begin(), ZRAM.end(), 0);
+    std::fill(VRAM.begin(), VRAM.end(), 0);
+    std::fill(OAM.begin(), OAM.end(), 0);
 
     printCartridgeInfo();
     return true;
