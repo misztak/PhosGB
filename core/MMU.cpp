@@ -29,22 +29,9 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     buffer.clear();
     if (!loadFile(romPath, false, buffer)) return false;
 
-    std::copy_n(buffer.begin(), ROM_BANK_SIZE, ROM_0.begin());
-    ROM.resize(buffer.size() - ROM_BANK_SIZE);
-    std::copy(buffer.begin() + ROM_BANK_SIZE, buffer.end(), ROM.begin());
+    u8 cartridgeType = buffer[0x147];
+    u8 RAMType = buffer[0x149];
     printf("Read file %s, size=%li\n", romPath.substr(romPath.find_last_of('/')+1, romPath.length()).c_str(), buffer.size());
-    u8 cartridgeType = ROM_0[0x147];
-
-    if (RAMSizeTypes.count(ROM_0[0x149]) == 0) {
-        printf("Invalid RAM type: %d\n", ROM_0[0x149]);
-        return false;
-    }
-    if (cartridgeType == 0x05 || cartridgeType == 0x06) {
-        RAM.resize(512, 0);
-    } else {
-        RAM.resize(RAMSizeTypes[ROM_0[0x149]], 0);
-    }
-    std::fill(RAM.begin(), RAM.end(), 0);
 
     switch (cartridgeType) {
         case 0x00:
@@ -99,6 +86,22 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         printf("Failed to initialize MBC for cartridge type 0x%2X\n", cartridgeType);
         return false;
     }
+
+    if (RAMSizeTypes.count(RAMType) == 0) {
+        printf("Invalid RAM type: %d\n", RAMType);
+        return false;
+    }
+
+    std::copy_n(buffer.begin(), ROM_BANK_SIZE, ROM_0.begin());
+    ROM.resize(buffer.size() - ROM_BANK_SIZE);
+    std::copy(buffer.begin() + ROM_BANK_SIZE, buffer.end(), ROM.begin());
+
+    if (cartridgeType == 0x05 || cartridgeType == 0x06) {
+        RAM.resize(512, 0);
+    } else {
+        RAM.resize(RAMSizeTypes[RAMType], 0);
+    }
+    std::fill(RAM.begin(), RAM.end(), 0);
 
     std::fill(WRAM.begin(), WRAM.end(), 0);
     std::fill(IO.begin(), IO.end(), 0);

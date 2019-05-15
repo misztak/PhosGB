@@ -3,9 +3,12 @@
 Emulator::Emulator(): isHalted(false), isDead(false) {}
 
 bool Emulator::load(std::string& romPath) {
-    isHalted = false;
-    isDead = false;
-    return cpu.init(romPath);
+    bool success = cpu.init(romPath);
+    if (success) {
+        isHalted = false;
+        isDead = false;
+    }
+    return success;
 }
 
 u32 Emulator::tick() {
