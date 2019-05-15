@@ -451,7 +451,8 @@ void CPU::reset() {
     r.de = 0x00D8;
     r.hl = 0x014D;
     r.sp = 0xFFFE;
-    r.pc = 0x0000;
+    r.pc = 0x0100;
+    mmu.inBIOS = false;
     r.ime = 0x0;
 
     writeByte(0xFF05, 0x00);    // TIMA
