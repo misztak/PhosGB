@@ -55,7 +55,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         case 0x12:
         case 0x13:
         case 0xFC:
-            printCartridgeInfo();
+            printCartridgeInfo(buffer);
             printf("No support for MBC3 cartridges yet\n");
             return false;
         case 0x19:
@@ -64,7 +64,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         case 0x1C:
         case 0x1D:
         case 0x1E:
-            printCartridgeInfo();
+            printCartridgeInfo(buffer);
             printf("No support for MBC5 cartridges yet\n");
             return false;
         case 0x0B:
@@ -74,7 +74,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         case 0x22:
         case 0xFD:
         case 0xFE:
-            printCartridgeInfo();
+            printCartridgeInfo(buffer);
             printf("No support for cartridge type '%s'\n", cartridgeTypes[cartridgeType].c_str());
             return false;
         default:
@@ -109,7 +109,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     std::fill(VRAM.begin(), VRAM.end(), 0);
     std::fill(OAM.begin(), OAM.end(), 0);
 
-    printCartridgeInfo();
+    printCartridgeInfo(buffer);
     return true;
 }
 
@@ -322,45 +322,44 @@ void MMU::initTables() {
     RAMSizeTypes[0x05] = 65536;
 }
 
-void MMU::printCartridgeInfo() {
-    cartridgeTitle = std::string(&ROM_0[0x134], &ROM_0[0x134] + 0xF);
-    u8 cartridgeType = ROM_0[0x147];
+void MMU::printCartridgeInfo(std::vector<u8>& buffer) {
+    cartridgeTitle = std::string(&buffer[0x134], &buffer[0x134] + 0xF);
+    u8 cartridgeType = buffer[0x147];
 
     printf("\n");
     printf("Game Title:          %s\n", cartridgeTitle.c_str());
     printf("Cartridge Type:      0x%02X (%s)\n", cartridgeType, cartridgeTypes[cartridgeType].c_str());
-    printf("ROM Size Type:       0x%02X (%d Byte)\n", ROM_0[0x148], ROMSizeTypes[ROM_0[0x148]]);
-    printf("RAM Size Type:       0x%02X (%d Byte)", ROM_0[0x149], RAMSizeTypes[ROM_0[0x149]]);
+    printf("ROM Size Type:       0x%02X (%d Byte)\n", buffer[0x148], ROMSizeTypes[buffer[0x148]]);
+    printf("RAM Size Type:       0x%02X (%d Byte)", buffer[0x149], RAMSizeTypes[buffer[0x149]]);
     if (cartridgeType == 0x05 || cartridgeType == 0x06) printf(" -- (%li Byte MBC2 internal)\n", RAM.size());
     else printf("\n");
-    printf("Destination Code:    %d", ROM_0[0x14A]);
-    ROM_0[0x14A] ? printf(" (Non-Japanese)\n") : printf(" (Japanese)\n");
-    u8 licenceCode = ROM_0[0x14B];
+    printf("Destination Code:    %d", buffer[0x14A]);
+    buffer[0x14A] ? printf(" (Non-Japanese)\n") : printf(" (Japanese)\n");
+    u8 licenceCode = buffer[0x14B];
     if (licenceCode == 0x33) {
-        std::string newCode = std::string(&ROM_0[0x144], &ROM_0[0x144] + 1);
+        std::string newCode = std::string(&buffer[0x144], &buffer[0x144] + 1);
         printf("Licensee Code (New): %s\n", newCode.c_str());
     } else {
         printf("Licensee Code (Old): 0x%02X\n", licenceCode);
     }
-    printf("Game Version:        %d\n", ROM_0[0x14C]);
+    printf("Game Version:        %d\n", buffer[0x14C]);
 
-    u8 headerCRC = ROM_0[0x14D];
+    u8 headerCRC = buffer[0x14D];
     printf("Header Checksum:     0x%02X", headerCRC);
     u8 x = 0;
-    for (int i=0x134; i<=0x14C; i++) x = x - ROM_0[i] -1;
+    for (int i=0x134; i<=0x14C; i++) x = x - buffer[i] -1;
     if (x != headerCRC) {
         printf("   [INVALID - actual checksum is 0x%02X, a real Gameboy would halt execution]\n", x);
     } else {
         printf("   [VALID]\n");
     }
 
-    u16 globalCRC = (ROM_0[0x14E] << 8) | ROM_0[0x14F];
+    u16 globalCRC = (buffer[0x14E] << 8) | buffer[0x14F];
     printf("Global Checksum:     0x%04X", globalCRC);
     u16 g = 0;
-    for (unsigned char i : ROM_0) g += i;
-    for (unsigned char i : ROM) g += i;
-    g -= ROM_0[0x14E];
-    g -= ROM_0[0x14F];
+    for (u8 i : buffer) g += i;
+    g -= buffer[0x14E];
+    g -= buffer[0x14F];
     if (g != globalCRC) {
         printf(" [INVALID - actual checksum is 0x%04X, but a real Gameboy would not care]\n", g);
     } else {

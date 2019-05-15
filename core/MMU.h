@@ -28,7 +28,7 @@ public:
     void writeByte(u16 address, u8 value);
     void writeWord(u16 address, u16 value);
 
-    void printCartridgeInfo();
+    void printCartridgeInfo(std::vector<u8>& buffer);
 public:
     bool inBIOS;
 
