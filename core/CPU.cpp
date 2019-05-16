@@ -1791,7 +1791,7 @@ u32 CPU::BIT_b_HL(const u8& opcode) {
     setFlag(HALF_CARRY);
     clearFlag(ADD_SUB);
 
-    return 16;
+    return 12;
 }
 
 u32 CPU::SET_b_r(const u8& opcode) {
