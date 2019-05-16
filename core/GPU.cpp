@@ -96,7 +96,7 @@ void GPU::tick(u32 ticks) {
             break;
     }
 
-    if (getReg(LY_COMPARE) == getReg(LCDC_Y_COORDINATE)) {
+    if (getReg(LY_COMPARE) == line) {
         setReg(LCDC_STATUS, setBit(getReg(LCDC_STATUS), COINCIDENCE_FLAG));
         if (isBitSet(getReg(LCDC_STATUS), LYC_LY_COINCIDENCE_INTERRUPT)) {
             cpu->requestInterrupt(INTERRUPT_LCD_STAT);
@@ -311,7 +311,9 @@ u8 GPU::getReg(u16 regAddress) {
 }
 
 void GPU::setReg(u16 regAddress, u8 value) {
-    mmu->writeByte(regAddress, value);
+    // TODO: find a better way to do this
+    if (regAddress == LCDC_Y_COORDINATE) mmu->IO[0x44] = value;
+    else mmu->writeByte(regAddress, value);
 }
 
 u8 GPU::getMode() {

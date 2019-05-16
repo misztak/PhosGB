@@ -254,12 +254,14 @@ void MMU::writeByte(u16 address, u8 value) {
                         // reset some STAT values
                         // TODO: see if this is right
                         // i.e. compare with "https://www.reddit.com/r/EmuDev/comments/6r6gf3/gb_pokemon_gold_spews_unexpected_values_at_mbc/dl5c0ub"
-                        IO[LCDC_Y_COORDINATE - 0xFF00] = 0;
-                        gpu->modeclock = 0;
-                        gpu->setMode(READ_BOTH);
+                        IO[LCDC_Y_COORDINATE - 0xFF00] = 153;
+                        gpu->modeclock = 456;
+                        gpu->setMode(VBLANK);
                     }
                 } else if (address == 0xFF41) {     // LCDC STAT
                     IO[address - 0xFF00] = (value & (u8) 0xF8) | (IO[address - 0xFF00] & (u8) 0x07);
+                } else if (address == 0xFF44) {     // LY (line) (Read-only)
+                    return;
                 } else if (address == 0xFF46) {
                     // start DMA transfer
                     u16 source = value << (u16) 8;
