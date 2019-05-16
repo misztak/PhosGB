@@ -37,6 +37,14 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     u8 RAMType = buffer[0x149];
     printf("Read file %s, size=%li\n", romPath.substr(romPath.find_last_of('/')+1, romPath.length()).c_str(), buffer.size());
 
+    if (buffer[0x143] == 0xC0) {
+        printf("Gameboy Color cartridges not supported\n");
+        return false;
+    }
+    if (buffer[0x143] == 0x80) {
+        printf("Gameboy Color cartridge with Non-CGB-Mode\n");
+    }
+
     switch (cartridgeType) {
         case 0x00:
         case 0x08:
