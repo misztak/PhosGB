@@ -18,6 +18,8 @@ constexpr int OAM_SIZE      = 160;
 constexpr int IO_SIZE       = 128;
 constexpr int ZRAM_SIZE     = 128;
 
+enum FileType { BIOS, ROM, SRAM };
+
 class CPU;
 class GPU;
 
@@ -53,7 +55,7 @@ public:
     std::map<u8, int> ROMSizeTypes;
     std::map<u8, int> RAMSizeTypes;
 private:
-    bool loadFile(std::string& path, bool isBIOS, std::vector<u8>& buffer);
+    bool loadFile(std::string& path, FileType fileType, std::vector<u8>& buffer);
     void initTables();
 private:
     std::unique_ptr<MBC> mbc;

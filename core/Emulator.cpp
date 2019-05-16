@@ -36,6 +36,17 @@ void Emulator::kill() {
     isHalted = true;
 }
 
+void Emulator::shutdown() {
+    u8 cartridgeType = cpu.mmu.ROM_0[0x147];
+    if (cpu.mmu.cartridgeTypes[cartridgeType].find("RAM+BATTERY")) {
+        std::string saveName = currentFile.substr(currentFile.find_last_of('/') + 1, currentFile.size());
+        saveName.append(".sav");
+        std::ofstream outfile(saveName, std::ios::out | std::ios::binary);
+        outfile.write((char *) cpu.mmu.RAM.data(), cpu.mmu.RAM.size());
+        printf("Saving RAM state to %s\n", saveName.c_str());
+    }
+}
+
 u8* Emulator::getDisplayState() {
     return cpu.gpu.getDisplayState();
 }

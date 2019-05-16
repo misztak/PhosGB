@@ -24,14 +24,14 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     std::vector<u8> buffer;
 
     if (!biosPath.empty()) {
-        if (!loadFile(biosPath, true, buffer)) return false;
+        if (!loadFile(biosPath, FileType::BIOS, buffer)) return false;
         std::copy_n(buffer.begin(), BIOS_SIZE, BIOS.begin());
     } else {
         inBIOS = false;
     }
 
     buffer.clear();
-    if (!loadFile(romPath, false, buffer)) return false;
+    if (!loadFile(romPath, FileType::ROM, buffer)) return false;
 
     u8 cartridgeType = buffer[0x147];
     u8 RAMType = buffer[0x149];
@@ -121,11 +121,24 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     std::fill(VRAM.begin(), VRAM.end(), 0);
     std::fill(OAM.begin(), OAM.end(), 0);
 
+    if (cartridgeTypes[cartridgeType].find("RAM+BATTERY")) {
+        // look for a .sav file of valid size
+        std::string saveName = romPath.substr(romPath.find_last_of('/') + 1, romPath.length());
+        saveName.append(".sav");
+        std::vector<u8> saveBuffer;
+        if (!loadFile(saveName, FileType::SRAM, saveBuffer)) {
+            printf("Could not open .sav file %s. Continuing without it.\n", saveName.c_str());
+        } else {
+            std::copy_n(saveBuffer.begin(), RAM.size(), RAM.begin());
+            printf("Successfully loaded SRAM from .sav file %s\n", saveName.c_str());
+        }
+    }
+
     printCartridgeInfo(buffer);
     return true;
 }
 
-bool MMU::loadFile(std::string& path, bool isBIOS, std::vector<u8>& buffer) {
+bool MMU::loadFile(std::string& path, FileType fileType, std::vector<u8>& buffer) {
     std::ifstream file(path);
     if (!file || !file.good()) {
         printf("Failed to open file %s\n", path.c_str());
@@ -143,19 +156,28 @@ bool MMU::loadFile(std::string& path, bool isBIOS, std::vector<u8>& buffer) {
     buffer.resize(length);
     file.read((char *) buffer.data(), length);
 
-    if (isBIOS) {
-        if (length != BIOS_SIZE) {
-            printf("Invalid BootROM size: %li\n", length);
+    switch (fileType) {
+        case FileType::BIOS:
+            if (length != BIOS_SIZE) {
+                printf("Invalid BootROM size: %li\n", length);
+                return false;
+            }
+            return true;
+        case FileType::ROM:
+            // check type id and underlying value
+            if (ROMSizeTypes.count(buffer[0x148]) && ROMSizeTypes[buffer[0x148]] == length) return true;
+            // TODO: turn this into an option or a warning
+            printf("Cartridge type %d with size %li is invalid\n", buffer[0x148], length);
             return false;
-        }
-        return true;
-    } else {
-        // check type id and underlying value
-        if (ROMSizeTypes.count(buffer[0x148]) && ROMSizeTypes[buffer[0x148]] == length) return true;
-        // TODO: turn this into an option or a warning
-        printf("Cartridge type %d with size %li is invalid\n", buffer[0x148], length);
-        return false;
+        case FileType::SRAM:
+            // RAM is already resized at this point so just compare with that
+            if (buffer.size() != RAM.size()) {
+                printf("Invalid size of .sav file. Should be %li but detected %li\n", RAM.size(), buffer.size());
+                return false;
+            }
+            return true;
     }
+    return false;
 }
 
 u8 MMU::readByte(u16 address) {

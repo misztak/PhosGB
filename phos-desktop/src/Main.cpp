@@ -107,6 +107,7 @@ int main(int argc, char** argv) {
     filePath.append("Zelda.gb");
 
     //filePath.append("blargg/instr_timing.gb");
+    //filePath.append("mooneye/acceptance/halt_ime0_nointr_timing.gb");
 
     if (!emulator.load(filePath)) {
         fprintf(stderr, "Failed to load BootROM or Cartridge\n");
@@ -159,6 +160,7 @@ int main(int argc, char** argv) {
             handleJoypadInput(event, emulator);
             host->processEvent(event);
         }
+        if (done) break;
 
         // emulator tick
         if (!emulator.isHalted) {
@@ -207,6 +209,8 @@ int main(int argc, char** argv) {
         frameTimer.syncFrame();
     }
 
+    // Save state if cartridge has persistent storage
+    emulator.shutdown();
     // Cleanup
     IDisplay::ImGuiDestroy();
     SDL_GL_DeleteContext(glContext);
