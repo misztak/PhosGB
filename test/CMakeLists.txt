@@ -1,6 +1,5 @@
-#file(GLOB phos_TESTS *.cpp *.hpp)
+file(GLOB phos_TESTS *.cpp *.hpp)
 
-#add_executable(tests ${phos_TESTS})
-#add_test(main_test tests)
-
-#target_include_directories(tests PUBLIC ../src)
+add_executable(test_runner ${phos_TESTS})
+target_include_directories(test_runner PUBLIC ../core)
+target_link_libraries(test_runner PRIVATE core)

@@ -29,4 +29,4 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LIBS}")
 
 add_subdirectory(phos-desktop)
 add_subdirectory(core)
-#add_subdirectory(test)
+add_subdirectory(test)

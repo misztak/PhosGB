@@ -99,11 +99,14 @@ int main(int argc, char** argv) {
 
     // GAMES
     //filePath.append("KirbyPinballLand.gb");
-    filePath.append("Tetris.gb");
+    //filePath.append("Tetris.gb");
     //filePath.append("F1-Race.gb");
     //filePath.append("Opus.gb");
     //filePath.append("TicTacToe.gb");
     //filePath.append("SuperMarioLand.gb");
+    filePath.append("Zelda.gb");
+
+    //filePath.append("blargg/instr_timing.gb");
 
     if (!emulator.load(filePath)) {
         fprintf(stderr, "Failed to load BootROM or Cartridge\n");
