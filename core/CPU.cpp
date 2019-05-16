@@ -1,6 +1,9 @@
 #include "CPU.h"
 
 CPU::CPU(): gpu(this, &mmu), joypad(this), halted(false) {
+    mmu.cpu = this;
+    mmu.gpu = &gpu;
+
     timerCounter = 1024;
     dividerCounter = 0;
 

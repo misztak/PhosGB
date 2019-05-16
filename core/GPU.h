@@ -44,6 +44,8 @@ constexpr u8 COINCIDENCE_FLAG = 0x04;
 class GPU {
 public:
     bool hitVBlank;
+    int modeclock;
+    int DMATicks;
 public:
     GPU(CPU* cpu, MMU* mmu);
     void reset();
@@ -52,17 +54,15 @@ public:
     u8* getBackgroundState();
     u8* getTileData();
 
-    u8 readByte(u16 address);
-    void writeByte(u16 address, u8 value);
-    u16 readWord(u16 address);
-    void writeWord(u16 address, u16 value);
+    u8 getMode();
+    void setMode(GPU_MODE mode);
+
+    void setBGColor(u8 color);
 private:
     CPU* cpu;
     MMU* mmu;
 
     GPU_MODE mode;
-    int modeclock;
-    int DMATicks;
 
     std::vector<u8> displayState;
     std::vector<u8> backgroundState;
@@ -72,15 +72,11 @@ private:
 private:
     u8 getReg(u16 regAddress);
     void setReg(u16 regAddress, u8 value);
-    u8 getMode();
-    void setMode(GPU_MODE mode);
 
     void renderScanline();
     void renderBGScanline(u8 yCoord);
     void renderWindowScanline();
     void renderSpriteScanline();
-
-    void setBGColor(u8 color);
 };
 
 #endif //PHOS_GPU_H

@@ -1,6 +1,10 @@
 #include "MMU.h"
+#include "CPU.h"
+#include "GPU.h"
 
 MMU::MMU() :
+    cpu(nullptr),
+    gpu(nullptr),
     inBIOS(true),
     BIOS(BIOS_SIZE, 0),
     ROM_0(ROM_BANK_SIZE, 0),
@@ -231,10 +235,22 @@ void MMU::writeByte(u16 address, u8 value) {
             }
             if (address <= 0xFF7F) {
                 assert(address != 0xFF00);
-                if (address == 0xFF04) {
-                    // reset divider counter on write
+                if (address == 0xFF04) {            // reset divider counter on write
                     IO[address - 0xFF00] = 0;
-                } else if (address == 0xFF41) {
+                } else if (address == 0xFF40) {     // LCD Control
+                    u8 wasLCDEnabled = IO[0x40] & LCD_DISPLAY_ENABLE;
+                    IO[0x40] = value;
+                    if (wasLCDEnabled && !(value & LCD_DISPLAY_ENABLE)) {
+                        assert(gpu->getMode() == VBLANK && "Tried to disable display outside of VBLANK period\n");
+                        gpu->setBGColor(0xFF);      // set display to all white
+                        // reset some STAT values
+                        // TODO: see if this is right
+                        // i.e. compare with "https://www.reddit.com/r/EmuDev/comments/6r6gf3/gb_pokemon_gold_spews_unexpected_values_at_mbc/dl5c0ub"
+                        IO[LCDC_Y_COORDINATE - 0xFF00] = 0;
+                        gpu->modeclock = 0;
+                        gpu->setMode(READ_BOTH);
+                    }
+                } else if (address == 0xFF41) {     // LCDC STAT
                     IO[address - 0xFF00] = (value & (u8) 0xF8) | (IO[address - 0xFF00] & (u8) 0x07);
                 } else if (address == 0xFF46) {
                     // start DMA transfer

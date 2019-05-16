@@ -18,6 +18,9 @@ constexpr int OAM_SIZE      = 160;
 constexpr int IO_SIZE       = 128;
 constexpr int ZRAM_SIZE     = 128;
 
+class CPU;
+class GPU;
+
 class MMU {
 public:
     MMU();
@@ -30,6 +33,9 @@ public:
 
     void printCartridgeInfo(std::vector<u8>& buffer);
 public:
+    CPU* cpu;
+    GPU* gpu;
+
     bool inBIOS;
 
     std::vector<u8> BIOS;

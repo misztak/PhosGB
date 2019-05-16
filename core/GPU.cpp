@@ -3,11 +3,11 @@
 
 GPU::GPU(CPU* c, MMU* m) :
     hitVBlank(false),
+    modeclock(0),
+    DMATicks(0),
     cpu(c),
     mmu(m),
     mode(VBLANK),
-    modeclock(0),
-    DMATicks(0),
     displayState(DISPLAY_TEXTURE_SIZE, 255),
     backgroundState(262144, 255),
     background(256, std::vector<u8>(256, 255)),
@@ -131,7 +131,7 @@ void GPU::renderScanline() {
 
 void GPU::renderBGScanline(u8 yCoord) {
     if (!isBitSet(getReg(LCD_CONTROL), BG_DISPLAY)) {
-        setBGColor(255);
+        setBGColor(0xFF);
         return;
     }
 
