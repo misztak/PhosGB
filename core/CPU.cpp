@@ -589,13 +589,13 @@ void CPU::setTimerFreq() {
 }
 
 void CPU::checkInterrupts() {
+    u8 IE = mmu.readByte(0xFFFF);
+    u8 IF = mmu.readByte(0xFF0F);
+    // filter active interrupts
+    u8 activeInterrupts = (IE & IF) & 0x1F;
     if (r.ime) {
-        u8 IE = mmu.readByte(0xFFFF);
-        u8 IF = mmu.readByte(0xFF0F);
-
-        // filter active interrupts
-        u8 activeInterrupts = (IE & IF) & 0x1F;
         if (activeInterrupts > 0) {
+            halted = false;
             r.ime = 0;
             pushWord(r.pc);
 
@@ -617,6 +617,9 @@ void CPU::checkInterrupts() {
             }
             mmu.writeByte(0xFF0F, IF);
         }
+    } else {
+        if (activeInterrupts) halted = false;
+        // TODO: HALT bug
     }
 }
 
@@ -627,8 +630,6 @@ void CPU::requestInterrupt(u8 interrupt) {
     else if (interrupt == INTERRUPT_TIMER) IF = setBit(IF, 0x04);
     else if (interrupt == INTERRUPT_SERIAL) IF = setBit(IF, 0x08);
     else if (interrupt == INTERRUPT_JOYPAD) IF = setBit(IF, 0x10);
-
-    halted = false;
 
     mmu.writeByte(0xFF0F, IF);
 }
