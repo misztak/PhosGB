@@ -51,4 +51,18 @@ private:
     bool RAMEnable;
 };
 
+class MBC3 : public MBC {
+public:
+    MBC3(MMU* mmu);
+    u8 readROMByte(u16 address) override;
+    void writeROMByte(u16 address, u8 value) override;
+    u8 readRAMByte(u16 address) override;
+    void writeRAMByte(u16 address, u8 value) override;
+private:
+    bool RAM_RTC_Enable;
+    u8 RAM_RTC_ModeSelect;
+    u8 RTCRegisterPtr;
+    u8 RTCRegisters[5] = {0};
+};
+
 #endif //PHOS_MBC_H

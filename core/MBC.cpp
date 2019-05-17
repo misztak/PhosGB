@@ -118,3 +118,67 @@ void MBC2::writeRAMByte(u16 address, u8 value) {
     assert(address < 0x0200);
     if (RAMEnable) mmu->RAM[address] = value & 0x0F;
 }
+
+// MBC 3
+
+MBC3::MBC3(MMU *mmu) : MBC(mmu), RAM_RTC_Enable(false), RAM_RTC_ModeSelect(0), RTCRegisterPtr(0) {}
+
+u8 MBC3::readROMByte(u16 address) {
+    return mmu->ROM[address + ROMBankPtr * ROM_BANK_SIZE];
+}
+
+void MBC3::writeROMByte(u16 address, u8 value) {
+    u16 type = address & 0xF000;
+    switch (type) {
+        case 0x0000:
+        case 0x1000:
+            RAM_RTC_Enable = (value & 0x0F) == 0x0A;
+            break;
+        case 0x2000:
+        case 0x3000:
+            ROMBankPtr = value & 0x7F;
+            if (ROMBankPtr != 0) ROMBankPtr--;
+            break;
+        case 0x4000:
+        case 0x5000:
+            if (value <= 0x07) {
+                RAMBankPtr = value;
+                RAM_RTC_ModeSelect = 0;
+            } else if (value <= 0x0C){
+                RAM_RTC_ModeSelect = 1;
+                RTCRegisterPtr = value - 0x08;
+                printf("Tried to access RTC register\n");
+            } else {
+                printf("Invalid MBC3 RAM_RTC_Register_Select value: 0x%2X\n", value);
+            }
+            break;
+        case 0x6000:
+        case 0x7000:
+            printf("Tried to access Latch Clock Data in MBC3\n");
+            break;
+        default:
+            printf("Invalid MBC3 Control Register address: 0x%4X\n", address);
+    }
+}
+
+u8 MBC3::readRAMByte(u16 address) {
+    if (!RAM_RTC_Enable) return 0xFF;
+    if (RAM_RTC_ModeSelect == 0) {
+        // read from RAM bank
+        return mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE];
+    } else {
+        // read from RTC register
+        return RTCRegisters[RTCRegisterPtr];
+    }
+}
+
+void MBC3::writeRAMByte(u16 address, u8 value) {
+    if (!RAM_RTC_Enable) return;
+    if (RAM_RTC_ModeSelect == 0) {
+        // write to RAM bank
+        mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE] = value;
+    } else {
+        // write to RTC register
+        RTCRegisters[RTCRegisterPtr] = value;
+    }
+}

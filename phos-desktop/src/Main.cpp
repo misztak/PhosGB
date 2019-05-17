@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
     //filePath.append("Opus.gb");
     //filePath.append("TicTacToe.gb");
     //filePath.append("SuperMarioLand.gb");
-    filePath.append("Zelda.gb");
+    filePath.append("PokemonRed.gb");
 
     //filePath.append("blargg/instr_timing.gb");
     //filePath.append("mooneye/acceptance/halt_ime0_nointr_timing.gb");
@@ -209,7 +209,7 @@ int main(int argc, char** argv) {
         frameTimer.syncFrame();
     }
 
-    // Save state if cartridge has persistent storage
+    // Save state if cartridge has persistent storage (battery buffered SRAM or flash ROM)
     emulator.shutdown();
     // Cleanup
     IDisplay::ImGuiDestroy();

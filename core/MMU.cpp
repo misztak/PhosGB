@@ -67,9 +67,8 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         case 0x12:
         case 0x13:
         case 0xFC:
-            printCartridgeInfo(buffer);
-            printf("No support for MBC3 cartridges yet\n");
-            return false;
+            mbc = std::make_unique<MBC3>(this);
+            break;
         case 0x19:
         case 0x1A:
         case 0x1B:
@@ -320,10 +319,10 @@ void MMU::initTables() {
     cartridgeTypes[0x01] = "MBC1";
     cartridgeTypes[0x02] = "MBC1+RAM";
     cartridgeTypes[0x03] = "MBC1+RAM+BATTERY";
-    cartridgeTypes[0xFF] = "HuC1+RAM+BATTERY";
+    cartridgeTypes[0xFF] = "HuC1+RAM+BATTERY";  // TODO: see what's different
     // MBC2
-    cartridgeTypes[0x05] = "MBC2";
-    cartridgeTypes[0x06] = "MBC2+BATTERY";
+    cartridgeTypes[0x05] = "MBC2+RAM";          // MBC2 has build-in RAM
+    cartridgeTypes[0x06] = "MBC2+RAM+BATTERY";  // same here
     // MBC3
     cartridgeTypes[0x11] = "MBC3";
     cartridgeTypes[0x12] = "MBC3+RAM";
