@@ -121,7 +121,12 @@ void MBC2::writeRAMByte(u16 address, u8 value) {
 
 // MBC 3
 
-MBC3::MBC3(MMU *mmu) : MBC(mmu), RAM_RTC_Enable(false), RAM_RTC_ModeSelect(0), RTCRegisterPtr(0) {}
+MBC3::MBC3(MMU *mmu) :
+    MBC(mmu), latchedTime(std::time(nullptr)), RAM_RTC_Enable(false), latchInit(false), RAM_RTC_ModeSelect(0), RTCRegisterPtr(0) {
+    // init latchTime to now
+    // this will be overridden if a .sav file was found
+    latchClockData();
+}
 
 u8 MBC3::readROMByte(u16 address) {
     return mmu->ROM[address + ROMBankPtr * ROM_BANK_SIZE];
@@ -142,8 +147,8 @@ void MBC3::writeROMByte(u16 address, u8 value) {
         case 0x4000:
         case 0x5000:
             if (value <= 0x07) {
-                RAMBankPtr = value;
                 RAM_RTC_ModeSelect = 0;
+                RAMBankPtr = value;
             } else if (value <= 0x0C){
                 RAM_RTC_ModeSelect = 1;
                 RTCRegisterPtr = value - 0x08;
@@ -154,7 +159,11 @@ void MBC3::writeROMByte(u16 address, u8 value) {
             break;
         case 0x6000:
         case 0x7000:
-            printf("Tried to access Latch Clock Data in MBC3\n");
+            if (value == 0x00 && !latchInit) latchInit = true;
+            else if (value == 0x01 || latchInit) {
+                latchClockData();
+                latchInit = false;
+            }
             break;
         default:
             printf("Invalid MBC3 Control Register address: 0x%4X\n", address);
@@ -181,4 +190,19 @@ void MBC3::writeRAMByte(u16 address, u8 value) {
         // write to RTC register
         RTCRegisters[RTCRegisterPtr] = value;
     }
+}
+
+void MBC3::latchClockData() {
+    long currentTime = std::time(nullptr);
+    std::tm* now = std::localtime(&currentTime);
+
+    // TODO: HALT flag
+    RTCRegisters[0] = now->tm_sec;
+    RTCRegisters[1] = now->tm_min;
+    RTCRegisters[2] = now->tm_hour;
+    u16 days = std::difftime(currentTime, latchedTime) / (60 * 60 * 24);
+    RTCRegisters[3] = days & 0x00FF;
+    RTCRegisters[4] |= (days & 0x0100) >> 8;
+    if (days >= 512) RTCRegisters[4] |= 0x80;
+    latchedTime = currentTime;
 }

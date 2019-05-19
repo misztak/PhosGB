@@ -169,6 +169,30 @@ bool MMU::loadFile(std::string& path, FileType fileType, std::vector<u8>& buffer
             printf("Cartridge type %d with size %li is invalid\n", buffer[0x148], length);
             return false;
         case FileType::SRAM:
+            if (buffer.size() < 517) {
+                printf("File %s is too small to be a valid .sav file\n", path.c_str());
+                return false;
+            }
+            std::string header = std::string(&buffer[0], &buffer[0] + 4);
+            if (header != "PHOS") {
+                printf("Invalid header of .sav file. Expected 'PHOS' but read '%s'\n", header.c_str());
+                return false;
+            }
+            size_t offset;
+            if (buffer[4] == 1) {
+                offset = 13;
+                if (cartridgeTypes[ROM_0[0x147]].find("MBC3") == std::string::npos) {
+                    printf("Cartridge type and .sav file type do not match\n");
+                    return false;
+                }
+                long rtc = *reinterpret_cast<long*>(&buffer[5]);
+                dynamic_cast<MBC3*>(mbc.get())->latchedTime = rtc;
+                dynamic_cast<MBC3*>(mbc.get())->latchClockData();
+            } else {
+                offset = 5;
+            }
+            buffer.erase(buffer.begin(), buffer.begin() + offset);
+
             // RAM is already resized at this point so just compare with that
             if (buffer.size() != RAM.size()) {
                 printf("Invalid size of .sav file. Should be %li but detected %li\n", RAM.size(), buffer.size());

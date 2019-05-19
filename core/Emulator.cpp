@@ -38,10 +38,22 @@ void Emulator::kill() {
 
 void Emulator::shutdown() {
     u8 cartridgeType = cpu.mmu.ROM_0[0x147];
-    if (cpu.mmu.cartridgeTypes[cartridgeType].find("RAM+BATTERY")) {
+    // TODO: move this somewhere else
+    if (cpu.mmu.cartridgeTypes[cartridgeType].find("RAM+BATTERY") != std::string::npos) {
         std::string saveName = currentFile.substr(currentFile.find_last_of('/') + 1, currentFile.size());
         saveName.append(".sav");
         std::ofstream outfile(saveName, std::ios::out | std::ios::binary);
+        outfile.write("PHOS", 4);
+        u8 fileType;
+        if (cpu.mmu.cartridgeTypes[cartridgeType].find("MBC3") != std::string::npos) {
+            fileType = 1;
+            outfile.write(reinterpret_cast<char *>(&fileType), 1);
+            long rtc = dynamic_cast<MBC3*>(cpu.mmu.mbc.get())->latchedTime;
+            outfile.write(reinterpret_cast<char *>(&rtc), 8);
+        } else {
+            fileType = 0;
+            outfile.write(reinterpret_cast<char *>(&fileType), 1);
+        }
         outfile.write((char *) cpu.mmu.RAM.data(), cpu.mmu.RAM.size());
         printf("Saving RAM state to %s\n", saveName.c_str());
     }

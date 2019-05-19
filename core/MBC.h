@@ -1,6 +1,8 @@
 #ifndef PHOS_MBC_H
 #define PHOS_MBC_H
 
+#include <ctime>
+
 #include "Common.h"
 
 class MMU;
@@ -58,8 +60,12 @@ public:
     void writeROMByte(u16 address, u8 value) override;
     u8 readRAMByte(u16 address) override;
     void writeRAMByte(u16 address, u8 value) override;
+    void latchClockData();
+public:
+    long latchedTime;
 private:
     bool RAM_RTC_Enable;
+    bool latchInit;
     u8 RAM_RTC_ModeSelect;
     u8 RTCRegisterPtr;
     u8 RTCRegisters[5] = {0};

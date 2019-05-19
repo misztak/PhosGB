@@ -54,11 +54,11 @@ public:
     std::map<u8, std::string> cartridgeTypes;
     std::map<u8, int> ROMSizeTypes;
     std::map<u8, int> RAMSizeTypes;
+
+    std::unique_ptr<MBC> mbc;
 private:
     bool loadFile(std::string& path, FileType fileType, std::vector<u8>& buffer);
     void initTables();
-private:
-    std::unique_ptr<MBC> mbc;
 };
 
 #endif //PHOS_MMU_H
