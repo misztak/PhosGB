@@ -104,7 +104,8 @@ int main(int argc, char** argv) {
     //filePath.append("Opus.gb");
     //filePath.append("TicTacToe.gb");
     //filePath.append("SuperMarioLand.gb");
-    filePath.append("PokemonRed.gb");
+    //filePath.append("PokemonRed.gb");
+	filePath.append("Zelda.gb");
 
     //filePath.append("blargg/instr_timing.gb");
     //filePath.append("mooneye/acceptance/halt_ime0_nointr_timing.gb");

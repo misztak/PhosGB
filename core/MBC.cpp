@@ -193,7 +193,7 @@ void MBC3::writeRAMByte(u16 address, u8 value) {
 }
 
 void MBC3::latchClockData() {
-    long currentTime = std::time(nullptr);
+    auto currentTime = std::time(nullptr);
     std::tm* now = std::localtime(&currentTime);
 
     // TODO: HALT flag

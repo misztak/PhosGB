@@ -9,7 +9,7 @@
       ],
       "buildRoot": "${workspaceRoot}\\cmake-build-debug",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-      "cmakeCommandArgs": "",
+      "cmakeCommandArgs": "-DCMAKE_TOOLCHAIN_FILE=${env.USERPROFILE}/vcpkg/scripts/buildsystems/vcpkg.cmake",
       "buildCommandArgs": "-v",
       "ctestCommandArgs": ""
     },
@@ -22,7 +22,7 @@
       ],
       "buildRoot": "${workspaceRoot}\\cmake-build-release",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-      "cmakeCommandArgs": "",
+      "cmakeCommandArgs": "-DCMAKE_TOOLCHAIN_FILE=${env.USERPROFILE}/vcpkg/scripts/buildsystems/vcpkg.cmake",
       "buildCommandArgs": "-v",
       "ctestCommandArgs": ""
     }
