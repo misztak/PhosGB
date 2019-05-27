@@ -1,6 +1,6 @@
 #include "CPU.h"
 
-CPU::CPU(): gpu(this, &mmu), joypad(this), halted(false) {
+CPU::CPU(): gpu(this, &mmu), joypad(this), apu(this), halted(false) {
     mmu.cpu = this;
     mmu.gpu = &gpu;
 
@@ -549,6 +549,8 @@ u32 CPU::tick() {
 
     updateTimer(ticks);
 
+    apu.update(ticks);
+
     checkInterrupts();
 
     return ticks;
@@ -687,6 +689,40 @@ void CPU::writeByte(u16 address, u8 value) {
         mmu.writeByte(address, value);
         u8 newFreq = mmu.readByte(0xFF07) & (u8) 0x03;
         if (currentFreq != newFreq) setTimerFreq();
+    } else if (address >= 0xFF10 && address <= 0xFF26) {
+        u8 type = address & 0xFF;
+        switch (type) {
+            case CH1_FREQ_HIGH:
+            case CH2_FREQ_HIGH:
+            case CH3_FREQ_HIGH:
+            case CH4_COUNTER_INITIAL:
+                if (isBitSet(value, 0x80)) apu.channels[(type - 0x14) / 5]->reset();
+                break;
+            case CH3_SOUND_ON_OFF:
+                if (!isBitSet(value, 0x80)) apu.channels[2]->on = false;
+                break;
+            case CH3_SOUND_LENGTH:
+                apu.channels[2]->lengthCounter = 0xFF - value;
+                break;
+            case CH3_OUTPUT_LVL_SELECT:
+                apu.channels[2]->volume = Channel::volumeShifts[(value >> 5) & 0x3];
+                break;
+            case CH1_SOUND_LENGTH:
+            case CH2_SOUND_LENGTH:
+            case CH4_SOUND_LENGTH:
+                apu.channels[(type - 0x11) / 5]->lengthCounter = 0x40 - (value & 0x3F);
+                break;
+            case OUTPUT_SELECT:
+                for (u8 i = 0; i < 4; ++i) {
+                    apu.channels[i]->onLeft = isBitSet(value, 0x01 << (4 + i));
+                    apu.channels[i]->onRight = isBitSet(value, 0x01 << i);
+                }
+                break;
+            default:
+                break;
+        }
+        // TODO: R/W
+        mmu.writeByte(address, value);
     } else {
         mmu.writeByte(address, value);
     }

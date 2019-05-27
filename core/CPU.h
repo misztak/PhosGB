@@ -5,6 +5,7 @@
 #include "MMU.h"
 #include "GPU.h"
 #include "Joypad.h"
+#include "APU.h"
 
 // bitmasks for flags stored in lower 8bit of AF register
 enum FLAG { ZERO = 0x80, ADD_SUB = 0x40, HALF_CARRY = 0x20, CARRY = 0x10 };
@@ -54,6 +55,7 @@ public:
     MMU mmu;
     GPU gpu;
     Joypad joypad;
+    APU apu;
 public:
     CPU();
     bool init(std::string& romPath);
