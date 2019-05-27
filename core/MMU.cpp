@@ -120,7 +120,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     std::fill(VRAM.begin(), VRAM.end(), 0);
     std::fill(OAM.begin(), OAM.end(), 0);
 
-    if (cartridgeTypes[cartridgeType].find("RAM+BATTERY")) {
+    if (cartridgeTypes[cartridgeType].find("RAM+BATTERY") != std::string::npos) {
         // look for a .sav file of valid size
         std::string saveName = romPath.substr(romPath.find_last_of('/') + 1, romPath.length());
         saveName.append(".sav");
