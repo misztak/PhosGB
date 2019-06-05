@@ -1,10 +1,31 @@
 #include "APU.h"
 #include "CPU.h"
 
-Channel::Channel(CPU *cpu) : cpu(cpu) {}
+Channel::Channel(CPU* cpu) : cpu(cpu) {}
 
 u8 Channel::getReg(u8 address) {
     return cpu->mmu.IO[address];
+}
+
+void Channel::setReg(u8 address, u8 value) {
+    cpu->mmu.IO[address] = value;
+}
+
+void Channel::updateLengthCounter(u8 channel, u8 frameStep) {
+    if (isBitSet(frameStep, 0x01) && isBitSet(getReg(channel + 4), 0x40)) {
+        if (lengthCounter > 0) {
+            lengthCounter--;
+            if (lengthCounter == 0) on = false;
+        }
+    }
+    if (frameStep == 7 && envelopeSweeps > 0) {
+        envelopeSweeps--;
+        if (envelopeSweeps == 0) {
+            if (isBitSet(getReg(channel + 2), 0x08) && volume < 0xF) volume++;
+            else if (!isBitSet(getReg(channel + 2), 0x08) && volume > 0x0) volume--;
+            envelopeSweeps = getReg(channel + 2) & 0x7;
+        }
+    }
 }
 
 Square1Channel::Square1Channel(CPU* cpu) : Channel(cpu) {}
@@ -14,22 +35,28 @@ void Square1Channel::reset() {
     envelopeSweeps = getReg(CH1_VOL_ENVELOPE) & 0x7;
     sweepLength = (getReg(CH1_SWEEP) >> 4) & 0x7;
     sweepOn = sweepLength || getReg(CH1_SWEEP) & 0x7;
-    sweepFreqency = ((getReg(CH1_FREQ_HIGH) & 0x7) << 8) | getReg(CH1_FREQ_LOW);
+    sweepFrequency = ((getReg(CH1_FREQ_HIGH) & 0x7) << 8) | getReg(CH1_FREQ_LOW);
     if (lengthCounter == 0) lengthCounter = 0x3F;
     volume = getReg(CH1_VOL_ENVELOPE) >> 4;
 }
 
 void Square1Channel::updateFrame(u8 frameStep) {
+    updateLengthCounter(0x10, frameStep);
+    if ((frameStep & 0x3) == 0x2 && sweepOn && sweepLength > 0 && --sweepLength == 0) {
+        sweepLength = (getReg(CH1_SWEEP) >> 4) & 0x7;
+        u16 freq = sweepFrequency >> (getReg(CH1_SWEEP) & 0x7);
+        if (!isBitSet(getReg(CH1_SWEEP), 0x10))
+            sweepFrequency += freq;
+        else
+            sweepFrequency-= freq;
+        if (sweepFrequency < 0x800) {
+            setReg(CH1_FREQ_LOW, sweepFrequency & 0xFF);
+            setReg(CH1_FREQ_HIGH, (getReg(CH1_FREQ_HIGH) & 0xF8) | (sweepFrequency >> 8));
+        } else {
+            on = false;
+        }
+    }
     sweepLength--;
-    if (lengthCounter == 1 && isBitSet(frameStep, 0x01) && isBitSet(getReg(CH1_FREQ_HIGH), 0x40)) {
-        on = false; lengthCounter = 0;
-    }
-    if (frameStep == 7 && envelopeSweeps == 1) {
-        envelopeSweeps = 0;
-        if (isBitSet(getReg(CH1_VOL_ENVELOPE), 0x08) && volume < 0xF) volume++;
-        else if (!isBitSet(getReg(CH1_VOL_ENVELOPE), 0x08) && volume > 0x0) volume--;
-        envelopeSweeps = getReg(CH1_VOL_ENVELOPE) & 0x7;
-    }
 }
 
 void Square1Channel::updateWave() {
@@ -50,15 +77,7 @@ void Square2Channel::reset() {
 }
 
 void Square2Channel::updateFrame(u8 frameStep) {
-    if (lengthCounter == 1 && isBitSet(frameStep, 0x01) && isBitSet(getReg(CH2_FREQ_HIGH), 0x40)) {
-        on = false; lengthCounter = 0;
-    }
-    if (frameStep == 7 && envelopeSweeps == 1) {
-        envelopeSweeps = 0;
-        if (isBitSet(getReg(CH2_VOL_ENVELOPE), 0x08) && volume < 0xF) volume++;
-        else if (!isBitSet(getReg(CH2_VOL_ENVELOPE), 0x08) && volume > 0x0) volume--;
-        envelopeSweeps = getReg(CH2_VOL_ENVELOPE) & 0x7;
-    }
+    updateLengthCounter(0x15, frameStep);
 }
 
 void Square2Channel::updateWave() {
@@ -77,8 +96,11 @@ void WaveChannel::reset() {
 }
 
 void WaveChannel::updateFrame(u8 frameStep) {
-    if (lengthCounter == 1 && isBitSet(frameStep, 0x01) && isBitSet(getReg(CH3_FREQ_HIGH), 0x40)) {
-        on = false; lengthCounter = 0;
+    if (isBitSet(frameStep, 0x01) && isBitSet(getReg(CH3_FREQ_HIGH), 0x40)) {
+        if (lengthCounter > 0) {
+            lengthCounter--;
+            if (lengthCounter == 0) on = false;
+        }
     }
 }
 
@@ -95,32 +117,28 @@ void WaveChannel::updateWave() {
 NoiseChannel::NoiseChannel(CPU *cpu) : Channel(cpu) {}
 
 void NoiseChannel::reset() {
-    on = false; timer = 1, lsfr = 0xFF;
+    on = true; timer = 1, lsfr = 0xFF;
     envelopeSweeps = getReg(CH4_VOL_ENVELOPE) & 0x7;
     if (lengthCounter == 0) lengthCounter = 0x3F;
     volume = getReg(CH4_VOL_ENVELOPE) >> 4;
 }
 
 void NoiseChannel::updateFrame(u8 frameStep) {
-    if (lengthCounter == 1 && isBitSet(frameStep, 0x01) && isBitSet(getReg(CH4_COUNTER_INITIAL), 0x40)) {
-        on = false; lengthCounter = 0;
-    }
-    if (frameStep == 7 && envelopeSweeps == 1) {
-        envelopeSweeps = 0;
-        if (isBitSet(getReg(CH4_VOL_ENVELOPE), 0x08) && volume < 0xF) volume++;
-        else if (!isBitSet(getReg(CH4_VOL_ENVELOPE), 0x08) && volume > 0x0) volume--;
-        envelopeSweeps = getReg(CH4_VOL_ENVELOPE) & 0x7;
-    }
+    updateLengthCounter(0x1F, frameStep);
 }
 
 void NoiseChannel::updateWave() {
     bool lowBits = isBitSet(lsfr, 0x01) ^ isBitSet(lsfr, 0x02);
     timer = ((noiseDivisors[getReg(CH4_POLY_COUNTER) & 0x7] / 2) << (getReg(CH4_POLY_COUNTER) >> 4)) + 1;
-    if (lowBits) lsfr = ((lsfr >> 1) | (0x1 << 14));
-    else lsfr = ((lsfr >> 1) & ~(0x1 << 14));
+    if (lowBits)
+        lsfr = ((lsfr >> 1) | (0x1 << 14));
+    else
+        lsfr = ((lsfr >> 1) & ~(0x1 << 14));
     if (isBitSet(getReg(CH4_POLY_COUNTER), 0x08)) {
-        if (lowBits) lsfr = (lsfr | (0x1 << 6));
-        else lsfr = (lsfr & ~(0x1 << 6));
+        if (lowBits)
+            lsfr = (lsfr | (0x1 << 6));
+        else
+            lsfr = (lsfr & ~(0x1 << 6));
     }
     channelOutput = 0;
     if (on && !isBitSet(lsfr, 0x01)) channelOutput = volume;

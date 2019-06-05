@@ -39,7 +39,9 @@ public:
     virtual void reset() = 0;
     virtual void updateFrame(u8 frameStep) = 0;
     virtual void updateWave() = 0;
+    void updateLengthCounter(u8 channel, u8 frameStep);
     u8 getReg(u8 address);
+    void setReg(u8 address, u8 value);
 public:
     CPU* cpu;
 
@@ -59,7 +61,7 @@ public:
     void updateWave() override;
 private:
     bool sweepOn = false;
-    u16 sweepFreqency = 0, sweepLength = 0;
+    u16 sweepFrequency = 0, sweepLength = 0;
 };
 
 class Square2Channel : public Channel {
@@ -85,7 +87,7 @@ public:
     void updateFrame(u8 frameStep) override;
     void updateWave() override;
 private:
-    u16 lsfr = 0;
+    u16 lsfr = 0xFF;
     static constexpr u8 noiseDivisors[8] = { 8, 16, 32, 48, 64, 80, 96, 112 };
 };
 
