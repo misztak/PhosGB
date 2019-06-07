@@ -145,10 +145,12 @@ bool Emulator::loadState(std::string &path) {
         printf("Invalid header of .state file. Expected 'PHOS-STATE ' but read '%s'\n", header.c_str());
         return false;
     }
+    std::string cartName = std::string(&buffer[11], &buffer[11] + 15);
     u8 cartType = READ_U8(&buffer[0x1A]);
     u8 romType = READ_U8(&buffer[0x1B]);
     u8 ramType = READ_U8(&buffer[0x1C]);
-    if (cartType != cpu.mmu.ROM_0[0x147] || romType != cpu.mmu.ROM_0[0x148] || ramType != cpu.mmu.ROM_0[0x149]) {
+    if (cartName != cpu.mmu.cartridgeTitle || cartType != cpu.mmu.ROM_0[0x147] || romType != cpu.mmu.ROM_0[0x148] ||
+    ramType != cpu.mmu.ROM_0[0x149]) {
         printf("Save state file does not match with current cartridge\n");
         return false;
     }
