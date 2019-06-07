@@ -36,6 +36,7 @@ public:
     void printCartridgeInfo(std::vector<u8>& buffer);
 
     void saveState(std::ofstream& outfile);
+    void loadState(std::vector<u8>& buffer);
 public:
     CPU* cpu;
     GPU* gpu;

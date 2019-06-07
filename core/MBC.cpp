@@ -13,6 +13,11 @@ void NO_MBC::saveState(std::ofstream& outfile) {
     outfile.write(WRITE_V(ROMBankPtr), 2); outfile.write(WRITE_V(RAMBankPtr), 2);
 }
 
+void NO_MBC::loadState(std::vector<u8> &buffer, size_t offset) {
+    ROMBankPtr = READ_U16(&buffer[offset]); RAMBankPtr = READ_U16(&buffer[offset + 2]);
+    assert((offset + 4) == buffer.size());
+}
+
 u8 NO_MBC::readROMByte(u16 address) {
     return mmu->ROM[address];
 }
@@ -38,6 +43,13 @@ void MBC1::saveState(std::ofstream& outfile) {
     outfile.write(WRITE_V(ROMBankPtr), 2); outfile.write(WRITE_V(RAMBankPtr), 2);
     outfile.write(WRITE_V(RAMEnable), sizeof(bool));
     outfile.write(WRITE_V(ROM_RAM_ModeSelect), 1);
+}
+
+void MBC1::loadState(std::vector<u8> &buffer, size_t offset) {
+    ROMBankPtr = READ_U16(&buffer[offset]); RAMBankPtr = READ_U16(&buffer[offset + 2]);
+    RAMEnable = READ_BOOL(&buffer[offset + 4]);
+    ROM_RAM_ModeSelect = READ_U8(&buffer[offset + 5]);
+    assert((offset + 6) == buffer.size());
 }
 
 u8 MBC1::readROMByte(u16 address) {
@@ -100,6 +112,12 @@ void MBC2::saveState(std::ofstream &outfile) {
     outfile.write(WRITE_V(RAMEnable), sizeof(bool));
 }
 
+void MBC2::loadState(std::vector<u8> &buffer, size_t offset) {
+    ROMBankPtr = READ_U16(&buffer[offset]); RAMBankPtr = READ_U16(&buffer[offset + 2]);
+    RAMEnable = READ_BOOL(&buffer[offset + 4]);
+    assert((offset + 5) == buffer.size());
+}
+
 u8 MBC2::readROMByte(u16 address) {
     return mmu->ROM[address + ROMBankPtr * ROM_BANK_SIZE];
 }
@@ -151,6 +169,21 @@ void MBC3::saveState(std::ofstream &outfile) {
     outfile.write(WRITE_V(RAM_RTC_ModeSelect), 1);
     outfile.write(WRITE_V(RTCRegisterPtr), 1);
     outfile.write(WRITE_A(RTCRegisters, 0), 5);
+}
+
+void MBC3::loadState(std::vector<u8> &buffer, size_t offset) {
+    ROMBankPtr = READ_U16(&buffer[offset]); RAMBankPtr = READ_U16(&buffer[offset + 2]);
+    latchedTime = *reinterpret_cast<long *>(&buffer[offset + 4]);
+    RAM_RTC_Enable = READ_BOOL(&buffer[offset + 12]);
+    latchInit = READ_BOOL(&buffer[offset + 13]);
+    RAM_RTC_ModeSelect = READ_U8(&buffer[offset + 14]);
+    RTCRegisterPtr = READ_U8(&buffer[offset + 15]);
+    RTCRegisters[0] = READ_U8(&buffer[offset + 16]);
+    RTCRegisters[1] = READ_U8(&buffer[offset + 17]);
+    RTCRegisters[2] = READ_U8(&buffer[offset + 18]);
+    RTCRegisters[3] = READ_U8(&buffer[offset + 19]);
+    RTCRegisters[4] = READ_U8(&buffer[offset + 20]);
+    assert((offset + 21) == buffer.size());
 }
 
 u8 MBC3::readROMByte(u16 address) {

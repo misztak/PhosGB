@@ -16,6 +16,7 @@ public:
     virtual u8 readRAMByte(u16 address) = 0;
     virtual void writeRAMByte(u16 address, u8 value) = 0;
     virtual void saveState(std::ofstream& outfile) = 0;
+    virtual void loadState(std::vector<u8>& buffer, size_t offset) = 0;
 public:
     MMU* mmu;
     u16 ROMBankPtr;
@@ -30,6 +31,7 @@ public:
     u8 readRAMByte(u16 address) override;
     void writeRAMByte(u16 address, u8 value) override;
     void saveState(std::ofstream& outfile) override;
+    void loadState(std::vector<u8>& buffer, size_t offset) override;
 };
 
 class MBC1 : public MBC {
@@ -40,6 +42,7 @@ public:
     u8 readRAMByte(u16 address) override;
     void writeRAMByte(u16 address, u8 value) override;
     void saveState(std::ofstream& outfile) override;
+    void loadState(std::vector<u8>& buffer, size_t offset) override;
 private:
     bool RAMEnable;
     u8 ROM_RAM_ModeSelect;
@@ -53,6 +56,7 @@ public:
     u8 readRAMByte(u16 address) override;
     void writeRAMByte(u16 address, u8 value) override;
     void saveState(std::ofstream& outfile) override;
+    void loadState(std::vector<u8>& buffer, size_t offset) override;
 private:
     bool RAMEnable;
 };
@@ -65,6 +69,7 @@ public:
     u8 readRAMByte(u16 address) override;
     void writeRAMByte(u16 address, u8 value) override;
     void saveState(std::ofstream& outfile) override;
+    void loadState(std::vector<u8>& buffer, size_t offset) override;
     void latchClockData();
 public:
     long latchedTime;

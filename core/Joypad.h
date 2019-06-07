@@ -19,6 +19,7 @@ public:
     void writeByte(u8 val);
 
     void saveState(std::ofstream& outfile);
+    void loadState(std::vector<u8>& buffer);
 private:
     CPU* cpu;
     u8 joypadState;

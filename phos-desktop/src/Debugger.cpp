@@ -23,7 +23,14 @@ Debugger::~Debugger() {
 
 void Debugger::processEvent(SDL_Event& event) {
     if (event.type == SDL_KEYUP) {
-        if (event.key.keysym.sym == SDLK_F5) emulator->saveState();
+        if (event.key.keysym.sym == SDLK_F5) {
+            emulator->saveState();
+        } else if (event.key.keysym.sym == SDLK_F6) {
+            std::string quicksaveName = emulator->currentFile.substr(emulator->currentFile.find_last_of('/') + 1);
+            quicksaveName.erase(quicksaveName.find_last_of('.'));
+            quicksaveName.append("_Quicksave.state");
+            emulator->loadState(quicksaveName);
+        }
     }
     ImGui_ImplSDL2_ProcessEvent(&event);
 }

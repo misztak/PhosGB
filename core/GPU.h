@@ -60,6 +60,7 @@ public:
     void setBGColor(u8 color);
 
     void saveState(std::ofstream& outfile);
+    void loadState(std::vector<u8>& buffer);
 private:
     CPU* cpu;
     MMU* mmu;

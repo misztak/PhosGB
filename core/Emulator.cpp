@@ -41,6 +41,7 @@ void Emulator::shutdown() {
     // TODO: move this somewhere else
     if (cpu.mmu.cartridgeTypes[cartridgeType].find("RAM+BATTERY") != std::string::npos) {
         std::string saveName = currentFile.substr(currentFile.find_last_of('/') + 1, currentFile.size());
+        saveName.erase(saveName.find_last_of('.'));
         saveName.append(".sav");
         std::ofstream outfile(saveName, std::ios::out | std::ios::binary);
         outfile.write("PHOS", 4);
@@ -55,7 +56,7 @@ void Emulator::shutdown() {
             outfile.write(reinterpret_cast<char *>(&fileType), 1);
         }
         outfile.write((char *) cpu.mmu.RAM.data(), cpu.mmu.RAM.size());
-        printf("Saving RAM state to %s\n", saveName.c_str());
+        printf("Saved RAM state in file %s\n", saveName.c_str());
     }
 }
 
@@ -83,12 +84,12 @@ void Emulator::handleInputUp(u8 key) {
 void Emulator::saveState() {
     std::string saveName = currentFile.substr(currentFile.find_last_of('/') + 1);
     saveName = saveName.erase(saveName.find_last_of('.'));
-    auto dateTime = std::time(nullptr);
-    auto now = std::localtime(&dateTime);
-    std::ostringstream oss;
-    oss << '[' << (now->tm_year + 1900) << '-' << (now->tm_mon + 1) << '-' << now->tm_mday << "--" << now->tm_hour << ':' << now->tm_min << ':' << now->tm_sec << ']';
-    saveName.append(oss.str());
-    saveName.append(".state");
+//    auto dateTime = std::time(nullptr);
+//    auto now = std::localtime(&dateTime);
+//    std::ostringstream oss;
+//    oss << '[' << (now->tm_year + 1900) << '-' << (now->tm_mon + 1) << '-' << now->tm_mday << "--" << now->tm_hour << ':' << now->tm_min << ':' << now->tm_sec << ']';
+//    saveName.append(oss.str());
+    saveName.append("_Quicksave.state");
 
     std::ofstream outfile(saveName, std::ios::out | std::ios::binary);
     outfile.write("PHOS-STATE ", 11);
@@ -115,5 +116,57 @@ void Emulator::saveState() {
 }
 
 bool Emulator::loadState(std::string &path) {
-    return false;
+    if (path.substr(path.find_last_of('.')) != ".state") {
+        printf("Invalid save state file suffix\n");
+        return false;
+    }
+
+    std::ifstream file(path);
+    if (!file || !file.good()) {
+        printf("Failed to open file %s\n", path.c_str());
+        return false;
+    }
+    file.seekg(0, std::ifstream::end);
+    long length = file.tellg();
+    file.seekg(0, std::ifstream::beg);
+
+    if (length == -1 || length == 0x7FFFFFFFFFFFFFFF) {
+        printf("Failed to load file %s\n", path.c_str());
+        return false;
+    }
+
+    std::vector<u8> buffer;
+    buffer.resize(length);
+    file.read((char *) buffer.data(), length);
+
+    // check if state file matches with the current cartridge
+    std::string header = std::string(&buffer[0], &buffer[0] + 11);
+    if (header != "PHOS-STATE ") {
+        printf("Invalid header of .state file. Expected 'PHOS-STATE ' but read '%s'\n", header.c_str());
+        return false;
+    }
+    u8 cartType = READ_U8(&buffer[0x1A]);
+    u8 romType = READ_U8(&buffer[0x1B]);
+    u8 ramType = READ_U8(&buffer[0x1C]);
+    if (cartType != cpu.mmu.ROM_0[0x147] || romType != cpu.mmu.ROM_0[0x148] || ramType != cpu.mmu.ROM_0[0x149]) {
+        printf("Save state file does not match with current cartridge\n");
+        return false;
+    }
+
+    // initialize saved state
+    cpu.r.af = READ_U16(&buffer[0x1D]);
+    cpu.r.bc = READ_U16(&buffer[0x1F]);
+    cpu.r.de = READ_U16(&buffer[0x21]);
+    cpu.r.hl = READ_U16(&buffer[0x23]);
+    cpu.r.pc = READ_U16(&buffer[0x25]);
+    cpu.r.sp = READ_U16(&buffer[0x27]);
+    cpu.halted = READ_BOOL(&buffer[0x29]);
+    cpu.timerCounter = READ_S32(&buffer[0x2A]);
+    cpu.dividerCounter = READ_S32(&buffer[0x2E]);
+    cpu.joypad.loadState(buffer);
+    cpu.apu.reset();
+    cpu.mmu.loadState(buffer);
+    cpu.gpu.loadState(buffer);
+
+    return true;
 }

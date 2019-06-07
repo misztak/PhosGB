@@ -375,3 +375,11 @@ void GPU::saveState(std::ofstream& outfile) {
     outfile.write(WRITE_V(DMATicks), 4);
     outfile.write(WRITE_V(mode), sizeof(GPU_MODE));
 }
+
+void GPU::loadState(std::vector<u8>& buffer) {
+    // GPU Offset == 0x37
+    hitVBlank = READ_BOOL(&buffer[0x37]);
+    modeclock = READ_S32(&buffer[0x38]);
+    DMATicks = READ_S32(&buffer[0x3C]);
+    setMode(static_cast<GPU_MODE>(READ_S32(&buffer[0x40])));
+}

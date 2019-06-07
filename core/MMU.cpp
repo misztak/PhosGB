@@ -123,6 +123,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     if (cartridgeTypes[cartridgeType].find("RAM+BATTERY") != std::string::npos) {
         // look for a .sav file of valid size
         std::string saveName = romPath.substr(romPath.find_last_of('/') + 1, romPath.length());
+        saveName.erase(saveName.find_last_of('.'));
         saveName.append(".sav");
         std::vector<u8> saveBuffer;
         if (!loadFile(saveName, FileType::SRAM, saveBuffer)) {
@@ -346,6 +347,29 @@ void MMU::saveState(std::ofstream &outfile) {
     if (!RAM.empty())
         outfile.write(WRITE_A(RAM, 0), RAM.size());
     mbc->saveState(outfile);
+}
+
+void MMU::loadState(std::vector<u8>& buffer) {
+    // MMU Offset == 0x44
+    size_t offset = 0x44;
+    inBIOS = READ_BOOL(&buffer[offset++]);
+    // values with constant size
+    std::copy_n(buffer.begin() + offset, WRAM_SIZE, WRAM.begin());
+    offset += WRAM_SIZE;
+    std::copy_n(buffer.begin() + offset, IO_SIZE, IO.begin());
+    offset += IO_SIZE;
+    std::copy_n(buffer.begin() + offset, ZRAM_SIZE, ZRAM.begin());
+    offset += ZRAM_SIZE;
+    std::copy_n(buffer.begin() + offset, VRAM_SIZE, VRAM.begin());
+    offset += VRAM_SIZE;
+    std::copy_n(buffer.begin() + offset, OAM_SIZE, OAM.begin());
+    offset += OAM_SIZE;
+    // values with MBC-dependant size
+    if (!RAM.empty()) {
+        std::copy_n(buffer.begin() + offset, RAM.size(), RAM.begin());
+        offset += RAM.size();
+    }
+    mbc->loadState(buffer, offset);
 }
 
 void MMU::initTables() {

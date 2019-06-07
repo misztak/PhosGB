@@ -8,6 +8,11 @@
 #define WRITE_V(VALUE) (reinterpret_cast<char *>(&VALUE))
 #define WRITE_A(ARRAY, OFFSET) (reinterpret_cast<char *>(&ARRAY[0]) + OFFSET)
 
+#define READ_U8(PTR) (*reinterpret_cast<unsigned char *>(PTR))
+#define READ_U16(PTR) (*reinterpret_cast<unsigned short *>(PTR))
+#define READ_S32(PTR) (*reinterpret_cast<int *>(PTR))
+#define READ_BOOL(PTR) (*reinterpret_cast<bool *>(PTR))
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;

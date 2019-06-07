@@ -12,7 +12,14 @@ Display::~Display() {
 
 void Display::processEvent(SDL_Event &event) {
     if (event.type == SDL_KEYUP) {
-        if (event.key.keysym.sym == SDLK_F5) emulator->saveState();
+        if (event.key.keysym.sym == SDLK_F5) {
+            emulator->saveState();
+        } else if (event.key.keysym.sym == SDLK_F6) {
+            std::string quicksaveName = emulator->currentFile.substr(emulator->currentFile.find_last_of('/') + 1);
+            quicksaveName.erase(quicksaveName.find_last_of('.'));
+            quicksaveName.append("_Quicksave.state");
+            emulator->loadState(quicksaveName);
+        }
     }
     ImGui_ImplSDL2_ProcessEvent(&event);
 }
@@ -59,7 +66,7 @@ void Display::render() {
 void Display::showMenuPopup() {
     ImGui::MenuItem("Menu", nullptr, false, false);
     if (ImGui::MenuItem("Open ROM..")) {}
-    if (ImGui::MenuItem("Reset ROM", "F6")) {
+    if (ImGui::MenuItem("Reset ROM")) {
         emulator->load(emulator->currentFile);
     }
     if (ImGui::BeginMenu("Open Recent")) {
@@ -75,7 +82,13 @@ void Display::showMenuPopup() {
     if (ImGui::MenuItem("Save State", "F5")) {
         emulator->saveState();
     }
-    if (ImGui::MenuItem("Save State As..")) {}
+    if (ImGui::MenuItem("Load State", "F6")) {
+        std::string placeholder = "Zelda_Quicksave.state";
+        if (emulator->loadState(placeholder))
+            printf("Successfully loaded save state %s\n", placeholder.c_str());
+        else
+            printf("Failed to load save state %s\n", placeholder.c_str());
+    }
     if (ImGui::BeginMenu("Options")) {
         if (ImGui::BeginMenu("Window Size")) {
             static bool selection[4] = {false, false, true, false};
