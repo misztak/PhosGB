@@ -11,6 +11,9 @@ Display::~Display() {
 }
 
 void Display::processEvent(SDL_Event &event) {
+    if (event.type == SDL_KEYUP) {
+        if (event.key.keysym.sym == SDLK_F5) emulator->saveState();
+    }
     ImGui_ImplSDL2_ProcessEvent(&event);
 }
 
@@ -37,7 +40,6 @@ void Display::update(u8* data) {
 
     for (int i = 0; i < IM_ARRAYSIZE(ImGui::GetIO().MouseDown); i++) {
         if (ImGui::IsMouseClicked(i) && i == 1) {
-            printf("Clicked mouse %d\n", i);
             ImGui::OpenPopup("menu_popup");
             break;
         }
@@ -70,7 +72,9 @@ void Display::showMenuPopup() {
         ImGui::EndMenu();
     }
     ImGui::Separator();
-    if (ImGui::MenuItem("Save State", "F5")) {}
+    if (ImGui::MenuItem("Save State", "F5")) {
+        emulator->saveState();
+    }
     if (ImGui::MenuItem("Save State As..")) {}
     if (ImGui::BeginMenu("Options")) {
         if (ImGui::BeginMenu("Window Size")) {

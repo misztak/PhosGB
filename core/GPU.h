@@ -58,6 +58,8 @@ public:
     void setMode(GPU_MODE mode);
 
     void setBGColor(u8 color);
+
+    void saveState(std::ofstream& outfile);
 private:
     CPU* cpu;
     MMU* mmu;

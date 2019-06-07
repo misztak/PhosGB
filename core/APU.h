@@ -42,6 +42,7 @@ public:
     void updateLengthCounter(u8 channel, u8 frameStep);
     u8 getReg(u8 address);
     void setReg(u8 address, u8 value);
+    void hardReset();
 public:
     CPU* cpu;
 
@@ -59,7 +60,7 @@ public:
     void reset() override;
     void updateFrame(u8 frameStep) override;
     void updateWave() override;
-private:
+public:
     bool sweepOn = false;
     u16 sweepFrequency = 0, sweepLength = 0;
 };
@@ -86,8 +87,9 @@ public:
     void reset() override;
     void updateFrame(u8 frameStep) override;
     void updateWave() override;
-private:
+public:
     u16 lsfr = 0xFF;
+private:
     static constexpr u8 noiseDivisors[8] = { 8, 16, 32, 48, 64, 80, 96, 112 };
 };
 
@@ -97,6 +99,9 @@ public:
     ~APU();
     void update(u32 cycles);
     void readSamples();
+
+    void reset();
+    void saveState(std::ofstream& outfile);
 private:
     CPU* cpu;
 

@@ -22,6 +22,9 @@ Debugger::~Debugger() {
 }
 
 void Debugger::processEvent(SDL_Event& event) {
+    if (event.type == SDL_KEYUP) {
+        if (event.key.keysym.sym == SDLK_F5) emulator->saveState();
+    }
     ImGui_ImplSDL2_ProcessEvent(&event);
 }
 

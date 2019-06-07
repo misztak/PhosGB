@@ -334,6 +334,20 @@ void MMU::writeWord(u16 address, u16 value) {
     writeByte(address + 1, high);
 }
 
+void MMU::saveState(std::ofstream &outfile) {
+    outfile.write(WRITE_V(inBIOS), sizeof(bool));
+    // values with constant size
+    outfile.write(WRITE_A(WRAM, 0), WRAM_SIZE);
+    outfile.write(WRITE_A(IO, 0), IO_SIZE);
+    outfile.write(WRITE_A(ZRAM, 0), ZRAM_SIZE);
+    outfile.write(WRITE_A(VRAM, 0), VRAM_SIZE);
+    outfile.write(WRITE_A(OAM, 0), OAM_SIZE);
+    // values with MBC-dependent size
+    if (!RAM.empty())
+        outfile.write(WRITE_A(RAM, 0), RAM.size());
+    mbc->saveState(outfile);
+}
+
 void MMU::initTables() {
     // NO MBC
     cartridgeTypes[0x00] = "ROM ONLY";

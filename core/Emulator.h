@@ -1,6 +1,8 @@
 #ifndef PHOS_EMULATOR_H
 #define PHOS_EMULATOR_H
 
+#include <sstream>
+
 #include "Common.h"
 #include "CPU.h"
 
@@ -16,6 +18,8 @@ public:
     bool hitVBlank();
     void handleInputDown(u8 key);
     void handleInputUp(u8 key);
+    void saveState();
+    bool loadState(std::string& path);
 public:
     bool isHalted;
     bool isDead;

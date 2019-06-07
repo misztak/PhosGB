@@ -5,6 +5,9 @@
 #include <vector>
 #include <cassert>
 
+#define WRITE_V(VALUE) (reinterpret_cast<char *>(&VALUE))
+#define WRITE_A(ARRAY, OFFSET) (reinterpret_cast<char *>(&ARRAY[0]) + OFFSET)
+
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;

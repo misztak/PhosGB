@@ -369,3 +369,9 @@ void GPU::setBGColor(u8 color) {
     }
 }
 
+void GPU::saveState(std::ofstream& outfile) {
+    outfile.write(WRITE_V(hitVBlank), sizeof(bool));
+    outfile.write(WRITE_V(modeclock), 4);
+    outfile.write(WRITE_V(DMATicks), 4);
+    outfile.write(WRITE_V(mode), sizeof(GPU_MODE));
+}

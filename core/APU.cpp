@@ -28,6 +28,12 @@ void Channel::updateLengthCounter(u8 channel, u8 frameStep) {
     }
 }
 
+void Channel::hardReset() {
+    on = false, onRight = true, onLeft = true;
+    channelOutput = 0, lastOutput = 0, volume = 0, waveStep = 0;
+    timer = 0, lengthCounter = 0, envelopeSweeps = 0;
+}
+
 Square1Channel::Square1Channel(CPU* cpu) : Channel(cpu) {}
 
 void Square1Channel::reset() {
@@ -165,6 +171,21 @@ APU::~APU() {
     blip_delete(right_buffer);
 }
 
+void APU::reset() {
+    blip_delete(left_buffer);
+    blip_delete(right_buffer);
+    left_buffer = blip_new(16383);
+    right_buffer = blip_new(16383);
+    blip_set_rates(left_buffer, 2097152, 44200);
+    blip_set_rates(right_buffer, 2097152, 44200);
+
+    audioBuffer.clear();
+    for (auto& c : channels)
+        c->hardReset();
+    ch1.sweepOn = false, ch1.sweepFrequency = 0, ch1.sweepLength = 0;
+    ch4.lsfr = 0xFF;
+}
+
 void APU::update(u32 cycles) {
     u32 mCycles = cycles / 4;
     bool dividerCycle = isBitSet(cpu->mmu.IO[0x04], 0x10);
@@ -205,4 +226,9 @@ void APU::readSamples() {
     audioBuffer.resize(size * 2);
     blip_read_samples(left_buffer, audioBuffer.data(), size, true);
     blip_read_samples(right_buffer, audioBuffer.data() + 1, size, true);
+}
+
+void APU::saveState(std::ofstream& outfile) {
+    // TODO: actually save the state
+    reset();
 }

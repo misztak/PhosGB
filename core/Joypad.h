@@ -17,6 +17,8 @@ public:
     void handleInputUp(u8 key);
     u8 readByte();
     void writeByte(u8 val);
+
+    void saveState(std::ofstream& outfile);
 private:
     CPU* cpu;
     u8 joypadState;

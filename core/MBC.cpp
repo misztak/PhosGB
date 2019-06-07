@@ -9,6 +9,10 @@ NO_MBC::NO_MBC(MMU *mmu) : MBC(mmu) {
     // both bank pointers are always zero
 }
 
+void NO_MBC::saveState(std::ofstream& outfile) {
+    outfile.write(WRITE_V(ROMBankPtr), 2); outfile.write(WRITE_V(RAMBankPtr), 2);
+}
+
 u8 NO_MBC::readROMByte(u16 address) {
     return mmu->ROM[address];
 }
@@ -29,6 +33,12 @@ void NO_MBC::writeRAMByte(u16 address, u8 value) {
 // MBC1
 
 MBC1::MBC1(MMU *mmu) : MBC(mmu), RAMEnable(false), ROM_RAM_ModeSelect(0) {}
+
+void MBC1::saveState(std::ofstream& outfile) {
+    outfile.write(WRITE_V(ROMBankPtr), 2); outfile.write(WRITE_V(RAMBankPtr), 2);
+    outfile.write(WRITE_V(RAMEnable), sizeof(bool));
+    outfile.write(WRITE_V(ROM_RAM_ModeSelect), 1);
+}
 
 u8 MBC1::readROMByte(u16 address) {
     return mmu->ROM[address + ROMBankPtr * ROM_BANK_SIZE];
@@ -85,6 +95,11 @@ void MBC1::writeRAMByte(u16 address, u8 value) {
 
 MBC2::MBC2(MMU *mmu) : MBC(mmu), RAMEnable(false) {}
 
+void MBC2::saveState(std::ofstream &outfile) {
+    outfile.write(WRITE_V(ROMBankPtr), 2); outfile.write(WRITE_V(RAMBankPtr), 2);
+    outfile.write(WRITE_V(RAMEnable), sizeof(bool));
+}
+
 u8 MBC2::readROMByte(u16 address) {
     return mmu->ROM[address + ROMBankPtr * ROM_BANK_SIZE];
 }
@@ -126,6 +141,16 @@ MBC3::MBC3(MMU *mmu) :
     // init latchTime to now
     // this will be overridden if a .sav file was found
     latchClockData();
+}
+
+void MBC3::saveState(std::ofstream &outfile) {
+    outfile.write(WRITE_V(ROMBankPtr), 2); outfile.write(WRITE_V(RAMBankPtr), 2);
+    outfile.write(WRITE_V(latchedTime), 8);
+    outfile.write(WRITE_V(RAM_RTC_Enable), sizeof(bool));
+    outfile.write(WRITE_V(latchInit), sizeof(bool));
+    outfile.write(WRITE_V(RAM_RTC_ModeSelect), 1);
+    outfile.write(WRITE_V(RTCRegisterPtr), 1);
+    outfile.write(WRITE_A(RTCRegisters, 0), 5);
 }
 
 u8 MBC3::readROMByte(u16 address) {

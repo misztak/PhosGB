@@ -56,6 +56,10 @@ public:
     GPU gpu;
     Joypad joypad;
     APU apu;
+
+    bool halted;
+    int timerCounter;
+    int dividerCounter;
 public:
     CPU();
     bool init(std::string& romPath);
@@ -70,10 +74,6 @@ public:
     u16 readWord(u16 address);
     void writeWord(u16 address, u16 value);
 private:
-    bool halted;
-    int timerCounter;
-    int dividerCounter;
-
     u8* byteRegisterMap[8];
     u16* shortRegisterMap[4];
 

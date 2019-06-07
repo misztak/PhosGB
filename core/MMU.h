@@ -34,6 +34,8 @@ public:
     void writeWord(u16 address, u16 value);
 
     void printCartridgeInfo(std::vector<u8>& buffer);
+
+    void saveState(std::ofstream& outfile);
 public:
     CPU* cpu;
     GPU* gpu;

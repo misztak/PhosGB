@@ -79,3 +79,41 @@ void Emulator::handleInputDown(u8 key) {
 void Emulator::handleInputUp(u8 key) {
     cpu.handleInputUp(key);
 }
+
+void Emulator::saveState() {
+    std::string saveName = currentFile.substr(currentFile.find_last_of('/') + 1);
+    saveName = saveName.erase(saveName.find_last_of('.'));
+    auto dateTime = std::time(nullptr);
+    auto now = std::localtime(&dateTime);
+    std::ostringstream oss;
+    oss << '[' << (now->tm_year + 1900) << '-' << (now->tm_mon + 1) << '-' << now->tm_mday << "--" << now->tm_hour << ':' << now->tm_min << ':' << now->tm_sec << ']';
+    saveName.append(oss.str());
+    saveName.append(".state");
+
+    std::ofstream outfile(saveName, std::ios::out | std::ios::binary);
+    outfile.write("PHOS-STATE ", 11);
+    // start with cartridge info
+    outfile.write(cpu.mmu.cartridgeTitle.c_str(), cpu.mmu.cartridgeTitle.size());
+    outfile.write(WRITE_A(cpu.mmu.ROM_0, 0x147), 3);
+    // dump CPU values
+    outfile.write(WRITE_V(cpu.r.af), 2);
+    outfile.write(WRITE_V(cpu.r.bc), 2);
+    outfile.write(WRITE_V(cpu.r.de), 2);
+    outfile.write(WRITE_V(cpu.r.hl), 2);
+    outfile.write(WRITE_V(cpu.r.pc), 2);
+    outfile.write(WRITE_V(cpu.r.sp), 2);
+    outfile.write(WRITE_V(cpu.halted), sizeof(bool));
+    outfile.write(WRITE_V(cpu.timerCounter), 4);
+    outfile.write(WRITE_V(cpu.dividerCounter), 4);
+    // dump subsystems
+    cpu.joypad.saveState(outfile);
+    cpu.gpu.saveState(outfile);
+    cpu.apu.saveState(outfile);
+    cpu.mmu.saveState(outfile);
+
+    printf("Saved state in file %s\n", saveName.c_str());
+}
+
+bool Emulator::loadState(std::string &path) {
+    return false;
+}

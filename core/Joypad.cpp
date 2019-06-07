@@ -46,3 +46,8 @@ void Joypad::writeByte(u8 val) {
     else if (laneVal == 0x10) lane = BUTTON_KEYS;
     else if (laneVal == 0x30) lane = BOTH;
 }
+
+void Joypad::saveState(std::ofstream& outfile) {
+    outfile.write(WRITE_V(joypadState), 1);
+    outfile.write(WRITE_V(lane), sizeof(JOYPAD_LANE));
+}
