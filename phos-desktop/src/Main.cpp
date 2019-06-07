@@ -67,7 +67,7 @@ void resize(SDL_Window* window, bool isDebugger) {
 
 int main(int argc, char** argv) {
     // Setup SDL
-    if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER|SDL_INIT_AUDIO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO) != 0) {
         printf("Error: %s\n", SDL_GetError());
         return 1;
     }
@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
     SDL_zero(spec);
     spec.freq = 44100;
     spec.format = AUDIO_S16;
-    //spec.channels = 2;
+    spec.channels = 2;
     spec.samples = 4096;
     SDL_AudioDeviceID deviceId = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
 
@@ -108,13 +108,13 @@ int main(int argc, char** argv) {
 
     // GAMES
     //filePath.append("KirbyPinballLand.gb");
-    filePath.append("Tetris.gb");
+    //filePath.append("Tetris.gb");
     //filePath.append("F1-Race.gb");
     //filePath.append("Opus.gb");
     //filePath.append("TicTacToe.gb");
     //filePath.append("SuperMarioLand.gb");
     //filePath.append("PokemonRed.gb");
-	//filePath.append("Zelda.gb");
+	filePath.append("Zelda.gb");
 
     //filePath.append("blargg/instr_timing.gb");
     //filePath.append("mooneye/acceptance/halt_ime0_nointr_timing.gb");
