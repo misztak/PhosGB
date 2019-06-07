@@ -7,10 +7,12 @@ bool Emulator::load(std::string& romPath) {
     if (success) {
         isHalted = false;
         isDead = false;
-        currentFile = romPath;
+        currentFilePath = romPath;
         if (std::find(recentFiles.begin(), recentFiles.end(), romPath) == recentFiles.end()) {
             recentFiles.push_back(romPath);
         }
+        currentFile = currentFilePath.substr(currentFilePath.find_last_of('/') + 1);
+        currentFile.erase(currentFile.find_last_of('.'));
     }
     return success;
 }
@@ -40,9 +42,7 @@ void Emulator::shutdown() {
     u8 cartridgeType = cpu.mmu.ROM_0[0x147];
     // TODO: move this somewhere else
     if (cpu.mmu.cartridgeTypes[cartridgeType].find("RAM+BATTERY") != std::string::npos) {
-        std::string saveName = currentFile.substr(currentFile.find_last_of('/') + 1, currentFile.size());
-        saveName.erase(saveName.find_last_of('.'));
-        saveName.append(".sav");
+        std::string saveName = currentFile + ".sav";
         std::ofstream outfile(saveName, std::ios::out | std::ios::binary);
         outfile.write("PHOS", 4);
         u8 fileType;
@@ -82,14 +82,12 @@ void Emulator::handleInputUp(u8 key) {
 }
 
 void Emulator::saveState() {
-    std::string saveName = currentFile.substr(currentFile.find_last_of('/') + 1);
-    saveName = saveName.erase(saveName.find_last_of('.'));
+    std::string saveName = currentFile + "_Quicksave.state";
 //    auto dateTime = std::time(nullptr);
 //    auto now = std::localtime(&dateTime);
 //    std::ostringstream oss;
 //    oss << '[' << (now->tm_year + 1900) << '-' << (now->tm_mon + 1) << '-' << now->tm_mday << "--" << now->tm_hour << ':' << now->tm_min << ':' << now->tm_sec << ']';
 //    saveName.append(oss.str());
-    saveName.append("_Quicksave.state");
 
     std::ofstream outfile(saveName, std::ios::out | std::ios::binary);
     outfile.write("PHOS-STATE ", 11);

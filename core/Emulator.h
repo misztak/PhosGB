@@ -25,6 +25,7 @@ public:
     bool isDead;
     CPU cpu;
     std::string currentFile;
+    std::string currentFilePath;
     std::vector<std::string> recentFiles;
 };
 

@@ -26,9 +26,7 @@ void Debugger::processEvent(SDL_Event& event) {
         if (event.key.keysym.sym == SDLK_F5) {
             emulator->saveState();
         } else if (event.key.keysym.sym == SDLK_F6) {
-            std::string quicksaveName = emulator->currentFile.substr(emulator->currentFile.find_last_of('/') + 1);
-            quicksaveName.erase(quicksaveName.find_last_of('.'));
-            quicksaveName.append("_Quicksave.state");
+            std::string quicksaveName = emulator->currentFile + "_Quicksave.state";
             emulator->loadState(quicksaveName);
         }
     }
