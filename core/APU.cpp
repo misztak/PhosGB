@@ -88,7 +88,7 @@ void Square2Channel::updateWave() {
     if (on && isBitSet(dutyCycleWaveform[dutyPattern], 0x1 << waveStep)) channelOutput = volume;
 }
 
-WaveChannel::WaveChannel(CPU *cpu) : Channel(cpu) {}
+WaveChannel::WaveChannel(CPU* cpu) : Channel(cpu) {}
 
 void WaveChannel::reset() {
     on = true; timer = 1, envelopeSweeps = 0, waveStep = 0;
@@ -114,7 +114,7 @@ void WaveChannel::updateWave() {
     if (on) channelOutput = waveformData >> volume;
 }
 
-NoiseChannel::NoiseChannel(CPU *cpu) : Channel(cpu) {}
+NoiseChannel::NoiseChannel(CPU* cpu) : Channel(cpu) {}
 
 void NoiseChannel::reset() {
     on = true; timer = 1, lsfr = 0xFF;
