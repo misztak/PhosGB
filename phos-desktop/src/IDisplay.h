@@ -28,6 +28,7 @@ public:
     virtual void processEvent(SDL_Event& event) = 0;
 
     bool loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* data);
+    void showMainMenu();
 
     static void ImGuiInit(SDL_Window* window, void* glContext);
     static void ImGuiDestroy();

@@ -38,12 +38,34 @@ void Debugger::update(u8* data) {
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
 
+    bool open = true;
+    ImGuiWindowFlags flags =
+            ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoBackground |
+            ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoBringToFrontOnFocus |
+            ImGuiWindowFlags_MenuBar;
+    int w, h;
+    SDL_GetWindowSize(window, &w, &h);
+    ImGui::Begin("DebuggerWindow", &open, ImVec2(w, h), -1.0f, flags);
+    ImGui::SetWindowPos(ImVec2(0, 0));
+    // Menu
+    if (ImGui::BeginMenuBar()) {
+        if (ImGui::BeginMenu("Menu")) {
+            showMainMenu();
+            ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+    }
+
     if (show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
     emulatorView(data);
     memoryView();
     backgroundView();
     VRAMView();
 
+    ImGui::End();
     // Rendering
     ImGui::Render();
 }

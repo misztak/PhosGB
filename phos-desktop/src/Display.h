@@ -12,8 +12,6 @@ public:
     void render() override;
     void processEvent(SDL_Event& event) override;
     void update(u8* data) override;
-private:
-    void showMenuPopup();
 };
 
 
