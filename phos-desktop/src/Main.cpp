@@ -177,11 +177,6 @@ int main(int argc, char** argv) {
         if (!emulator.isHalted) {
             while (ticks < ticksPerFrame) {
                 int cycles = emulator.tick();
-                if (cycles == 0) {
-                    fprintf(stderr, "Encountered a fatal error during execution\n");
-                    emulator.kill();
-                    break;
-                }
 
                 if (emulator.hitVBlank()) {
                     // Under normal circumstances the display should update at the start of every VBLANK period.

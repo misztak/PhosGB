@@ -12,7 +12,6 @@ public:
     bool load(std::string& romPath);
     u32 tick();
     void toggle();
-    void kill();
     void shutdown();
     u8* getDisplayState();
     bool hitVBlank();

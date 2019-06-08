@@ -33,11 +33,6 @@ void Emulator::toggle() {
     }
 }
 
-void Emulator::kill() {
-    isDead = true;
-    isHalted = true;
-}
-
 void Emulator::shutdown() {
     u8 cartridgeType = cpu.mmu.ROM_0[0x147];
     // TODO: move this somewhere else

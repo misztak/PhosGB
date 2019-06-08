@@ -542,7 +542,7 @@ u32 CPU::tick() {
         printf("Unimplemented opcode");
         if (isCBInstruction) printf(" 0xCB");
         printf(" 0x%02X at address 0x%02X\n", opcode, r.pc-1);
-        return 0;
+        std::abort();
     }
 
     gpu.tick(ticks);
