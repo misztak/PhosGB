@@ -3,6 +3,7 @@
 
 GPU::GPU(CPU* c, MMU* m) :
     hitVBlank(false),
+    useCustomPalette(false),
     modeclock(0),
     DMATicks(0),
     cpu(c),
@@ -11,8 +12,13 @@ GPU::GPU(CPU* c, MMU* m) :
     displayState(DISPLAY_TEXTURE_SIZE, 255),
     backgroundState(262144, 255),
     background(256, std::vector<u8>(256, 255)),
-    //backgroundTmp(144, std::vector<u8>(160, 255)),
-    tileData(6144 * 4 * 8, 255) {}
+    tileData(6144 * 4 * 8, 255) {
+    // map customizable RGB values to each palette value
+    customPalette[colors[0]] = {224, 248, 208};
+    customPalette[colors[1]] = {136, 192, 112};
+    customPalette[colors[2]] = { 52, 104,  86};
+    customPalette[colors[3]] = {  8,  24,  32};
+}
 
 void GPU::reset() {
     hitVBlank = false;
@@ -118,10 +124,17 @@ void GPU::renderScanline() {
     int y = getReg(LCDC_Y_COORDINATE);
     int index = y * 160 * 4;
     for (int x=0; x<160; x++) {
-        displayState[index] = background[y][x];
-        displayState[index + 1] = background[y][x];
-        displayState[index + 2] = background[y][x];
-        index += 4;
+        if (useCustomPalette) {
+            displayState[index] = customPalette[background[y][x]][0];
+            displayState[index + 1] = customPalette[background[y][x]][1];
+            displayState[index + 2] = customPalette[background[y][x]][2];
+            index += 4;
+        } else {
+            displayState[index] = background[y][x];
+            displayState[index + 1] = background[y][x];
+            displayState[index + 2] = background[y][x];
+            index += 4;
+        }
     }
 
     if (isBitSet(getReg(LCD_CONTROL), SPRITE_DISPLAY_ENABLE)) {
@@ -294,9 +307,15 @@ void GPU::renderSpriteScanline() {
                         int index = ((getReg(LCDC_Y_COORDINATE) * 160) + pixelX) * 4;
                         if (!isBitSet(spriteFlags, 0x80) || (background[getReg(LCDC_Y_COORDINATE)][pixelX] == bgPalette[0x00])) {
                             //backgroundTmp[getReg(LCDC_Y_COORDINATE)][pixelX] = color;
-                            displayState[index] = color;
-                            displayState[index + 1] = color;
-                            displayState[index + 2] = color;
+                            if (useCustomPalette) {
+                                displayState[index] = customPalette[color][0];
+                                displayState[index + 1] = customPalette[color][1];
+                                displayState[index + 2] = customPalette[color][2];
+                            } else {
+                                displayState[index] = color;
+                                displayState[index + 1] = color;
+                                displayState[index + 2] = color;
+                            }
                         }
                     }
                 }

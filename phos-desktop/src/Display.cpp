@@ -96,6 +96,38 @@ void Display::showMenuPopup() {
             ImGui::MenuItem("4x4", nullptr, selection[3]);
             ImGui::EndMenu();
         }
+        static bool paletteEnable = emulator->cpu.gpu.useCustomPalette;
+        ImGui::MenuItem("Use Custom Palette", "", &paletteEnable);
+        emulator->cpu.gpu.useCustomPalette = paletteEnable;
+        if (ImGui::BeginMenu("Custom Palette")) {
+            u8* p0 = emulator->cpu.gpu.customPalette[colors[0]].data();
+            u8* p1 = emulator->cpu.gpu.customPalette[colors[1]].data();
+            u8* p2 = emulator->cpu.gpu.customPalette[colors[2]].data();
+            u8* p3 = emulator->cpu.gpu.customPalette[colors[3]].data();
+            ImVec4 clrs[4] = {
+                ImVec4(p0[0]/255.0f, p0[1]/255.0f, p0[2]/255.0f, 1.f),
+                ImVec4(p1[0]/255.0f, p1[1]/255.0f, p1[2]/255.0f, 1.f),
+                ImVec4(p2[0]/255.0f, p2[1]/255.0f, p2[2]/255.0f, 1.f),
+                ImVec4(p3[0]/255.0f, p3[1]/255.0f, p3[2]/255.0f, 1.f),
+            };
+            ImGui::ColorEdit3("P1", (float*)&clrs[0], 0);
+            ImGui::ColorEdit3("P2", (float*)&clrs[1], 0);
+            ImGui::ColorEdit3("P3", (float*)&clrs[2], 0);
+            ImGui::ColorEdit3("P4", (float*)&clrs[3], 0);
+            for (int i=0; i<4; i++) {
+                emulator->cpu.gpu.customPalette[colors[i]][0] = clrs[i].x * 255;
+                emulator->cpu.gpu.customPalette[colors[i]][1] = clrs[i].y * 255;
+                emulator->cpu.gpu.customPalette[colors[i]][2] = clrs[i].z * 255;
+            }
+            if (ImGui::Button("Reset")) {
+                emulator->cpu.gpu.customPalette.clear();
+                emulator->cpu.gpu.customPalette[colors[0]] = {224, 248, 208};
+                emulator->cpu.gpu.customPalette[colors[1]] = {136, 192, 112};
+                emulator->cpu.gpu.customPalette[colors[2]] = { 52, 104,  86};
+                emulator->cpu.gpu.customPalette[colors[3]] = {  8,  24,  32};
+            }
+            ImGui::EndMenu();
+        }
         ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Colors"))

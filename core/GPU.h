@@ -44,8 +44,11 @@ constexpr u8 COINCIDENCE_FLAG = 0x04;
 class GPU {
 public:
     bool hitVBlank;
+    bool useCustomPalette;
     int modeclock;
     int DMATicks;
+
+    std::map<u8, std::array<u8, 3>> customPalette;
 public:
     GPU(CPU* cpu, MMU* mmu);
     void reset();
@@ -70,7 +73,6 @@ private:
     std::vector<u8> displayState;
     std::vector<u8> backgroundState;
     std::vector<std::vector<u8>> background;
-    //std::vector<std::vector<u8>> backgroundTmp;
     std::vector<u8> tileData;
 private:
     u8 getReg(u16 regAddress);
