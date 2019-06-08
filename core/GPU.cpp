@@ -109,7 +109,7 @@ void GPU::tick(u32 ticks) {
 }
 
 void GPU::renderScanline() {
-    renderBGScanline(getReg(LCDC_Y_COORDINATE));
+    renderBGScanline(getReg(LCDC_Y_COORDINATE), getReg(SCROLL_Y), getReg(SCROLL_X));
 
     if (isBitSet(getReg(LCD_CONTROL), WINDOW_DISPLAY_ENABLE)) {
         renderWindowScanline();
@@ -129,12 +129,14 @@ void GPU::renderScanline() {
     }
 }
 
-void GPU::renderBGScanline(u8 yCoord) {
+void GPU::renderBGScanline(u8 yCoord, u8 scrollY, u8 scrollX, u8 maxWidth) {
+    // white background
     if (!isBitSet(getReg(LCD_CONTROL), BG_DISPLAY)) {
         setBGColor(0xFF);
         return;
     }
 
+    // setup palette data from register
     int paletteData = getReg(BG_PALETTE_DATA);
     const u8 palette[] {
         colors[paletteData & 0x03],
@@ -143,17 +145,15 @@ void GPU::renderBGScanline(u8 yCoord) {
         colors[(paletteData >> 6) & 0x03]
     };
 
-    u16 tileNumberMap = isBitSet(getReg(LCD_CONTROL), BG_TILE_MAP_SELECT) ? (u16) 0x9C00 : (u16) 0x9800;
-    tileNumberMap -= 0x8000;
+    // get tile info
+    u16 tileNumberMap = isBitSet(getReg(LCD_CONTROL), BG_TILE_MAP_SELECT) ? (u16) 0x1C00 : (u16) 0x1800;
+    u16 tileData = isBitSet(getReg(LCD_CONTROL), BG_AND_WINDOW_TILE_SELECT) ? (u16) 0x0000 : (u16) 0x1000;
 
-    u16 tileData = isBitSet(getReg(LCD_CONTROL), BG_AND_WINDOW_TILE_SELECT) ? (u16) 0x8000 : (u16) 0x9000;
-    tileData -= 0x8000;
+    u8 tileY = (u8)(((yCoord + scrollY) / 8) % 32);
+    u8 tileYOffset = (u8)((yCoord + scrollY) % 8);
 
-    u8 tileY = (u8)(((yCoord + getReg(SCROLL_Y)) / 8) % 32);
-    u8 tileYOffset = (u8)((yCoord + getReg(SCROLL_Y)) % 8);
-
-    for (u8 x=0; x<255; x++) {
-        u8 tileX = (u8)(((getReg(SCROLL_X) + x) / 8) % 32);
+    for (u8 x=0; x<maxWidth; x++) {
+        u8 tileX = (u8)(((scrollX + x) / 8) % 32);
         u8 tileNumber = mmu->VRAM[(u16)(tileNumberMap + (tileY * 32) + tileX)];
 
         u16 tileDataPtr = 0;
@@ -167,7 +167,7 @@ void GPU::renderBGScanline(u8 yCoord) {
         u8 b1 = mmu->VRAM[tileDataPtr];
         u8 b2 = mmu->VRAM[tileDataPtr + 1];
 
-        u8 bit = (u8)(7 - ((getReg(SCROLL_X) + x) % 8));
+        u8 bit = (u8)(7 - ((scrollX + x) % 8));
         if (bit > 7) {
             printf("Invalid value for bitmask %d\n", bit);
         }
@@ -333,8 +333,8 @@ u8* GPU::getDisplayState() {
 
 u8* GPU::getBackgroundState() {
     int counter = 0;
-    for (int i=144; i<256; i++) {
-        renderBGScanline(i);
+    for (int i=0; i<256; i++) {
+        renderBGScanline(i, 0, 0, 255);
     }
     for (int y=0; y<256; y++) {
         for (int x=0; x<256; x++) {

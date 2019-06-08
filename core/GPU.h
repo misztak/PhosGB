@@ -77,7 +77,7 @@ private:
     void setReg(u16 regAddress, u8 value);
 
     void renderScanline();
-    void renderBGScanline(u8 yCoord);
+    void renderBGScanline(u8 yCoord, u8 scrollY, u8 scrollX, u8 maxWidth = 160);
     void renderWindowScanline();
     void renderSpriteScanline();
 };
