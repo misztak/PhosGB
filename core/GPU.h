@@ -55,7 +55,7 @@ public:
     void tick(u32 ticks);
     u8* getDisplayState();
     u8* getBackgroundState();
-    u8* getTileData();
+    u8* getTileData(int offset);
 
     u8 getMode();
     void setMode(GPU_MODE mode);

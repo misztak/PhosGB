@@ -6,7 +6,7 @@ Debugger::Debugger(SDL_Window* w, Emulator* emu) :
 
     loadTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());
     loadTexture(&bgTextureHandler, 256, 256, emulator->cpu.gpu.getBackgroundState());
-    loadTexture(&VRAMTextureHandler, 256, 192, emulator->cpu.gpu.getTileData());
+    loadTexture(&VRAMTextureHandler, 8*16, 8*24, nullptr);
 }
 
 Debugger::~Debugger() {
@@ -159,10 +159,18 @@ void Debugger::backgroundView() {
 
 void Debugger::VRAMView() {
     glBindTexture(GL_TEXTURE_2D, VRAMTextureHandler);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 192, 0, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getTileData());
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8*16, 8*24, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    const int tileSize = 16;
+    int tileCounter = 0;
+    for (int y=0; y<24; y++) {
+        for (int i=0; i<16; i++) {
+            glTexSubImage2D(GL_TEXTURE_2D, 0, i*8, y*8, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getTileData(tileCounter++ * tileSize));
+        }
+    }
 
     ImGui::Begin("VRAM Viewer");
-    ImGui::Image((void*)(intptr_t)VRAMTextureHandler, ImVec2(256, 192));
+    ImGui::Image((void*)(intptr_t)VRAMTextureHandler, ImVec2(8*16*2, 8*24*2));
     ImGui::End();
 }
 

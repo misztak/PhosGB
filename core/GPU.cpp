@@ -12,7 +12,7 @@ GPU::GPU(CPU* c, MMU* m) :
     displayState(DISPLAY_TEXTURE_SIZE, 255),
     backgroundState(262144, 255),
     background(256, std::vector<u8>(256, 255)),
-    tileData(6144 * 4 * 8, 255) {
+    tileData(64 * 4) {
     // map customizable RGB values to each palette value
     customPalette[colors[0]] = {224, 248, 208};
     customPalette[colors[1]] = {136, 192, 112};
@@ -366,16 +366,30 @@ u8* GPU::getBackgroundState() {
     return backgroundState.data();
 }
 
-u8* GPU::getTileData() {
+u8* GPU::getTileData(int offset) {
+    int paletteData = getReg(BG_PALETTE_DATA);
+    const u8 palette[4] {
+            colors[paletteData & 0x03],
+            colors[(paletteData >> 2) & 0x03],
+            colors[(paletteData >> 4) & 0x03],
+            colors[(paletteData >> 6) & 0x03]
+    };
+    // build one tile
+    u8 tile[64] = {};
     int counter = 0;
-    for (int i=0; i<6144; i++) {
-        for (int b=7; b>=0; b--) {
-            u8 color = ((mmu->VRAM[i] >> b) & 0x01) ? 255 : 0;
-            tileData[counter] = color;
-            tileData[counter + 1] = color;
-            tileData[counter + 2] = color;
-            counter += 4;
+    for (int i=0; i<16; i+=2) {
+        u8 lowByte = mmu->VRAM[i+offset];
+        u8 highByte = mmu->VRAM[i+1+offset];
+        for (int j = 0; j < 8; j++) {
+            tile[counter++] = (lowByte & (0x80 >> j)) | ((highByte & (0x80 >> j)) << 1);
         }
+    }
+    counter = 0;
+    for (u8 t : tile) {
+        tileData[counter++] = palette[t];
+        tileData[counter++] = palette[t];
+        tileData[counter++] = palette[t];
+        tileData[counter++] = 255;
     }
     return tileData.data();
 }
