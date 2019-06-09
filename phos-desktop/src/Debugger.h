@@ -19,6 +19,7 @@ public:
 private:
     GLuint bgTextureHandler;
     GLuint VRAMTextureHandler;
+    GLuint TileTextureHandler;
 private:
     void emulatorView(u8* data);
     void memoryView();

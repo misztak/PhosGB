@@ -2,23 +2,19 @@
 
 Debugger::Debugger(SDL_Window* w, Emulator* emu) :
     IDisplay(w, emu), show_demo_window(false), nextStep(false), singleStepMode(false),
-    bgTextureHandler(0), VRAMTextureHandler(0) {
+    bgTextureHandler(0), VRAMTextureHandler(0), TileTextureHandler(0) {
 
     loadTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());
     loadTexture(&bgTextureHandler, 256, 256, emulator->cpu.gpu.getBackgroundState());
     loadTexture(&VRAMTextureHandler, 8*16, 8*24, nullptr);
+    loadTexture(&TileTextureHandler, 64, 64, nullptr);
 }
 
 Debugger::~Debugger() {
-    if (mainTextureHandler != 0) {
-        glDeleteTextures(1, &mainTextureHandler);
-    }
-    if (bgTextureHandler != 0) {
-        glDeleteTextures(1, &bgTextureHandler);
-    }
-    if (VRAMTextureHandler != 0) {
-        glDeleteTextures(1, &VRAMTextureHandler);
-    }
+    if (mainTextureHandler != 0)    glDeleteTextures(1, &mainTextureHandler);
+    if (bgTextureHandler != 0)      glDeleteTextures(1, &bgTextureHandler);
+    if (VRAMTextureHandler != 0)    glDeleteTextures(1, &VRAMTextureHandler);
+    if (TileTextureHandler != 0)    glDeleteTextures(1, &TileTextureHandler);
 }
 
 void Debugger::processEvent(SDL_Event& event) {
@@ -164,13 +160,35 @@ void Debugger::VRAMView() {
     const int tileSize = 16;
     int tileCounter = 0;
     for (int y=0; y<24; y++) {
-        for (int i=0; i<16; i++) {
-            glTexSubImage2D(GL_TEXTURE_2D, 0, i*8, y*8, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getTileData(tileCounter++ * tileSize));
+        for (int x=0; x<16; x++) {
+            glTexSubImage2D(GL_TEXTURE_2D, 0, x*8, y*8, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getTileData(tileCounter++ * tileSize));
         }
     }
 
     ImGui::Begin("VRAM Viewer");
     ImGui::Image((void*)(intptr_t)VRAMTextureHandler, ImVec2(8*16*2, 8*24*2));
+    ImGuiIO& io = ImGui::GetIO();
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+    if (ImGui::IsItemHovered()) {
+        ImGui::BeginTooltip();
+        float relX = io.MousePos.x - pos.x;
+        float relY = io.MousePos.y - pos.y + 388;
+        int tileColumn = (int) (relX / 16);
+        int tileRow = (int) (relY / 16);
+        int tileID = tileRow * 16 + tileColumn;
+        float zoom = 8.f;
+        if (tileID < 128) ImGui::Text("Tile ID: (Set #1: %d)", tileID);
+        else if (tileID < 256) ImGui::Text("Tile ID: (Set #1: %d)\nTile ID: (Set #2: %d)", tileID, static_cast<char>(tileID));
+        else ImGui::Text("Tile ID: (Set #2: %d)", tileID - 256);
+        ImGui::Text("Tile Pos: (%d, %d)", tileColumn, tileRow);
+        ImGui::Text("Tile Address: 0x%4X", tileID * tileSize + 0x8000);
+
+        glBindTexture(GL_TEXTURE_2D, TileTextureHandler);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getTileData(tileID * tileSize));
+        ImGui::Image((void*)(intptr_t)TileTextureHandler, ImVec2(8 * zoom, 8 * zoom));
+        ImGui::EndTooltip();
+    }
+
     ImGui::End();
 }
 
