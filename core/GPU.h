@@ -1,6 +1,8 @@
 #ifndef PHOS_GPU_H
 #define PHOS_GPU_H
 
+#include <array>
+
 #include "Common.h"
 #include "MMU.h"
 
