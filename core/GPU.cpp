@@ -391,28 +391,22 @@ u8* GPU::getBackgroundState() {
 }
 
 u8* GPU::getTileData(int offset) {
-    int paletteData = getReg(BG_PALETTE_DATA);
-    const u8 palette[4] {
-            colors[paletteData & 0x03],
-            colors[(paletteData >> 2) & 0x03],
-            colors[(paletteData >> 4) & 0x03],
-            colors[(paletteData >> 6) & 0x03]
-    };
     // build one tile
     u8 tile[64] = {};
     int counter = 0;
     for (int i=0; i<16; i+=2) {
         u8 lowByte = mmu->VRAM[i+offset];
         u8 highByte = mmu->VRAM[i+1+offset];
-        for (int j = 0; j < 8; j++) {
-            tile[counter++] = (lowByte & (0x80 >> j)) | ((highByte & (0x80 >> j)) << 1);
+        for (int j = 7; j >= 0; j--) {
+            tile[counter++] = ((lowByte & (0x01 << j)) >> j) | (((highByte & (0x01 << j)) >> j) << 1);
         }
     }
     counter = 0;
     for (u8 t : tile) {
-        tileData[counter++] = palette[t];
-        tileData[counter++] = palette[t];
-        tileData[counter++] = palette[t];
+        assert(t < 4);
+        tileData[counter++] = colors[t];
+        tileData[counter++] = colors[t];
+        tileData[counter++] = colors[t];
         tileData[counter++] = 255;
     }
     return tileData.data();
