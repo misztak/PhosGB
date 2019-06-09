@@ -3,9 +3,10 @@
 
 GPU::GPU(CPU* c, MMU* m) :
     hitVBlank(false),
-    useCustomPalette(false),
     modeclock(0),
     DMATicks(0),
+    useCustomPalette(false),
+    showViewportBorder(true),
     cpu(c),
     mmu(m),
     mode(VBLANK),
@@ -361,6 +362,29 @@ u8* GPU::getBackgroundState() {
             backgroundState[counter + 1] = background[y][x];
             backgroundState[counter + 2] = background[y][x];
             counter += 4;
+        }
+    }
+    if (!showViewportBorder) return backgroundState.data();
+
+    // render viewport borders
+    u8 scrollY = getReg(SCROLL_Y), scrollX = getReg(SCROLL_X);
+    int index = 0;
+    for (int y=0; y<144; y++) {
+        if (y == 0 || y == 143) {
+            for (int x=0; x<160; x++) {
+                index = (((scrollY + y) % 256) * 256 + ((scrollX + x) % 256)) * 4;
+                backgroundState[index] = 0xFF;
+                backgroundState[index + 1] = 0x00;
+                backgroundState[index + 2] = 0x00;
+            }
+        } else {
+            for (int i=0; i<2; i++) {
+                int relX = i ? scrollX : (scrollX + 159) % 256;
+                index = (((scrollY + y) % 256) * 256 + relX) * 4;
+                backgroundState[index] = 0xFF;
+                backgroundState[index + 1] = 0x00;
+                backgroundState[index + 2] = 0x00;
+            }
         }
     }
     return backgroundState.data();

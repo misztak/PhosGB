@@ -46,9 +46,11 @@ constexpr u8 COINCIDENCE_FLAG = 0x04;
 class GPU {
 public:
     bool hitVBlank;
-    bool useCustomPalette;
     int modeclock;
     int DMATicks;
+
+    bool useCustomPalette;
+    bool showViewportBorder;
 
     std::map<u8, std::array<u8, 3>> customPalette;
 public:
