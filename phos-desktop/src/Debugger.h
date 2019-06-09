@@ -11,7 +11,7 @@ public:
     bool nextStep;
     bool singleStepMode;
 public:
-    Debugger(SDL_Window* window, Emulator* emu);
+    Debugger(SDL_Window* window, Emulator* emu, SDL_AudioDeviceID deviceId);
     ~Debugger();
     void render() override;
     void processEvent(SDL_Event& event) override;

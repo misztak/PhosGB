@@ -203,15 +203,17 @@ void APU::update(u32 cycles) {
         }
 
         short deltaLeft = 0, deltaRight = 0;
-        for (auto& channel : channels) {
-            if (--channel->timer != 0)
+        for (int c=0; c<4; c++) {
+            if (--channels[c]->timer != 0)
                 continue;
-            channel->updateWave();
-            short delta = channel->channelOutput - channel->lastOutput;
-            channel->lastOutput += delta;
-            if (channel->onLeft)
+            channels[c]->updateWave();
+            if (!masterEnable[c])
+                continue;
+            short delta = channels[c]->channelOutput - channels[c]->lastOutput;
+            channels[c]->lastOutput += delta;
+            if (channels[c]->onLeft)
                 deltaLeft += delta;
-            if (channel->onRight)
+            if (channels[c]->onRight)
                 deltaRight += delta;
         }
         if (deltaLeft != 0)
@@ -228,7 +230,3 @@ void APU::readSamples() {
     blip_read_samples(right_buffer, audioBuffer.data() + 1, size, true);
 }
 
-void APU::saveState(std::ofstream& outfile) {
-    // TODO: actually save the state
-    reset();
-}

@@ -1,7 +1,7 @@
 #include "Debugger.h"
 
-Debugger::Debugger(SDL_Window* w, Emulator* emu) :
-    IDisplay(w, emu), show_demo_window(false), nextStep(false), singleStepMode(false),
+Debugger::Debugger(SDL_Window* w, Emulator* emu, SDL_AudioDeviceID deviceId) :
+    IDisplay(w, emu, deviceId), show_demo_window(false), nextStep(false), singleStepMode(false),
     bgTextureHandler(0), VRAMTextureHandler(0), TileTextureHandler(0) {
 
     loadTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());

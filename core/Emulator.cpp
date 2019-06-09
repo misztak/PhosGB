@@ -102,7 +102,7 @@ void Emulator::saveState() {
     // dump subsystems
     cpu.joypad.saveState(outfile);
     cpu.gpu.saveState(outfile);
-    cpu.apu.saveState(outfile);
+    cpu.apu.reset();
     cpu.mmu.saveState(outfile);
 
     printf("Saved state in file %s\n", saveName.c_str());

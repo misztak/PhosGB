@@ -101,7 +101,6 @@ public:
     void readSamples();
 
     void reset();
-    void saveState(std::ofstream& outfile);
 private:
     CPU* cpu;
 
@@ -117,6 +116,7 @@ public:
     WaveChannel ch3;
     NoiseChannel ch4;
     Channel* channels[4] = {nullptr};
+    bool masterEnable[4] = {true, true, true, true};
 };
 
 #endif //PHOS_APU_H

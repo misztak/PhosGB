@@ -7,7 +7,7 @@
 
 class Display : public IDisplay {
 public:
-    Display(SDL_Window* window, Emulator* emu);
+    Display(SDL_Window* window, Emulator* emu, SDL_AudioDeviceID deviceId);
     ~Display();
     void render() override;
     void processEvent(SDL_Event& event) override;

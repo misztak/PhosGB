@@ -1,7 +1,7 @@
 #include "IDisplay.h"
 
-IDisplay::IDisplay(SDL_Window* window, Emulator* emulator)
-    : mainTextureHandler(0), window(window), emulator(emulator) {}
+IDisplay::IDisplay(SDL_Window* window, Emulator* emulator, SDL_AudioDeviceID deviceId)
+    : mainTextureHandler(0), window(window), emulator(emulator), deviceId(deviceId) {}
 
 
 bool IDisplay::loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* data) {
@@ -62,15 +62,21 @@ void IDisplay::showMainMenu() {
         else
             printf("Failed to load save state %s\n", quicksaveName.c_str());
     }
+    ImGui::Separator();
     if (ImGui::BeginMenu("Options")) {
-        if (ImGui::BeginMenu("Window Size")) {
-            static bool selection[4] = {false, false, true, false};
-            ImGui::MenuItem("1x1", nullptr, selection[0]);
-            ImGui::MenuItem("2x2", nullptr, selection[1]);
-            ImGui::MenuItem("3x3", nullptr, selection[2]);
-            ImGui::MenuItem("4x4", nullptr, selection[3]);
+        // Sound Control
+        static bool soundDisabled = false;
+        ImGui::MenuItem("Disable Sound", "", &soundDisabled);
+        SDL_PauseAudioDevice(deviceId, soundDisabled);
+        if (ImGui::BeginMenu("Disable Channels")) {
+            ImGui::MenuItem("CH1", nullptr, &emulator->cpu.apu.masterEnable[0]);
+            ImGui::MenuItem("CH2", nullptr, &emulator->cpu.apu.masterEnable[1]);
+            ImGui::MenuItem("CH3", nullptr, &emulator->cpu.apu.masterEnable[2]);
+            ImGui::MenuItem("CH4", nullptr, &emulator->cpu.apu.masterEnable[3]);
             ImGui::EndMenu();
         }
+        ImGui::Separator();
+        // Custom Palette
         static bool paletteEnable = emulator->cpu.gpu.useCustomPalette;
         ImGui::MenuItem("Use Custom Palette", "", &paletteEnable);
         emulator->cpu.gpu.useCustomPalette = paletteEnable;
@@ -103,6 +109,18 @@ void IDisplay::showMainMenu() {
             }
             ImGui::EndMenu();
         }
+        ImGui::Separator();
+        // Windows Size
+        if (ImGui::BeginMenu("Window Size [TODO]")) {
+            static bool selection[4] = {false, false, true, false};
+            ImGui::MenuItem("1x1", nullptr, selection[0]);
+            ImGui::MenuItem("2x2", nullptr, selection[1]);
+            ImGui::MenuItem("3x3", nullptr, selection[2]);
+            ImGui::MenuItem("4x4", nullptr, selection[3]);
+            ImGui::EndMenu();
+        }
+
+        // End of Options Menu
         ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Colors"))

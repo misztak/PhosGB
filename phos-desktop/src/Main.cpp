@@ -126,8 +126,8 @@ int main(int argc, char** argv) {
 
     IDisplay::ImGuiInit(window, glContext);
     IDisplay* host;
-    Display display(window, &emulator);
-    Debugger debugger(window, &emulator);
+    Display display(window, &emulator, deviceId);
+    Debugger debugger(window, &emulator, deviceId);
 
     // Main loop
     host = &debugger;
@@ -182,7 +182,8 @@ int main(int argc, char** argv) {
                     // Under normal circumstances the display should update at the start of every VBLANK period.
                     render(window, glContext, host, &emulator);
                     emulator.cpu.apu.readSamples();
-                    SDL_QueueAudio(deviceId, emulator.cpu.apu.audioBuffer.data(), emulator.cpu.apu.audioBuffer.size() * 2);
+                    if (SDL_GetAudioDeviceStatus(deviceId) == SDL_AUDIO_PLAYING)
+                        SDL_QueueAudio(deviceId, emulator.cpu.apu.audioBuffer.data(), emulator.cpu.apu.audioBuffer.size() * 2);
                 }
 
                 ticks += cycles;

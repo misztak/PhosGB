@@ -22,7 +22,7 @@ constexpr int SCALED_HEIGHT = HEIGHT * SCALE;
 
 class IDisplay {
 public:
-    IDisplay(SDL_Window* window, Emulator* emulator);
+    IDisplay(SDL_Window* window, Emulator* emulator, SDL_AudioDeviceID deviceId);
     virtual void update(u8* data) = 0;
     virtual void render() = 0;
     virtual void processEvent(SDL_Event& event) = 0;
@@ -36,6 +36,8 @@ public:
     GLuint mainTextureHandler;
     SDL_Window* window;
     Emulator* emulator;
+
+    SDL_AudioDeviceID deviceId;
 };
 
 #endif //PHOS_IDISPLAY_H

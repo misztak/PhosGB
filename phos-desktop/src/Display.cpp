@@ -1,6 +1,6 @@
 #include "Display.h"
 
-Display::Display(SDL_Window* w, Emulator* emu) : IDisplay(w, emu) {
+Display::Display(SDL_Window* w, Emulator* emu, SDL_AudioDeviceID deviceId) : IDisplay(w, emu, deviceId) {
     loadTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());
 }
 
