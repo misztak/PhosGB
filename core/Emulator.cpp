@@ -27,9 +27,9 @@ void Emulator::toggle() {
     }
     isHalted = !isHalted;
     if (isHalted) {
-        printf("Stopped execution\n");
+        Log(I, "Stopped execution\n");
     } else {
-        printf("Resumed execution\n");
+        Log(I, "Resumed execution\n");
     }
 }
 
@@ -51,7 +51,7 @@ void Emulator::shutdown() {
             outfile.write(reinterpret_cast<char *>(&fileType), 1);
         }
         outfile.write((char *) cpu.mmu.RAM.data(), cpu.mmu.RAM.size());
-        printf("Saved RAM state in file %s\n", saveName.c_str());
+        Log(I, "Saved RAM state in file %s\n", saveName.c_str());
     }
 }
 
@@ -105,18 +105,18 @@ void Emulator::saveState() {
     cpu.apu.reset();
     cpu.mmu.saveState(outfile);
 
-    printf("Saved state in file %s\n", saveName.c_str());
+    Log(I, "Saved state in file %s\n", saveName.c_str());
 }
 
 bool Emulator::loadState(std::string &path) {
     if (path.substr(path.find_last_of('.')) != ".state") {
-        printf("Invalid save state file suffix\n");
+        Log(W, "Invalid save state file suffix\n");
         return false;
     }
 
     std::ifstream file(path);
     if (!file || !file.good()) {
-        printf("Failed to open file %s\n", path.c_str());
+        Log(W, "Failed to open file %s\n", path.c_str());
         return false;
     }
     file.seekg(0, std::ifstream::end);
@@ -124,7 +124,7 @@ bool Emulator::loadState(std::string &path) {
     file.seekg(0, std::ifstream::beg);
 
     if (length == -1 || length == 0x7FFFFFFFFFFFFFFF) {
-        printf("Failed to load file %s\n", path.c_str());
+        Log(W, "Failed to load file %s\n", path.c_str());
         return false;
     }
 
@@ -135,7 +135,7 @@ bool Emulator::loadState(std::string &path) {
     // check if state file matches with the current cartridge
     std::string header = std::string(&buffer[0], &buffer[0] + 11);
     if (header != "PHOS-STATE ") {
-        printf("Invalid header of .state file. Expected 'PHOS-STATE ' but read '%s'\n", header.c_str());
+        Log(W, "Invalid header of .state file. Expected 'PHOS-STATE ' but read '%s'\n", header.c_str());
         return false;
     }
     std::string cartName = std::string(&buffer[11], &buffer[11] + 15);
@@ -144,7 +144,7 @@ bool Emulator::loadState(std::string &path) {
     u8 ramType = READ_U8(&buffer[0x1C]);
     if (cartName != cpu.mmu.cartridgeTitle || cartType != cpu.mmu.ROM_0[0x147] || romType != cpu.mmu.ROM_0[0x148] ||
     ramType != cpu.mmu.ROM_0[0x149]) {
-        printf("Save state file does not match with current cartridge\n");
+        Log(W, "Save state file does not match with current cartridge\n");
         return false;
     }
 
@@ -163,5 +163,6 @@ bool Emulator::loadState(std::string &path) {
     cpu.mmu.loadState(buffer);
     cpu.gpu.loadState(buffer);
 
+    Log(I, "Load state from file %s\n", path.c_str());
     return true;
 }

@@ -23,7 +23,7 @@ u8 NO_MBC::readROMByte(u16 address) {
 }
 
 void NO_MBC::writeROMByte(u16 address, u8 value) {
-    printf("Write to ROM address range\n");
+    Log(W, "Write to ROM address range\n");
     // writes to ROM are ignored
 }
 
@@ -90,7 +90,7 @@ void MBC1::writeROMByte(u16 address, u8 value) {
             }
             break;
         default:
-            printf("Invalid MBC1 Control Register address: 0x%4X\n", address);
+            Log(W, "Invalid MBC1 Control Register address: 0x%4X\n", address);
     }
 }
 
@@ -137,7 +137,7 @@ void MBC2::writeROMByte(u16 address, u8 value) {
             ROMBankPtr = (value & 0x0F) - 1;
             break;
         default:
-            printf("Invalid MBC2 Control Register address: 0x%4X\n", address);
+            Log(W, "Invalid MBC2 Control Register address: 0x%4X\n", address);
     }
 }
 
@@ -210,9 +210,9 @@ void MBC3::writeROMByte(u16 address, u8 value) {
             } else if (value <= 0x0C){
                 RAM_RTC_ModeSelect = 1;
                 RTCRegisterPtr = value - 0x08;
-                printf("Tried to access RTC register\n");
+                Log(I, "Tried to access RTC register\n");
             } else {
-                printf("Invalid MBC3 RAM_RTC_Register_Select value: 0x%2X\n", value);
+                Log(W, "Invalid MBC3 RAM_RTC_Register_Select value: 0x%2X\n", value);
             }
             break;
         case 0x6000:
@@ -224,7 +224,7 @@ void MBC3::writeROMByte(u16 address, u8 value) {
             }
             break;
         default:
-            printf("Invalid MBC3 Control Register address: 0x%4X\n", address);
+            Log(W, "Invalid MBC3 Control Register address: 0x%4X\n", address);
     }
 }
 

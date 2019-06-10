@@ -35,14 +35,15 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
 
     u8 cartridgeType = buffer[0x147];
     u8 RAMType = buffer[0x149];
-    printf("Read file %s, size=%li\n", romPath.substr(romPath.find_last_of('/')+1, romPath.length()).c_str(), buffer.size());
+    Log(I, "Read file %s, size=%li\n", romPath.substr(romPath.find_last_of('/')+1, romPath.length()).c_str(), buffer.size());
 
     if (buffer[0x143] == 0xC0) {
-        printf("Gameboy Color cartridges not supported\n");
+        Log(W, "Gameboy Color cartridges not supported\n");
         return false;
     }
     if (buffer[0x143] == 0x80) {
-        printf("Gameboy Color cartridge with Non-CGB-Mode\n");
+        Log(W, "Gameboy Color cartridge with Non-CGB-Mode\n");
+        return false;
     }
 
     switch (cartridgeType) {
@@ -76,7 +77,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         case 0x1D:
         case 0x1E:
             printCartridgeInfo(buffer);
-            printf("No support for MBC5 cartridges yet\n");
+            Log(W, "No support for MBC5 cartridges yet\n");
             return false;
         case 0x0B:
         case 0x0C:
@@ -86,20 +87,20 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         case 0xFD:
         case 0xFE:
             printCartridgeInfo(buffer);
-            printf("No support for cartridge type '%s'\n", cartridgeTypes[cartridgeType].c_str());
+            Log(W, "No support for cartridge type '%s'\n", cartridgeTypes[cartridgeType].c_str());
             return false;
         default:
-            printf("Unknown cartridge type 0x%2X detected\n", cartridgeType);
+            Log(W, "Unknown cartridge type 0x%2X detected\n", cartridgeType);
             return false;
     }
 
     if (!mbc) {
-        printf("Failed to initialize MBC for cartridge type 0x%2X\n", cartridgeType);
+        Log(W, "Failed to initialize MBC for cartridge type 0x%2X\n", cartridgeType);
         return false;
     }
 
     if (RAMSizeTypes.count(RAMType) == 0) {
-        printf("Invalid RAM type: %d\n", RAMType);
+        Log(W, "Invalid RAM type: %d\n", RAMType);
         return false;
     }
 
@@ -127,10 +128,10 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         saveName.append(".sav");
         std::vector<u8> saveBuffer;
         if (!loadFile(saveName, FileType::SRAM, saveBuffer)) {
-            printf("Could not open .sav file %s. Continuing without it.\n", saveName.c_str());
+            Log(I, "Could not open .sav file %s. Continuing without it.\n", saveName.c_str());
         } else {
             std::copy_n(saveBuffer.begin(), RAM.size(), RAM.begin());
-            printf("Successfully loaded SRAM from .sav file %s\n", saveName.c_str());
+            Log(I, "Successfully loaded SRAM from .sav file %s\n", saveName.c_str());
         }
     }
 
@@ -141,7 +142,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
 bool MMU::loadFile(std::string& path, FileType fileType, std::vector<u8>& buffer) {
     std::ifstream file(path);
     if (!file || !file.good()) {
-        printf("Failed to open file %s\n", path.c_str());
+        Log(W, "Failed to open file %s\n", path.c_str());
         return false;
     }
     file.seekg(0, std::ifstream::end);
@@ -149,7 +150,7 @@ bool MMU::loadFile(std::string& path, FileType fileType, std::vector<u8>& buffer
     file.seekg(0, std::ifstream::beg);
 
     if (length == -1 || length == 0x7FFFFFFFFFFFFFFF) {
-        printf("Failed to load file %s\n", path.c_str());
+        Log(W, "Failed to load file %s\n", path.c_str());
         return false;
     }
 
@@ -159,7 +160,7 @@ bool MMU::loadFile(std::string& path, FileType fileType, std::vector<u8>& buffer
     switch (fileType) {
         case FileType::BIOS:
             if (length != BIOS_SIZE) {
-                printf("Invalid BootROM size: %li\n", length);
+                Log(W, "Invalid BootROM size: %li\n", length);
                 return false;
             }
             return true;
@@ -167,23 +168,23 @@ bool MMU::loadFile(std::string& path, FileType fileType, std::vector<u8>& buffer
             // check type id and underlying value
             if (ROMSizeTypes.count(buffer[0x148]) && ROMSizeTypes[buffer[0x148]] == length) return true;
             // TODO: turn this into an option or a warning
-            printf("Cartridge type %d with size %li is invalid\n", buffer[0x148], length);
+            Log(W, "Cartridge type %d with size %li is invalid\n", buffer[0x148], length);
             return false;
         case FileType::SRAM:
             if (buffer.size() < 517) {
-                printf("File %s is too small to be a valid .sav file\n", path.c_str());
+                Log(W, "File %s is too small to be a valid .sav file\n", path.c_str());
                 return false;
             }
             std::string header = std::string(&buffer[0], &buffer[0] + 4);
             if (header != "PHOS") {
-                printf("Invalid header of .sav file. Expected 'PHOS' but read '%s'\n", header.c_str());
+                Log(W, "Invalid header of .sav file. Expected 'PHOS' but read '%s'\n", header.c_str());
                 return false;
             }
             size_t offset;
             if (buffer[4] == 1) {
                 offset = 13;
                 if (cartridgeTypes[ROM_0[0x147]].find("MBC3") == std::string::npos) {
-                    printf("Cartridge type and .sav file type do not match\n");
+                    Log(W, "Cartridge type and .sav file type do not match\n");
                     return false;
                 }
                 long rtc = *reinterpret_cast<long*>(&buffer[5]);
@@ -196,7 +197,7 @@ bool MMU::loadFile(std::string& path, FileType fileType, std::vector<u8>& buffer
 
             // RAM is already resized at this point so just compare with that
             if (buffer.size() != RAM.size()) {
-                printf("Invalid size of .sav file. Should be %li but detected %li\n", RAM.size(), buffer.size());
+                Log(W, "Invalid size of .sav file. Should be %li but detected %li\n", RAM.size(), buffer.size());
                 return false;
             }
             return true;
@@ -243,7 +244,7 @@ u8 MMU::readByte(u16 address) {
             }
             return ZRAM[address - 0xFF80];
         default:
-            printf("You should not be here\n");
+            Log(W, "You should not be here\n");
             return 0xFF;
     }
 }
@@ -435,44 +436,44 @@ void MMU::printCartridgeInfo(std::vector<u8>& buffer) {
     cartridgeTitle = std::string(&buffer[0x134], &buffer[0x134] + 0xF);
     u8 cartridgeType = buffer[0x147];
 
-    printf("\n");
-    printf("Game Title:          %s\n", cartridgeTitle.c_str());
-    printf("Cartridge Type:      0x%02X (%s)\n", cartridgeType, cartridgeTypes[cartridgeType].c_str());
-    printf("ROM Size Type:       0x%02X (%d Byte)\n", buffer[0x148], ROMSizeTypes[buffer[0x148]]);
-    printf("RAM Size Type:       0x%02X (%d Byte)", buffer[0x149], RAMSizeTypes[buffer[0x149]]);
-    if (cartridgeType == 0x05 || cartridgeType == 0x06) printf(" -- (%li Byte MBC2 internal)\n", RAM.size());
-    else printf("\n");
-    printf("Destination Code:    %d", buffer[0x14A]);
-    buffer[0x14A] ? printf(" (Non-Japanese)\n") : printf(" (Japanese)\n");
+    LogRaw(I, "\n");
+    Log(I, "Game Title:          %s\n", cartridgeTitle.c_str());
+    Log(I, "Cartridge Type:      0x%02X (%s)\n", cartridgeType, cartridgeTypes[cartridgeType].c_str());
+    Log(I, "ROM Size Type:       0x%02X (%d Byte)\n", buffer[0x148], ROMSizeTypes[buffer[0x148]]);
+    Log(I, "RAM Size Type:       0x%02X (%d Byte)", buffer[0x149], RAMSizeTypes[buffer[0x149]]);
+    if (cartridgeType == 0x05 || cartridgeType == 0x06) LogRaw(I, " -- (%li Byte MBC2 internal)\n", RAM.size());
+    else LogRaw(I, "\n");
+    Log(I, "Destination Code:    %d", buffer[0x14A]);
+    buffer[0x14A] ? LogRaw(I, " (Non-Japanese)\n") : LogRaw(I, " (Japanese)\n");
     u8 licenceCode = buffer[0x14B];
     if (licenceCode == 0x33) {
         std::string newCode = std::string(&buffer[0x144], &buffer[0x144] + 1);
-        printf("Licensee Code (New): %s\n", newCode.c_str());
+        Log(I, "Licensee Code (New): %s\n", newCode.c_str());
     } else {
-        printf("Licensee Code (Old): 0x%02X\n", licenceCode);
+        Log(I, "Licensee Code (Old): 0x%02X\n", licenceCode);
     }
-    printf("Game Version:        %d\n", buffer[0x14C]);
+    Log(I, "Game Version:        %d\n", buffer[0x14C]);
 
     u8 headerCRC = buffer[0x14D];
-    printf("Header Checksum:     0x%02X", headerCRC);
+    Log(I, "Header Checksum:     0x%02X", headerCRC);
     u8 x = 0;
     for (int i=0x134; i<=0x14C; i++) x = x - buffer[i] -1;
     if (x != headerCRC) {
-        printf("   [INVALID - actual checksum is 0x%02X, a real Gameboy would halt execution]\n", x);
+        LogRaw(I, "   [INVALID - actual checksum is 0x%02X, a real Gameboy would halt execution]\n", x);
     } else {
-        printf("   [VALID]\n");
+        LogRaw(I, "   [VALID]\n");
     }
 
     u16 globalCRC = (buffer[0x14E] << 8) | buffer[0x14F];
-    printf("Global Checksum:     0x%04X", globalCRC);
+    Log(I, "Global Checksum:     0x%04X", globalCRC);
     u16 g = 0;
     for (u8 i : buffer) g += i;
     g -= buffer[0x14E];
     g -= buffer[0x14F];
     if (g != globalCRC) {
-        printf(" [INVALID - actual checksum is 0x%04X, but a real Gameboy would not care]\n", g);
+        LogRaw(I, " [INVALID - actual checksum is 0x%04X, but a real Gameboy would not care]\n", g);
     } else {
-        printf(" [VALID]\n");
+        LogRaw(I, " [VALID]\n");
     }
-    printf("\n");
+    LogRaw(I, "\n");
 }

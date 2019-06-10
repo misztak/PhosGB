@@ -532,17 +532,17 @@ u32 CPU::tick() {
         }
 
         if (instruction == nullptr) {
-            printf("Invalid opcode 0x%02X at address 0x%04X\n", opcode, r.pc-1);
+            Log(F, "Invalid opcode 0x%02X at address 0x%04X\n", opcode, r.pc-1);
             return 0;
         }
         ticks = (this->*instruction)(opcode);
     }
 
     if (ticks == 0) {
-        printf("Unimplemented opcode");
-        if (isCBInstruction) printf(" 0xCB");
-        printf(" 0x%02X at address 0x%02X\n", opcode, r.pc-1);
-        std::abort();
+        Log(F, "Unimplemented opcode");
+        if (isCBInstruction) LogRaw(F, " 0xCB");
+        LogRaw(F, " 0x%02X at address 0x%02X\n", opcode, r.pc-1);
+        return 0;
     }
 
     gpu.tick(ticks);
@@ -589,7 +589,7 @@ void CPU::setTimerFreq() {
         case 1: timerCounter = 16; break;
         case 2: timerCounter = 64; break;
         case 3: timerCounter = 256; break;
-        default: printf("Invalid timer frequency\n");
+        default: Log(W, "Invalid timer frequency\n");
     }
 }
 

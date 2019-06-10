@@ -182,9 +182,7 @@ void GPU::renderBGScanline(u8 yCoord, u8 scrollY, u8 scrollX, u8 maxWidth) {
         u8 b2 = mmu->VRAM[tileDataPtr + 1];
 
         u8 bit = (u8)(7 - ((scrollX + x) % 8));
-        if (bit > 7) {
-            printf("Invalid value for bitmask %d\n", bit);
-        }
+        assert(bit < 8);
         u8 bitMask = 1 << bit;
         u8 pLo = isBitSet(b1, bitMask) ? 1 : 0;
         u8 pHi = isBitSet(b2, bitMask) ? 2 : 0;
@@ -239,9 +237,7 @@ void GPU::renderWindowScanline() {
         u8 b2 = mmu->VRAM[tileDataPtr + 1];
 
         u8 bit = (u8)(7 - x % 8);
-        if (bit > 7) {
-            printf("Invalid value for bitmask %d\n", bit);
-        }
+        assert(bit < 8);
         u8 bitMask = 1 << bit;
         u8 pLo = isBitSet(b1, bitMask) ? 1 : 0;
         u8 pHi = isBitSet(b2, bitMask) ? 2 : 0;

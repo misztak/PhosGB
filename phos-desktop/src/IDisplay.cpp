@@ -14,7 +14,7 @@ bool IDisplay::loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* da
 
     GLenum error;
     if ((error = glGetError()) != GL_NO_ERROR) {
-        printf("OpenGL Error: %u\n", error);
+        Log(F, "OpenGL Error: %u\n", error);
         return false;
     }
     return true;
@@ -58,9 +58,9 @@ void IDisplay::showMainMenu() {
     if (ImGui::MenuItem("Load State", "F6")) {
         std::string quicksaveName = emulator->currentFile + "_Quicksave.state";
         if (emulator->loadState(quicksaveName))
-            printf("Successfully loaded save state %s\n", quicksaveName.c_str());
+            Log(I, "Successfully loaded save state %s\n", quicksaveName.c_str());
         else
-            printf("Failed to load save state %s\n", quicksaveName.c_str());
+            Log(W, "Failed to load save state %s\n", quicksaveName.c_str());
     }
     ImGui::Separator();
     if (ImGui::BeginMenu("Options")) {

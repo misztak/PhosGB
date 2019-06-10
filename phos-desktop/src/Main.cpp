@@ -68,7 +68,7 @@ void resize(SDL_Window* window, bool isDebugger) {
 int main(int argc, char** argv) {
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO) != 0) {
-        printf("Error: %s\n", SDL_GetError());
+        fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
         return 1;
     }
     SDL_SetHintWithPriority(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0", SDL_HINT_OVERRIDE);
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
 
     bool err = glewInit() != GLEW_OK;
     if (err) {
-        fprintf(stderr, "Failed to initialize OpenGL loader!\n");
+        fprintf(stderr, "Failed to initialize GLEW!\n");
         return 1;
     }
 
@@ -102,6 +102,8 @@ int main(int argc, char** argv) {
     spec.channels = 2;
     spec.samples = 4096;
     SDL_AudioDeviceID deviceId = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
+
+    Logger::callback = DebuggerLog::DebugLog;
 
     Emulator emulator;
     std::string filePath = "../../gb/";
@@ -119,15 +121,15 @@ int main(int argc, char** argv) {
     //filePath.append("blargg/instr_timing.gb");
     //filePath.append("mooneye/acceptance/halt_ime0_nointr_timing.gb");
 
-    if (!emulator.load(filePath)) {
-        fprintf(stderr, "Failed to load BootROM or Cartridge\n");
-        return 2;
-    }
-
     IDisplay::ImGuiInit(window, glContext);
     IDisplay* host;
     Display display(window, &emulator, deviceId);
     Debugger debugger(window, &emulator, deviceId);
+
+    if (!emulator.load(filePath)) {
+        fprintf(stderr, "Failed to load BootROM or Cartridge\n");
+        return 2;
+    }
 
     // Main loop
     host = &debugger;
@@ -135,6 +137,7 @@ int main(int argc, char** argv) {
     if (isDebugger && debugger.singleStepMode) {
         emulator.isHalted = true;
     }
+
     bool done = false;
 
     int ticks = 0;
@@ -162,7 +165,7 @@ int main(int argc, char** argv) {
                 if (event.key.keysym.scancode == SDL_SCANCODE_M) {
                     frameTimer.toggleMode();
                     SDL_GL_SetSwapInterval(frameTimer.getMode() == VSYNC ? 1 : 0);
-                    printf("Switched to mode %d\n", frameTimer.getMode());
+                    Log(I, "Switched to mode %d\n", frameTimer.getMode());
                 }
                 if (event.key.keysym.scancode == SDL_SCANCODE_H) {
                     emulator.toggle();
@@ -177,6 +180,10 @@ int main(int argc, char** argv) {
         if (!emulator.isHalted) {
             while (ticks < ticksPerFrame) {
                 int cycles = emulator.tick();
+                if (cycles == 0) {
+                    done = true;
+                    break;
+                }
 
                 if (emulator.hitVBlank()) {
                     // Under normal circumstances the display should update at the start of every VBLANK period.
@@ -205,7 +212,7 @@ int main(int argc, char** argv) {
                     emulator.isHalted = true;
                     render(window, glContext, host, &emulator);
                     ticks = ticksPerFrame;
-                    printf("Step\n");
+                    Log(D, "Step\n");
                     break;
                 }
             }

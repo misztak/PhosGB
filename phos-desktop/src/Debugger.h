@@ -4,12 +4,14 @@
 #include "IDisplay.h"
 
 #include "imgui_memory_editor.h"
+#include "DebuggerLog.h"
 
 class Debugger : public IDisplay {
 public:
     bool show_demo_window;
     bool nextStep;
     bool singleStepMode;
+    bool showLogWindow;
 public:
     Debugger(SDL_Window* window, Emulator* emu, SDL_AudioDeviceID deviceId);
     ~Debugger();
@@ -25,6 +27,7 @@ private:
     void memoryView();
     void backgroundView();
     void VRAMView();
+    void logView();
 };
 
 

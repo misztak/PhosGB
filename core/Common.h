@@ -5,6 +5,11 @@
 #include <vector>
 #include <cassert>
 
+#include "Logger.h"
+
+#define Log(S, MSG, ...) Logger::Log(S, MSG, ##__VA_ARGS__)
+#define LogRaw(S, MSG, ...) Logger::LogRaw(S, MSG, ##__VA_ARGS__)
+
 #define WRITE_V(VALUE) (reinterpret_cast<char *>(&VALUE))
 #define WRITE_A(ARRAY, OFFSET) (reinterpret_cast<char *>(&ARRAY[0]) + OFFSET)
 
