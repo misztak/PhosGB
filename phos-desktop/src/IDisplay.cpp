@@ -38,7 +38,7 @@ void IDisplay::ImGuiDestroy() {
 
 void IDisplay::showMainMenu() {
     ImGui::MenuItem("Menu", nullptr, false, false);
-    if (ImGui::MenuItem("Open ROM..")) {}
+    if (ImGui::MenuItem("Open ROM [TODO]")) {}
     if (ImGui::MenuItem("Reset ROM")) {
         emulator->load(emulator->currentFilePath);
     }
@@ -119,6 +119,9 @@ void IDisplay::showMainMenu() {
             ImGui::MenuItem("4x4", nullptr, selection[3]);
             ImGui::EndMenu();
         }
+        ImGui::Separator();
+        // Misc ?
+        ImGui::MenuItem("Use Boot ROM", "", &emulator->cpu.mmu.runBIOS);
 
         // End of Options Menu
         ImGui::EndMenu();

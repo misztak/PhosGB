@@ -42,6 +42,7 @@ public:
     GPU* gpu;
 
     bool inBIOS;
+    bool runBIOS;
 
     std::vector<u8> BIOS;
     std::vector<u8> ROM_0;

@@ -6,6 +6,7 @@ MMU::MMU() :
     cpu(nullptr),
     gpu(nullptr),
     inBIOS(true),
+    runBIOS(false),
     BIOS(BIOS_SIZE, 0),
     ROM_0(ROM_BANK_SIZE, 0),
     // init ROM and RAM with capacity of NO_MBC cartridge
@@ -23,9 +24,9 @@ MMU::MMU() :
 bool MMU::init(std::string& romPath, std::string& biosPath) {
     std::vector<u8> buffer;
 
-    if (!biosPath.empty()) {
-        if (!loadFile(biosPath, FileType::BIOS, buffer)) return false;
+    if (runBIOS && !biosPath.empty() && loadFile(biosPath, FileType::BIOS, buffer)) {
         std::copy_n(buffer.begin(), BIOS_SIZE, BIOS.begin());
+        inBIOS = true;
     } else {
         inBIOS = false;
     }
@@ -293,7 +294,7 @@ void MMU::writeByte(u16 address, u8 value) {
                 if (address == 0xFF04) {            // reset divider counter on write
                     IO[address - 0xFF00] = 0;
                 } else if (address == 0xFF40) {     // LCD Control
-                    u8 wasLCDEnabled = IO[0x40] & LCD_DISPLAY_ENABLE;
+                    bool wasLCDEnabled = IO[0x40] & LCD_DISPLAY_ENABLE;
                     IO[0x40] = value;
                     if (wasLCDEnabled && !(value & LCD_DISPLAY_ENABLE)) {
                         assert(gpu->getMode() == VBLANK && "Tried to disable display outside of VBLANK period\n");

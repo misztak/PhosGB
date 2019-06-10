@@ -463,9 +463,8 @@ void CPU::reset() {
     r.de = 0x00D8;
     r.hl = 0x014D;
     r.sp = 0xFFFE;
-    r.pc = 0x0100;
-    mmu.inBIOS = false;
     r.ime = 0x0;
+    r.pc = mmu.inBIOS ? 0x0000 : 0x0100;
 
     timerCounter = 1024;
     dividerCounter = 0;
