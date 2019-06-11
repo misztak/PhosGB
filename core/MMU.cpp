@@ -44,7 +44,6 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     }
     if (buffer[0x143] == 0x80) {
         Log(W, "Gameboy Color cartridge with Non-CGB-Mode\n");
-        return false;
     }
 
     switch (cartridgeType) {
