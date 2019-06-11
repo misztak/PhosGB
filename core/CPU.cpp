@@ -1,6 +1,6 @@
 #include "CPU.h"
 
-CPU::CPU(): gpu(this, &mmu), joypad(this), apu(this), halted(false) {
+CPU::CPU(): gpu(this, &mmu), joypad(this), apu(this), halted(false), headless(false) {
     mmu.cpu = this;
     mmu.gpu = &gpu;
 
@@ -634,6 +634,8 @@ void CPU::requestInterrupt(u8 interrupt) {
     else if (interrupt == INTERRUPT_TIMER) IF = setBit(IF, 0x04);
     else if (interrupt == INTERRUPT_SERIAL) IF = setBit(IF, 0x08);
     else if (interrupt == INTERRUPT_JOYPAD) IF = setBit(IF, 0x10);
+
+    if (r.ime == 0 && ((mmu.readByte(0xFFFF) & IF) & 0x1F) == 0) halted = false;
 
     mmu.writeByte(0xFF0F, IF);
 }

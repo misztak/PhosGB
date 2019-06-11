@@ -172,6 +172,7 @@ APU::~APU() {
 }
 
 void APU::reset() {
+    if (cpu->headless) return;
     blip_delete(left_buffer);
     blip_delete(right_buffer);
     left_buffer = blip_new(16383);
@@ -187,6 +188,7 @@ void APU::reset() {
 }
 
 void APU::update(u32 cycles) {
+    if (cpu->headless) return;
     u32 mCycles = cycles / 4;
     bool dividerCycle = isBitSet(cpu->mmu.IO[0x04], 0x10);
     if (lastCounter && !dividerCycle) {

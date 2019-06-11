@@ -60,6 +60,8 @@ public:
     bool halted;
     int timerCounter;
     int dividerCounter;
+
+    bool headless;
 public:
     CPU();
     bool init(std::string& romPath);
