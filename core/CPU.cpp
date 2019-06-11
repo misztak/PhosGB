@@ -558,7 +558,7 @@ u32 CPU::tick() {
 void CPU::updateTimer(u32 ticks) {
     dividerCounter += ticks;
     if (dividerCounter >= 0xFF) {
-        dividerCounter = 0;
+        dividerCounter -= 0xFF;
         // access divider directly
         mmu.IO[0x4]++;
     }
@@ -583,6 +583,7 @@ void CPU::updateTimer(u32 ticks) {
 
 void CPU::setTimerFreq() {
     u8 freq = readByte(0xFF07) & 0x03;
+    int remainder = (timerCounter < 0) ? timerCounter : 0;
     switch (freq) {
         case 0: timerCounter = 1024; break;
         case 1: timerCounter = 16; break;
@@ -590,6 +591,7 @@ void CPU::setTimerFreq() {
         case 3: timerCounter = 256; break;
         default: Log(W, "Invalid timer frequency\n");
     }
+    timerCounter += remainder;
 }
 
 void CPU::checkInterrupts() {
