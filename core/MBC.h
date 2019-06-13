@@ -81,4 +81,18 @@ private:
     u8 RTCRegisters[5] = {0};
 };
 
+class MBC5 : public MBC {
+public:
+    MBC5(MMU* mmu, bool hasRumble);
+    u8 readROMByte(u16 address) override;
+    void writeROMByte(u16 address, u8 value) override;
+    u8 readRAMByte(u16 address) override;
+    void writeRAMByte(u16 address, u8 value) override;
+    void saveState(std::ofstream& outfile) override;
+    void loadState(std::vector<u8>& buffer, size_t offset) override;
+private:
+    bool RAMEnable;
+    bool hasRumble;
+};
+
 #endif //PHOS_MBC_H

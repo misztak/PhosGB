@@ -73,12 +73,15 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         case 0x19:
         case 0x1A:
         case 0x1B:
+            // MBC5 without rumble motor
+            mbc = std::make_unique<MBC5>(this, false);
+            break;
         case 0x1C:
         case 0x1D:
         case 0x1E:
-            printCartridgeInfo(buffer);
-            Log(W, "No support for MBC5 cartridges yet\n");
-            return false;
+            // MBC5 with rumble motor
+            mbc = std::make_unique<MBC5>(this, true);
+            break;
         case 0x0B:
         case 0x0C:
         case 0x0D:
@@ -429,6 +432,7 @@ void MMU::initTables() {
     RAMSizeTypes[0x01] = 2048;
     RAMSizeTypes[0x02] = 8192;
     RAMSizeTypes[0x03] = 32768;
+    RAMSizeTypes[0x04] = 131072;
     RAMSizeTypes[0x05] = 65536;
 }
 

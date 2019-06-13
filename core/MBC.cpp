@@ -264,3 +264,64 @@ void MBC3::latchClockData() {
     if (days >= 512) RTCRegisters[4] |= 0x80;
     latchedTime = currentTime;
 }
+
+// MBC 5
+
+MBC5::MBC5(MMU* mmu, bool hasRumble) : MBC(mmu), RAMEnable(false), hasRumble(hasRumble) {}
+
+void MBC5::saveState(std::ofstream& outfile) {
+    outfile.write(WRITE_V(ROMBankPtr), 2); outfile.write(WRITE_V(RAMBankPtr), 2);
+    outfile.write(WRITE_V(RAMEnable), sizeof(bool));
+    outfile.write(WRITE_V(hasRumble), sizeof(bool));
+}
+
+void MBC5::loadState(std::vector<u8>& buffer, size_t offset) {
+    ROMBankPtr = READ_U16(&buffer[offset]); RAMBankPtr = READ_U16(&buffer[offset + 2]);
+    RAMEnable = READ_BOOL(&buffer[offset + 4]);
+    hasRumble = READ_BOOL(&buffer[offset + 5]);
+    assert((offset + 6) == buffer.size());
+}
+
+u8 MBC5::readROMByte(u16 address) {
+    if (ROMBankPtr == 0)
+        return mmu->ROM_0[address];
+    else
+        return mmu->ROM[address + (ROMBankPtr - 1) * ROM_BANK_SIZE];
+}
+
+void MBC5::writeROMByte(u16 address, u8 value) {
+    u8 type = address & 0xF000;
+    switch (type) {
+        case 0x0000:
+        case 0x1000:
+            RAMEnable = (value & 0x0F) == 0x0A;
+            break;
+        case 0x2000:
+            ROMBankPtr = (ROMBankPtr & 0xFF00) | value;
+            assert(ROMBankPtr < 256);
+            break;
+        case 0x3000:
+            // TODO: find out what to do here
+            Log(W, "Tried to access upper byte of MBC5 Bank Pointer\n");
+            break;
+        case 0x4000:
+        case 0x5000: {
+            u8 mask = hasRumble ? 0x07 : 0x0F;
+            RAMBankPtr = value & mask;
+            if (hasRumble && ((value & 0x08) == 0x08)) Log(I, "Start Rumble\n");
+            break; }
+        default:
+            Log(W, "Invalid MBC5 Control Register address: 0x%4X\n", address);
+            break;
+    }
+}
+
+u8 MBC5::readRAMByte(u16 address) {
+    if (!RAMEnable) return 0xFF;
+    return mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE];
+}
+
+void MBC5::writeRAMByte(u16 address, u8 value) {
+    if (!RAMEnable) return;
+    mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE] = value;
+}
