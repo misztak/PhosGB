@@ -267,7 +267,9 @@ void MBC3::latchClockData() {
 
 // MBC 5
 
-MBC5::MBC5(MMU* mmu, bool hasRumble) : MBC(mmu), RAMEnable(false), hasRumble(hasRumble) {}
+MBC5::MBC5(MMU* mmu, bool hasRumble) : MBC(mmu), RAMEnable(false), hasRumble(hasRumble) {
+    ROMBankPtr = 1;
+}
 
 void MBC5::saveState(std::ofstream& outfile) {
     outfile.write(WRITE_V(ROMBankPtr), 2); outfile.write(WRITE_V(RAMBankPtr), 2);
@@ -290,7 +292,7 @@ u8 MBC5::readROMByte(u16 address) {
 }
 
 void MBC5::writeROMByte(u16 address, u8 value) {
-    u8 type = address & 0xF000;
+    u16 type = address & 0xF000;
     switch (type) {
         case 0x0000:
         case 0x1000:
