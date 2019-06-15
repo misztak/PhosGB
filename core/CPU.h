@@ -7,6 +7,8 @@
 #include "Joypad.h"
 #include "APU.h"
 
+enum GB_MODE { DMG, CGB };
+
 // bitmasks for flags stored in lower 8bit of AF register
 enum FLAG { ZERO = 0x80, ADD_SUB = 0x40, HALF_CARRY = 0x20, CARRY = 0x10 };
 
@@ -57,11 +59,14 @@ public:
     Joypad joypad;
     APU apu;
 
+    GB_MODE gbMode;
+
     bool halted;
     int timerCounter;
     int dividerCounter;
 
     bool headless;
+    bool runCGBinDMGMode;
 public:
     CPU();
     bool init(std::string& romPath);

@@ -18,10 +18,22 @@ constexpr int OAM_SIZE      = 160;
 constexpr int IO_SIZE       = 128;
 constexpr int ZRAM_SIZE     = 128;
 
+// CGB Mode Only
+constexpr int WRAM_BANK_SIZE = 4096;
+constexpr int VRAM_BANK_SIZE = 8192;
+
 enum FileType { BIOS, ROM, SRAM };
+enum VramDmaMode { GENERAL_PURPOSE, DURING_HBLANK };
 
 class CPU;
 class GPU;
+
+struct VRAM_DMA {
+    bool enabled;
+    VramDmaMode mode;
+    u16 transferLength;
+    void reset() { enabled = false, mode = GENERAL_PURPOSE, transferLength = 0; }
+};
 
 class MMU {
 public:
@@ -43,6 +55,10 @@ public:
 
     bool inBIOS;
     bool runBIOS;
+
+    u8 WRAMBankPtr;
+    u8 VRAMBankPtr;
+    VRAM_DMA VramDma;
 
     std::vector<u8> BIOS;
     std::vector<u8> ROM_0;

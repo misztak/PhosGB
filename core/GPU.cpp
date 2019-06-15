@@ -43,8 +43,6 @@ void GPU::reset() {
 }
 
 void GPU::tick(u32 ticks) {
-    //if (DMATicks > 0) DMATicks -= 0;
-
     modeclock += ticks;
     u8 line = getReg(LCDC_Y_COORDINATE);
     switch (mode) {

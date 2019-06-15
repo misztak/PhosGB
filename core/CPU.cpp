@@ -1,6 +1,6 @@
 #include "CPU.h"
 
-CPU::CPU(): gpu(this, &mmu), joypad(this), apu(this), halted(false), headless(false) {
+CPU::CPU(): gpu(this, &mmu), joypad(this), apu(this), gbMode(DMG), halted(false), headless(false), runCGBinDMGMode(true) {
     mmu.cpu = this;
     mmu.gpu = &gpu;
 
@@ -458,7 +458,7 @@ bool CPU::init(std::string& romPath) {
 
 void CPU::reset() {
     // startup values (https://problemkaputt.de/pandocs.htm#powerupsequence)
-    r.af = 0x01B0;
+    r.af = (gbMode == DMG) ? 0x01B0 : 0x11B0;
     r.bc = 0x0013;
     r.de = 0x00D8;
     r.hl = 0x014D;
@@ -501,6 +501,14 @@ void CPU::reset() {
     writeByte(0xFF49, 0xFF);    // OBP1
     writeByte(0xFF4A, 0x00);    // WY
     writeByte(0xFF4B, 0x00);    // WX
+
+    if (gbMode == DMG) {
+        writeByte(0xFF6C, 0xFF);
+        writeByte(0xFF74, 0xFF);
+    }
+    if (gbMode == CGB) {
+        writeByte(0xFF6C, 0xFE);
+    }
 
     writeByte(0xFFFF, 0x00);    // IE
 }

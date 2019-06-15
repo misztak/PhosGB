@@ -7,6 +7,8 @@ MMU::MMU() :
     gpu(nullptr),
     inBIOS(true),
     runBIOS(false),
+    WRAMBankPtr(1),
+    VRAMBankPtr(0),
     BIOS(BIOS_SIZE, 0),
     ROM_0(ROM_BANK_SIZE, 0),
     // init ROM and RAM with capacity of NO_MBC cartridge
@@ -18,6 +20,7 @@ MMU::MMU() :
     VRAM(VRAM_SIZE, 0),
     OAM(OAM_SIZE, 0),
     mbc(nullptr) {
+    VramDma.reset();
     initTables();
 }
 
@@ -38,12 +41,13 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     u8 RAMType = buffer[0x149];
     Log(I, "Read file %s, size=%li\n", romPath.substr(romPath.find_last_of('/')+1, romPath.length()).c_str(), buffer.size());
 
-    if (buffer[0x143] == 0xC0) {
-        Log(W, "Gameboy Color cartridges not supported\n");
+    cpu->gbMode = DMG;
+    if (cpu->runCGBinDMGMode && buffer[0x143] == 0x80) {
+        Log(I, "Running CGB ROM in DMG Mode\n");
+    } else if (buffer[0x143] == 0x80 || buffer[0x143] == 0xC0) {
+        cpu->gbMode = CGB;
+        Log(W, "Gameboy Color cartridges detected\n");
         return false;
-    }
-    if (buffer[0x143] == 0x80) {
-        Log(W, "Gameboy Color cartridge with Non-CGB-Mode\n");
     }
 
     switch (cartridgeType) {
@@ -118,6 +122,16 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     }
     std::fill(RAM.begin(), RAM.end(), 0);
 
+    // resize and clear all internal storage vectors
+    if (cpu->gbMode == DMG) {
+        WRAM.resize(WRAM_SIZE);
+        VRAM.resize(VRAM_SIZE);
+        OAM.resize(OAM_SIZE);
+    } else if (cpu->gbMode == CGB) {
+        WRAM.resize(WRAM_BANK_SIZE * 8);
+        VRAM.resize(VRAM_SIZE * 2);
+        OAM.resize(OAM_SIZE);
+    }
     std::fill(WRAM.begin(), WRAM.end(), 0);
     std::fill(IO.begin(), IO.end(), 0);
     std::fill(ZRAM.begin(), ZRAM.end(), 0);
@@ -138,6 +152,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         }
     }
 
+    VramDma.reset();
     printCartridgeInfo(buffer);
     return true;
 }
@@ -224,13 +239,20 @@ u8 MMU::readByte(u16 address) {
             return mbc->readROMByte(address - 0x4000);
         case 0x8000:
         case 0x9000:
-            return VRAM[address - 0x8000];
+            if (cpu->gbMode == DMG) return VRAM[address - 0x8000];
+            else if (cpu->gbMode == CGB) return VRAM[(address - 0x8000) + VRAMBankPtr * VRAM_BANK_SIZE];
         case 0xA000:
         case 0xB000:
             return mbc->readRAMByte(address - 0xA000);
         case 0xC000:
         case 0xD000:
-            return WRAM[address - 0xC000];
+            if (cpu->gbMode == DMG) {
+                return WRAM[address - 0xC000];
+            } else if (cpu->gbMode == CGB) {
+                u16 relAddress = address - 0xC000;
+                if (relAddress <= 0x0FFF) return WRAM[relAddress];
+                else return WRAM[relAddress + WRAMBankPtr * WRAM_BANK_SIZE];
+            }
         case 0xE000:
             return WRAM[address - 0xE000];
         case 0xF000:
@@ -271,7 +293,8 @@ void MMU::writeByte(u16 address, u8 value) {
             return;
         case 0x8000:
         case 0x9000:
-            VRAM[address - 0x8000] = value;
+            if (cpu->gbMode == DMG) VRAM[address - 0x8000] = value;
+            else if (cpu->gbMode == CGB) VRAM[(address - 0x8000) + VRAMBankPtr * VRAM_BANK_SIZE] = value;
             return;
         case 0xA000:
         case 0xB000:
@@ -279,9 +302,15 @@ void MMU::writeByte(u16 address, u8 value) {
             return;
         case 0xC000:
         case 0xD000:
-            WRAM[address - 0xC000] = value;
+            if (cpu->gbMode == DMG) {
+                WRAM[address - 0xC000] = value;
+            } else if (cpu->gbMode == CGB) {
+                u16 relAddress = address - 0xC000;
+                if (relAddress <= 0x0FFF) WRAM[relAddress] = value;
+                else WRAM[relAddress + WRAMBankPtr * WRAM_BANK_SIZE] = value;
+            }
             return;
-        case 0xF000:
+        case 0xF000: {
             if (address <= 0xFDFF) return;
             if (address <= 0xFE9F) {
                 OAM[address - 0xFE00] = value;
@@ -293,39 +322,101 @@ void MMU::writeByte(u16 address, u8 value) {
             }
             if (address <= 0xFF7F) {
                 assert(address != 0xFF00);
-                if (address == 0xFF04) {            // reset divider counter on write
-                    IO[address - 0xFF00] = 0;
-                } else if (address == 0xFF40) {     // LCD Control
-                    bool wasLCDEnabled = IO[0x40] & LCD_DISPLAY_ENABLE;
-                    IO[0x40] = value;
-                    if (wasLCDEnabled && !(value & LCD_DISPLAY_ENABLE)) {
-                        assert(gpu->getMode() == VBLANK && "Tried to disable display outside of VBLANK period\n");
-                        gpu->setBGColor(0xFF);      // set display to all white
-                        // reset some STAT values
-                        // TODO: see if this is right
-                        // i.e. compare with "https://www.reddit.com/r/EmuDev/comments/6r6gf3/gb_pokemon_gold_spews_unexpected_values_at_mbc/dl5c0ub"
-                        IO[LCDC_Y_COORDINATE - 0xFF00] = 153;
-                        gpu->modeclock = 456;
-                        gpu->setMode(VBLANK);
-                    }
-                } else if (address == 0xFF41) {     // LCDC STAT
-                    IO[address - 0xFF00] = (value & (u8) 0xF8) | (IO[address - 0xFF00] & (u8) 0x07);
-                } else if (address == 0xFF44) {     // LY (line) (Read-only)
-                    return;
-                } else if (address == 0xFF46) {
-                    // start DMA transfer
-                    u16 source = value << (u16) 8;
-                    for (int i=0; i<0xA0; i++) {
-                        writeByte(0xFE00 + i, readByte(source + i));
-                    }
-                    IO[address - 0xFF00] = value;
-                } else {
-                    IO[address - 0xFF00] = value;
+                u16 relAddress = address & 0xFF;
+                switch (relAddress) {
+                    case 0x04:      // reset divider counter on write
+                        IO[relAddress] = 0;
+                        break;
+                    case 0x40: {    // LCD Control
+                        bool wasLCDEnabled = IO[0x40] & LCD_DISPLAY_ENABLE;
+                        IO[0x40] = value;
+                        if (wasLCDEnabled && !(value & LCD_DISPLAY_ENABLE)) {
+                            assert(gpu->getMode() == VBLANK && "Tried to disable display outside of VBLANK period\n");
+                            gpu->setBGColor(0xFF);      // set display to all white
+                            // reset some STAT values
+                            // TODO: see if this is right
+                            // i.e. compare with "https://www.reddit.com/r/EmuDev/comments/6r6gf3/gb_pokemon_gold_spews_unexpected_values_at_mbc/dl5c0ub"
+                            IO[LCDC_Y_COORDINATE - 0xFF00] = 153;
+                            gpu->modeclock = 456;
+                            gpu->setMode(VBLANK);
+                        }
+                        break; }
+                    case 0x41:      // LCDC Stat
+                        IO[relAddress] = (value & (u8) 0xF8) | (IO[relAddress] & (u8) 0x07);
+                        break;
+                    case 0x44:      // LY (line) (Read-only)
+                        return;
+                    case 0x46: {    // Start DMA transfer
+                        u16 source = value << (u16) 8;
+                        for (int i=0; i<0xA0; i++) {
+                            writeByte(0xFE00 + i, readByte(source + i));
+                        }
+                        IO[relAddress] = value;
+                        cpu->gpu.DMATicks = 648;
+                        break; }
+                    case 0x4D:      // TODO: Speed Switch (CGB Mode Only)
+                        IO[relAddress] = (IO[relAddress] & 0xFE) | (value & 0x01);
+                        Log(I, "Tried to change speed mode [Unimplemented]\n");
+                        break;
+                    case 0x4F:      // Select VRAM Bank (CGB Mode Only)
+                        if (cpu->gbMode != CGB) return;
+                        VRAMBankPtr = value & 0x01;
+                        IO[relAddress] = VRAMBankPtr;
+                        break;
+                    case 0x55: {    // VRAM DMA Transfer (CGB Mode Only)
+                        if (cpu->gbMode != CGB) return;
+                        VramDma.transferLength = ((value & 0x7F) + 1) * 16;
+                        VramDma.mode = isBitSet(value, 0x80) ? DURING_HBLANK : GENERAL_PURPOSE;
+
+                        switch (VramDma.mode) {
+                            case DURING_HBLANK:
+                                IO[0x55] = value & 0x7F;
+                                if (!VramDma.enabled) {
+                                    VramDma.enabled = true;
+                                    // Start HDMA
+                                }
+                                break;
+                            case GENERAL_PURPOSE:
+                                if (VramDma.enabled) {
+                                    IO[0x55] = 0xFF;
+                                    VramDma.enabled = false;
+                                } else {
+                                    // Start GDMA
+                                }
+                                break;
+                        }
+
+                        IO[0x55] = value;
+                        break; }
+                    case 0x56:      // Infrared (CGB Mode Only)
+                        assert(cpu->gbMode == CGB);
+                        Log(I, "Write to CGB Infrared Communications Port [Unimplemented]\n");
+                        break;
+                    case 0x6C:
+                        if (cpu->gbMode != CGB) return;
+                        IO[relAddress] = (IO[relAddress] & 0xFE) | (value & 0x01);
+                        break;
+                    case 0x70:      // Select WRAM Bank (CGB Mode Only)
+                        assert(cpu->gbMode == CGB);
+                        WRAMBankPtr = value & 0x07;
+                        IO[relAddress] = WRAMBankPtr;
+                        if (WRAMBankPtr == 0x00) WRAMBankPtr = 1;
+                        WRAMBankPtr--;
+                        break;
+                    case 0x74:
+                        if (cpu->gbMode != CGB) return;
+                        IO[relAddress] = value;
+                        break;
+                    case 0x75:
+                        IO[relAddress] = value & 0x70;
+                        break;
+                    default:
+                        IO[relAddress] = value;
                 }
                 return;
             }
             ZRAM[address - 0xFF80] = value;
-            return;
+            return; }
         default:
             return;
     }
