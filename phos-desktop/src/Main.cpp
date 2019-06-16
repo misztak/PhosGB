@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
     Logger::callback = DebuggerLog::DebugLog;
 
     Emulator emulator;
-    std::string filePath = "../../gb/";
+    std::string filePath = "../gb/";
 
     // GAMES
     //filePath.append("KirbyPinballLand.gb");
