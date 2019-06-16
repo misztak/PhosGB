@@ -78,12 +78,6 @@ void Emulator::handleInputUp(u8 key) {
 
 void Emulator::saveState() {
     std::string saveName = currentFile + "_Quicksave.state";
-//    auto dateTime = std::time(nullptr);
-//    auto now = std::localtime(&dateTime);
-//    std::ostringstream oss;
-//    oss << '[' << (now->tm_year + 1900) << '-' << (now->tm_mon + 1) << '-' << now->tm_mday << "--" << now->tm_hour << ':' << now->tm_min << ':' << now->tm_sec << ']';
-//    saveName.append(oss.str());
-
     std::ofstream outfile(saveName, std::ios::out | std::ios::binary);
     outfile.write("PHOS-STATE ", 11);
     // start with cartridge info
@@ -165,4 +159,12 @@ bool Emulator::loadState(std::string &path) {
 
     Log(I, "Load state from file %s\n", path.c_str());
     return true;
+}
+
+std::string Emulator::currentDateTime() {
+    auto dateTime = std::time(nullptr);
+    auto now = std::localtime(&dateTime);
+    std::ostringstream oss;
+    oss << '[' << (now->tm_year + 1900) << '-' << (now->tm_mon + 1) << '-' << now->tm_mday << "--" << now->tm_hour << ':' << now->tm_min << ':' << now->tm_sec << ']';
+    return oss.str();
 }

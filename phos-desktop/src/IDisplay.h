@@ -7,6 +7,8 @@
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 
+#include "lodepng.h"
+
 #if __APPLE__
 #define GLSL_VERSION "#version 150"
 #else
@@ -38,6 +40,10 @@ public:
     Emulator* emulator;
 
     SDL_AudioDeviceID deviceId;
+protected:
+    void scaleFrame(std::vector<u8>& src, std::vector<u8>& dest, unsigned scale);
+private:
+    unsigned IX(unsigned x, unsigned y, unsigned width=160) { return y * width + x; }
 };
 
 #endif //PHOS_IDISPLAY_H

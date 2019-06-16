@@ -63,6 +63,25 @@ void IDisplay::showMainMenu() {
             Log(W, "Failed to load save state %s\n", quicksaveName.c_str());
     }
     ImGui::Separator();
+    if (ImGui::MenuItem("Screenshot")) {
+        const int size = WIDTH * HEIGHT * 4;
+        const int scale = 3;
+        std::vector<u8> pixelBuffer(size);
+        glGetTextureImage(mainTextureHandler, 0, GL_RGBA, GL_UNSIGNED_BYTE, size, pixelBuffer.data());
+        GLenum glError;
+        if ((glError = glGetError()) != GL_NO_ERROR) {
+            Log(W, "OpenGL error during screenshot creation (Code %u)\n", glError);
+        } else {
+            std::vector<u8> scaledBuffer(size * scale * scale, 0xFF);
+            scaleFrame(pixelBuffer, scaledBuffer, scale);
+            std::string fileName = emulator->currentFile + emulator->currentDateTime();
+            unsigned int error = lodepng::encode(fileName, scaledBuffer, WIDTH*scale, HEIGHT*scale);
+            if (error)
+                Log(W, "Lodepng encode error %u: %s\n", error, lodepng_error_text(error));
+            else
+                Log(I, "Created screenshot %s\n", fileName.c_str());
+        }
+    }
     if (ImGui::BeginMenu("Options")) {
         // Sound Control
         static bool soundDisabled = false;
@@ -139,5 +158,50 @@ void IDisplay::showMainMenu() {
             ImGui::MenuItem(name);
         }
         ImGui::EndMenu();
+    }
+}
+
+void IDisplay::scaleFrame(std::vector<u8>& src, std::vector<u8>& dest, unsigned scale) {
+    if (src.size() * scale * scale != dest.size()) {
+        Log(W, "Vector size and scale value don't match\n");
+        return;
+    }
+    unsigned counter = 0;
+    switch (scale) {
+        case 2: {
+            for (unsigned y=0; y<HEIGHT; y++) {
+                for (unsigned x=0; x<WIDTH; x++) {
+                    for (int i=0; i<3; i++) {
+                        dest[IX(x*2, y*2, WIDTH*scale) * 4 + i]     = src[counter + i];
+                        dest[IX(x*2+1, y*2, WIDTH*scale) * 4 + i]   = src[counter + i];
+                        dest[IX(x*2, y*2+1, WIDTH*scale) * 4 + i]   = src[counter + i];
+                        dest[IX(x*2+1, y*2+1, WIDTH*scale) * 4 + i] = src[counter + i];
+                    }
+                    counter += 4;
+                }
+            }
+            return; }
+        case 3: {
+            for (unsigned y=0; y<HEIGHT; y++) {
+                for (unsigned x=0; x<WIDTH; x++) {
+                    for (int i=0; i<3; i++) {
+                        dest[IX(x*3, y*3, WIDTH*scale) * 4 + i]     = src[counter + i];
+                        dest[IX(x*3+1, y*3, WIDTH*scale) * 4 + i]   = src[counter + i];
+                        dest[IX(x*3, y*3+1, WIDTH*scale) * 4 + i]   = src[counter + i];
+                        dest[IX(x*3+1, y*3+1, WIDTH*scale) * 4 + i] = src[counter + i];
+
+                        dest[IX(x*3, y*3+2, WIDTH*scale) * 4 + i] = src[counter + i];
+                        dest[IX(x*3+1, y*3+2, WIDTH*scale) * 4 + i] = src[counter + i];
+                        dest[IX(x*3+2, y*3+2, WIDTH*scale) * 4 + i] = src[counter + i];
+                        dest[IX(x*3+2, y*3+1, WIDTH*scale) * 4 + i] = src[counter + i];
+                        dest[IX(x*3+2, y*3+0, WIDTH*scale) * 4 + i] = src[counter + i];
+                    }
+                    counter += 4;
+                }
+            }
+            return; }
+        default:
+            Log(W, "Invalid scale factor %u\n", scale);
+            return;
     }
 }

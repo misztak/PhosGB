@@ -19,6 +19,7 @@ public:
     void handleInputUp(u8 key);
     void saveState();
     bool loadState(std::string& path);
+    std::string currentDateTime();
 public:
     bool isHalted;
     bool isDead;
