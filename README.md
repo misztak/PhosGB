@@ -40,6 +40,10 @@ An experimental Gameboy and Gameboy Color Emulator written in modern C++
 
 * Custom palette for DMG mode
 
+### Input
+
+<img src="examples/Controls.png" hspace="15">
+
 ## Building
 
 PhosGB currently supports Windows, Linux and macOS. The frontend requires SDL2.
