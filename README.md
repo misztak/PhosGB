@@ -3,24 +3,24 @@
 An experimental Gameboy and Gameboy Color Emulator written in modern C++
 
 <p align="center">
-  <img src="examples/Zelda_1.png">
-  <img src="examples/Zelda_2.png">
+  <img src="examples/Zelda_1.png" hspace="10">
+  <img src="examples/Zelda_2.png" hspace="10">
 </p>
 <p align="center">
-  <img src="examples/F1-Race_1.png">
-  <img src="examples/F1-Race_2.png">
+  <img src="examples/F1-Race_1.png" hspace="10">
+  <img src="examples/F1-Race_2.png" hspace="10">
 </p>
 <p align="center">
-  <img src="examples/SuperMarioLand_1.png">
-  <img src="examples/SuperMarioLand_2.png">
+  <img src="examples/SuperMarioLand_1.png" hspace="10">
+  <img src="examples/SuperMarioLand_2.png" hspace="10">
 </p>
 <p align="center">
-  <img src="examples/PokemonRed_1.png">
-  <img src="examples/PokemonRed_2.png">
+  <img src="examples/PokemonRed_1.png" hspace="10">
+  <img src="examples/PokemonRed_2.png" hspace="10">
 </p>
 <p align="center">
-  <img src="examples/Tetris_1.png">
-  <img src="examples/Tetris_2.png">
+  <img src="examples/Tetris_1.png" hspace="10">
+  <img src="examples/Tetris_2.png" hspace="10">
 </p>
 <p align="center">
   <img src="examples/Debugger.png">
