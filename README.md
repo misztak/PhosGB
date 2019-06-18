@@ -28,7 +28,17 @@ An experimental Gameboy and Gameboy Color Emulator written in modern C++
 
 ## Features
 
-TODO
+* Support for MBC1, MBC2, MBC3 and MBC5 cartridges
+
+* Full audio emulation
+
+* Save States
+
+* Saves SRAM to file
+
+* Debugger with Memory Editor, Tileset & Background Viewer, etc.
+
+* Custom palette for DMG mode
 
 ## Building
 
