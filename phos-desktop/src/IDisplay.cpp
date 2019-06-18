@@ -74,7 +74,7 @@ void IDisplay::showMainMenu() {
         } else {
             std::vector<u8> scaledBuffer(size * scale * scale, 0xFF);
             scaleFrame(pixelBuffer, scaledBuffer, scale);
-            std::string fileName = emulator->currentFile + emulator->currentDateTime();
+            std::string fileName = emulator->currentFile + emulator->currentDateTime() + ".png";
             unsigned int error = lodepng::encode(fileName, scaledBuffer, WIDTH*scale, HEIGHT*scale);
             if (error)
                 Log(W, "Lodepng encode error %u: %s\n", error, lodepng_error_text(error));
