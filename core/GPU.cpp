@@ -123,7 +123,7 @@ void GPU::renderScanline() {
     for (int p=0; p<160; p++) pixelLine[p].clear();
 
     // white background
-    if (!isBitSet(getReg(LCD_CONTROL), BG_DISPLAY)) {
+    if (!isBitSet(getReg(LCD_CONTROL), BG_DISPLAY) && cpu->gbMode == DMG) {
         setBGColor(0xFF);
     } else {
         renderBGScanline();
@@ -227,6 +227,7 @@ void GPU::renderBGScanline(bool fullLine, u8 yCoord) {
 
         posX++;
         bit = (bit + 1) % 8;
+        if (bit == 0) fetchTileData(mapSelect, posY, posX, tile, attribute, data);
     }
 }
 
@@ -251,7 +252,6 @@ void GPU::renderWindowScanline() {
 
     // draw one line
     u8 bit = posX % 8;
-    //u8 winX = getReg(WINDOW_X_minus7) - 7;
     for (unsigned x=0; x<160; x++) {
         u8 pLo = ((data & (0x0080 >> bit)) ? 1 : 0);
         u8 pHi = ((data & (0x8000 >> bit)) ? 2 : 0);
@@ -341,10 +341,11 @@ void GPU::renderSpriteScanline() {
             unsigned ox = spriteX + bit;
             if (ox < 160) {
                 unsigned index = ((getReg(LCDC_Y_COORDINATE) * 160) + ox) * 4;
-                // TODO: GB enable flag behaviour in CGB mode
-                if (pixelLine[ox].type == 3) continue;
-                if (isBitSet(spriteAttr, 0x80)) {
-                    if (pixelLine[ox].type == 1 && pixelLine[ox].palette > 0) continue;
+                if (isBitSet(getReg(LCD_CONTROL), BG_DISPLAY)) {
+                    if (pixelLine[ox].type == 3) continue;
+                    if (isBitSet(spriteAttr, 0x80)) {
+                        if (pixelLine[ox].type == 1 && pixelLine[ox].palette > 0) continue;
+                    }
                 }
 
                 pixelLine[ox].palette = paletteIndex;
