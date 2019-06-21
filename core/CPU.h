@@ -61,12 +61,14 @@ public:
 
     GB_MODE gbMode;
 
+    u32 cycles;
     bool halted;
     int timerCounter;
     int dividerCounter;
 
     bool headless;
     bool runCGBinDMGMode;
+    bool doubleSpeedMode;
 public:
     CPU();
     bool init(std::string& romPath);

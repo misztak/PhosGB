@@ -88,6 +88,7 @@ void Debugger::emulatorView(u8* data) {
         emulator->isHalted = false;
     }
 
+    ImGui::Text("GB Mode: %s", (emulator->cpu.gbMode == DMG) ? "DMG" : "CGB");
     ImGui::Text("Registers:");
     ImGui::Text("PC: 0x%04X", emulator->cpu.r.pc);
     ImGui::Text("SP: 0x%04X", emulator->cpu.r.sp);

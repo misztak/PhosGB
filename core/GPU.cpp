@@ -10,6 +10,8 @@ GPU::GPU(CPU* c, MMU* m) :
     cpu(c),
     mmu(m),
     mode(VBLANK),
+    wyc(0),
+    pixelLine(160),
     displayState(DISPLAY_TEXTURE_SIZE, 255),
     backgroundState(262144, 255),
     background(256, std::vector<u8>(256, 255)),
@@ -26,6 +28,7 @@ void GPU::reset() {
     setMode(VBLANK);
     modeclock = 0;
     DMATicks = 0;
+    wyc = 0;
     std::fill(displayState.begin(), displayState.end(), 255);
     std::fill(backgroundState.begin(), backgroundState.end(), 255);
     for (std::vector<u8>& v : background) std::fill(v.begin(), v.end(), 255);
@@ -79,6 +82,9 @@ void GPU::tick(u32 ticks) {
                          cpu->requestInterrupt(INTERRUPT_LCD_STAT);
                      }
                 } else {
+                    if (cpu->gbMode == CGB && mmu->VramDma.enabled)
+                        mmu->performHDMA();
+
                     setMode(READ_OAM);
                     if (isBitSet(getReg(LCDC_STATUS), MODE_2_OAM_INTERRUPT)) {
                         cpu->requestInterrupt(INTERRUPT_LCD_STAT);
@@ -88,7 +94,7 @@ void GPU::tick(u32 ticks) {
             break;
         case VBLANK:
             if (modeclock >= 456) {
-                modeclock = 0;
+                modeclock = 0; wyc = 0;
                 line++;
                 if (line > 153) {
                     setMode(READ_OAM);
@@ -114,7 +120,14 @@ void GPU::tick(u32 ticks) {
 }
 
 void GPU::renderScanline() {
-    renderBGScanline(getReg(LCDC_Y_COORDINATE), getReg(SCROLL_Y), getReg(SCROLL_X));
+    for (int p=0; p<160; p++) pixelLine[p].clear();
+
+    // white background
+    if (!isBitSet(getReg(LCD_CONTROL), BG_DISPLAY)) {
+        setBGColor(0xFF);
+    } else {
+        renderBGScanline();
+    }
 
     if (isBitSet(getReg(LCD_CONTROL), WINDOW_DISPLAY_ENABLE)) {
         renderWindowScanline();
@@ -123,15 +136,15 @@ void GPU::renderScanline() {
     int y = getReg(LCDC_Y_COORDINATE);
     int index = y * 160 * 4;
     for (int x=0; x<160; x++) {
-        if (useCustomPalette) {
-            displayState[index] = customPalette[background[y][x]][0];
-            displayState[index + 1] = customPalette[background[y][x]][1];
-            displayState[index + 2] = customPalette[background[y][x]][2];
+        if (useCustomPalette && cpu->gbMode == DMG) {
+            displayState[index] = customPalette[pixelLine[x].r][0];
+            displayState[index + 1] = customPalette[pixelLine[x].g][1];
+            displayState[index + 2] = customPalette[pixelLine[x].b][2];
             index += 4;
         } else {
-            displayState[index] = background[y][x];
-            displayState[index + 1] = background[y][x];
-            displayState[index + 2] = background[y][x];
+            displayState[index] = pixelLine[x].r;
+            displayState[index + 1] = pixelLine[x].g;
+            displayState[index + 2] = pixelLine[x].b;
             index += 4;
         }
     }
@@ -141,183 +154,241 @@ void GPU::renderScanline() {
     }
 }
 
-void GPU::renderBGScanline(u8 yCoord, u8 scrollY, u8 scrollX, u8 maxWidth) {
-    // white background
-    if (!isBitSet(getReg(LCD_CONTROL), BG_DISPLAY)) {
-        setBGColor(0xFF);
-        return;
+void GPU::fetchTileData(bool mapSelect, u8 posY, u8 posX, u16& tile, u16& attribute, u16& data) {
+    // get the start of the selected map and add the offset to the selected tile
+    u16 tileAddress = mapSelect ? 0x1C00u : 0x1800u;
+    tileAddress += (((posY / 8) * 32) + (posX / 8)) % 1024;
+
+    u16 tileData = 0x0000;
+    u8 yOffset = posY & 0x07;
+
+    tile = mmu->VRAM[tileAddress];
+    if (cpu->gbMode == CGB) {
+        attribute = mmu->VRAM[VRAM_BANK_SIZE + tileAddress];
+        // select correct bank
+        if (attribute & 0x08) tileData += VRAM_BANK_SIZE;
+        // check for up/down flip
+        if (attribute & 0x40) yOffset ^= 7;
     }
 
-    // setup palette data from register
+    if (isBitSet(getReg(LCD_CONTROL), BG_AND_WINDOW_TILE_SELECT)) {
+        tileData += tile * 0x10;
+    } else {
+        tileData += 0x1000 + static_cast<char>(tile) * 0x10;
+    }
+    tileData += yOffset * 2;
+
+    data = mmu->VRAM[tileData++];
+    data |= mmu->VRAM[tileData] << 8;
+
+    // check for left/right flip
+    if (cpu->gbMode == CGB && attribute & 0x20) hflip(data);
+}
+
+void GPU::renderBGScanline(bool fullLine, u8 yCoord) {
+    // DMG palette (should probably move this somewhere else)
     int paletteData = getReg(BG_PALETTE_DATA);
-    const u8 palette[] {
-        colors[paletteData & 0x03],
-        colors[(paletteData >> 2) & 0x03],
-        colors[(paletteData >> 4) & 0x03],
-        colors[(paletteData >> 6) & 0x03]
+    const u8 palette[4] {
+            colors[paletteData & 0x03],
+            colors[(paletteData >> 2) & 0x03],
+            colors[(paletteData >> 4) & 0x03],
+            colors[(paletteData >> 6) & 0x03],
     };
 
-    // get tile info
-    u16 tileNumberMap = isBitSet(getReg(LCD_CONTROL), BG_TILE_MAP_SELECT) ? (u16) 0x1C00 : (u16) 0x1800;
-    u16 tileData = isBitSet(getReg(LCD_CONTROL), BG_AND_WINDOW_TILE_SELECT) ? (u16) 0x0000 : (u16) 0x1000;
+    u8 posY = getReg(LCDC_Y_COORDINATE) + getReg(SCROLL_Y);
+    u8 posX = getReg(SCROLL_X);
+    unsigned lineWidth = 160;
+    if (fullLine) {
+        posY = yCoord;
+        posX = 0;
+        lineWidth = 256;
+    }
 
-    u8 tileY = (u8)(((yCoord + scrollY) / 8) % 32);
-    u8 tileYOffset = (u8)((yCoord + scrollY) % 8);
+    u16 tile = 0, attribute = 0, data = 0;
+    bool mapSelect = isBitSet(getReg(LCD_CONTROL), BG_TILE_MAP_SELECT);
+    fetchTileData(mapSelect, posY, posX, tile, attribute, data);
 
-    for (u8 x=0; x<maxWidth; x++) {
-        u8 tileX = (u8)(((scrollX + x) / 8) % 32);
-        u8 tileNumber = mmu->VRAM[(u16)(tileNumberMap + (tileY * 32) + tileX)];
+    // draw one line
+    u8 bit = posX % 8;
+    for (unsigned x=0; x<lineWidth; x++) {
+        u8 pLo = ((data & (0x0080 >> bit)) ? 1 : 0);
+        u8 pHi = ((data & (0x8000 >> bit)) ? 2 : 0);
+        u8 paletteIndex = pLo + pHi;
 
-        u16 tileDataPtr = 0;
-        if (isBitSet(getReg(LCD_CONTROL), BG_AND_WINDOW_TILE_SELECT)) {
-            tileDataPtr = (u16)(tileData + tileNumber * 0x10);
+        pixelLine[x].type = (attribute & 0x80) ? 3 : 1;
+        pixelLine[x].palette = paletteIndex;
+        if (cpu->gbMode == DMG) {
+            u8 color = palette[paletteIndex];
+            pixelLine[x].setColor(color, color, color);
         } else {
-            tileDataPtr = (u16)(tileData + static_cast<char>(tileNumber) * 0x10);
+            u16 color = getColor(0, attribute, paletteIndex);
+            pixelLine[x].setColor(color & 0x001F, (color & 0x03E0) >> 5, (color & 0x7C00) >> 10);
         }
 
-        tileDataPtr += (u16)(tileYOffset * 2);
-        u8 b1 = mmu->VRAM[tileDataPtr];
-        u8 b2 = mmu->VRAM[tileDataPtr + 1];
-
-        u8 bit = (u8)(7 - ((scrollX + x) % 8));
-        assert(bit < 8);
-        u8 bitMask = 1 << bit;
-        u8 pLo = isBitSet(b1, bitMask) ? 1 : 0;
-        u8 pHi = isBitSet(b2, bitMask) ? 2 : 0;
-
-        u8 color = palette[pLo + pHi];
-
-        //int index = ((getReg(LCDC_Y_COORDINATE) * 160) + x) * 4;
-        background[yCoord][x] = color;
+        posX++;
+        bit = (bit + 1) % 8;
     }
 }
 
 void GPU::renderWindowScanline() {
-    int winY = getReg(LCDC_Y_COORDINATE) - getReg(WINDOW_Y);
-    if (winY < 0) {
-        return;
-    }
-
-    const u8 palette[] {
-        colors[getReg(BG_PALETTE_DATA) & 0x03],
-        colors[(getReg(BG_PALETTE_DATA) >> 2) & 0x03],
-        colors[(getReg(BG_PALETTE_DATA) >> 4) & 0x03],
-        colors[(getReg(BG_PALETTE_DATA) >> 6) & 0x03]
+    // DMG palette (should probably move this somewhere else)
+    int paletteData = getReg(BG_PALETTE_DATA);
+    const u8 palette[4] {
+            colors[paletteData & 0x03],
+            colors[(paletteData >> 2) & 0x03],
+            colors[(paletteData >> 4) & 0x03],
+            colors[(paletteData >> 6) & 0x03],
     };
 
-    u16 tileNumberMap = isBitSet(getReg(LCD_CONTROL), WINDOW_TILE_MAP_SELECT) ? (u16) 0x9C00 : (u16) 0x9800;
-    tileNumberMap -= 0x8000;
+    if (getReg(WINDOW_X_minus7) >= 167u) return;
+    if ((unsigned)(getReg(LCDC_Y_COORDINATE) - getReg(WINDOW_Y)) >= 144u) return;
+    u8 posX = (7 - getReg(WINDOW_X_minus7)) & 0xFF;
+    u8 posY = wyc++;
 
-    u16 tileData = isBitSet(getReg(LCD_CONTROL), BG_AND_WINDOW_TILE_SELECT) ? (u16) 0x8000 : (u16) 0x9000;
-    tileData -= 0x8000;
+    u16 tile = 0, attribute = 0, data = 0;
+    bool mapSelect = isBitSet(getReg(LCD_CONTROL), WINDOW_TILE_MAP_SELECT);
+    fetchTileData(mapSelect, posY, posX, tile, attribute, data);
 
-    u8 tileY = (u8)(winY / 8);
-    u8 tileYOffset = (u8)(winY % 8);
+    // draw one line
+    u8 bit = posX % 8;
+    //u8 winX = getReg(WINDOW_X_minus7) - 7;
+    for (unsigned x=0; x<160; x++) {
+        u8 pLo = ((data & (0x0080 >> bit)) ? 1 : 0);
+        u8 pHi = ((data & (0x8000 >> bit)) ? 2 : 0);
+        u8 paletteIndex = pLo + pHi;
 
-    int winX = getReg(WINDOW_X_minus7) - 7;
-    for (int x=0; x<160; x++) {
-        if (x < winX) {
-            continue;
+        if (x - (getReg(WINDOW_X_minus7) - 7) <= 160u) {
+            pixelLine[x].type = (attribute & 0x80) ? 3 : 1;
+            pixelLine[x].palette = paletteIndex;
+            if (cpu->gbMode == DMG) {
+                u8 color = palette[paletteIndex];
+                pixelLine[x].setColor(color, color, color);
+            } else {
+                u16 color = getColor(0, attribute, paletteIndex);
+                pixelLine[x].setColor(color & 0x001F, (color & 0x03E0) >> 5, (color & 0x7C00) >> 10);
+            }
         }
 
-        u8 tileX = (u8)((x - winX) / 8);
-        u8 tileNumber = mmu->VRAM[tileNumberMap + (tileY * 32) + tileX];
-        u16 tileDataPtr = 0;
-
-        if (isBitSet(getReg(LCD_CONTROL), BG_AND_WINDOW_TILE_SELECT)) {
-            tileDataPtr = (u16)(tileData + tileNumber * 0x10);
-        } else {
-            tileDataPtr = (u16)(tileData + static_cast<char>(tileNumber) * 0x10);
-        }
-        tileDataPtr += (u16)(tileYOffset * 2);
-
-        u8 b1 = mmu->VRAM[tileDataPtr];
-        u8 b2 = mmu->VRAM[tileDataPtr + 1];
-
-        u8 bit = (u8)(7 - x % 8);
-        assert(bit < 8);
-        u8 bitMask = 1 << bit;
-        u8 pLo = isBitSet(b1, bitMask) ? 1 : 0;
-        u8 pHi = isBitSet(b2, bitMask) ? 2 : 0;
-        u8 color = palette[pLo + pHi];
-
-        //int index = ((getReg(LCDC_Y_COORDINATE) * 160) + x) * 4;
-        background[getReg(LCDC_Y_COORDINATE)][x] = color;
+        posX++;
+        bit = (bit + 1) % 8;
+        if (bit == 0) fetchTileData(mapSelect, posY, posX, tile, attribute, data);
     }
 }
 
 void GPU::renderSpriteScanline() {
-    const u8 SPRITE_SIZE_BYTES = 16;
-    const u8 bgPalette[] {
-        colors[getReg(BG_PALETTE_DATA) & 0x03],
-        colors[getReg(BG_PALETTE_DATA >> 2) & 0x03],
-        colors[getReg(BG_PALETTE_DATA >> 4) & 0x03],
-        colors[getReg(BG_PALETTE_DATA >> 6) & 0x03],
-    };
+    const u8 spriteSize = isBitSet(getReg(LCD_CONTROL), SPRITE_SIZE) ? 16 : 8;
+    unsigned sprites[10] = {};
+    unsigned spriteCount = 0;
 
-    for (int i=156; i>=0; i-=4) {
-        u8 objY = mmu->OAM[i];
-        u8 spriteSize = isBitSet(getReg(LCD_CONTROL), SPRITE_SIZE) ? 0x10 : 0x08;
-        int height = spriteSize;
+    for (unsigned s=0; s<40; s++) {
+        unsigned sy = mmu->OAM[s * 4] - 16;
 
-        int y = objY - 16;
-        if ((y <= getReg(LCDC_Y_COORDINATE)) && ((y + height) > getReg(LCDC_Y_COORDINATE))) {
-            u8 objX = mmu->OAM[i + 1];
-            u8 spriteTileNumber = mmu->OAM[i + 2];
-            u8 spriteFlags = mmu->OAM[i + 3];
+        sy = getReg(LCDC_Y_COORDINATE) - sy;
+        if (sy >= spriteSize) continue;
+        sprites[spriteCount++] = s;
+        if (spriteCount == 10) break;
+    }
 
-            if (spriteSize == 0x10) {
-                spriteTileNumber &= 0xFE;
+    // sort sprites by x-coordinate
+    for (unsigned s1=0; s1<spriteCount; s1++) {
+        for (unsigned s2=s1+1; s2<spriteCount; s2++) {
+            int sx1 = mmu->OAM[sprites[s1] * 4 + 1] - 8;
+            int sx2 = mmu->OAM[sprites[s2] * 4 + 1] - 8;
+            if (sx2 < sx1) {
+                unsigned tmp = sprites[s1];
+                sprites[s1] = sprites[s2];
+                sprites[s2] = tmp;
             }
+        }
+    }
 
-            u8 paletteNumber = isBitSet(spriteFlags, 0x10) ? 0x01 : 0x00;
-            int x = objX - 8;
+    // render backwards
+    for (int s=spriteCount-1; s>=0; s--) {
+        unsigned spriteAddress = sprites[s] * 4;
+        unsigned spriteY    = mmu->OAM[spriteAddress] - 16;
+        unsigned spriteX    = mmu->OAM[spriteAddress + 1] - 8;
+        unsigned spriteTile = mmu->OAM[spriteAddress + 2];
+        unsigned spriteAttr = mmu->OAM[spriteAddress + 3];
+        if (spriteSize == 16) spriteTile &= 0xFE;
 
-            const u16 tileData = 0x0000;
-            u8 palette[] {
-                0x00,
-                colors[(paletteNumber == 0x00) ? (getReg(SPRITE_PALETTE_0_DATA) >> 2 & 0x03) : (getReg(SPRITE_PALETTE_1_DATA) >> 2 & 0x03)],
-                colors[(paletteNumber == 0x00) ? (getReg(SPRITE_PALETTE_0_DATA) >> 4 & 0x03) : (getReg(SPRITE_PALETTE_1_DATA) >> 4 & 0x03)],
-                colors[(paletteNumber == 0x00) ? (getReg(SPRITE_PALETTE_0_DATA) >> 6 & 0x03) : (getReg(SPRITE_PALETTE_1_DATA) >> 6 & 0x03)],
-            };
+        u8 relY = getReg(LCDC_Y_COORDINATE) - spriteY;
+        if (relY >= spriteSize) continue;
+        // vertical flip
+        if (spriteAttr & 0x40) relY = (spriteSize - 1) - relY;
 
-            u16 tilePtr = tileData + (spriteTileNumber * SPRITE_SIZE_BYTES);
-            u8 tileYOffset = isBitSet(spriteFlags, 0x40) ? ((height - 1) - (getReg(LCDC_Y_COORDINATE) - y)) : (getReg(LCDC_Y_COORDINATE) - y);
-            tilePtr += (tileYOffset * 2);
+        u8 dmgPaletteNumber = isBitSet(spriteAttr, 0x10);
+        const u8 dmgPalette[4] {
+            0x00,
+            colors[dmgPaletteNumber ? (getReg(SPRITE_PALETTE_1_DATA) >> 2 & 0x03) : (getReg(SPRITE_PALETTE_0_DATA) >> 2 & 0x03)],
+            colors[dmgPaletteNumber ? (getReg(SPRITE_PALETTE_1_DATA) >> 4 & 0x03) : (getReg(SPRITE_PALETTE_0_DATA) >> 4 & 0x03)],
+            colors[dmgPaletteNumber ? (getReg(SPRITE_PALETTE_1_DATA) >> 6 & 0x03) : (getReg(SPRITE_PALETTE_0_DATA) >> 6 & 0x03)],
+        };
 
-            u8 low = mmu->VRAM[tilePtr];
-            u8 high = mmu->VRAM[(u16)tilePtr + 1];
+        unsigned tileData;
+        if (cpu->gbMode == DMG) tileData = spriteTile * 16 + relY * 2;
+        else tileData = (spriteAttr & 0x08 ? VRAM_BANK_SIZE : 0x0000) + spriteTile * 16 + relY * 2;
+        unsigned data = mmu->VRAM[tileData++];
+        data |= mmu->VRAM[tileData] << 8;
+        if (spriteAttr & 0x20) data = hflip(data);
 
-            for (int indexX=0; indexX<8; indexX++) {
-                int pixelX = x + indexX;
-                if (pixelX >= 0 && pixelX < 160) {
-                    u8 bit = isBitSet(spriteFlags, 0x20) ? indexX : 7 - indexX;
-                    u8 bitMask = 0x01 << bit;
-                    u8 pixelVal = 0x00;
-                    if (isBitSet(high, bitMask)) pixelVal |= 2;
-                    if (isBitSet(low, bitMask)) pixelVal |= 1;
-                    u8 color = palette[pixelVal];
+        for (unsigned bit=0; bit<8; bit++) {
+            u8 pLo = ((data & (0x0080 >> bit)) ? 1 : 0);
+            u8 pHi = ((data & (0x8000 >> bit)) ? 2 : 0);
+            u8 paletteIndex = pLo + pHi;
+            // transparent
+            if (paletteIndex == 0) continue;
 
-                    if (pixelVal != 0x00) {
-                        int index = ((getReg(LCDC_Y_COORDINATE) * 160) + pixelX) * 4;
-                        if (!isBitSet(spriteFlags, 0x80) || (background[getReg(LCDC_Y_COORDINATE)][pixelX] == bgPalette[0x00])) {
-                            //backgroundTmp[getReg(LCDC_Y_COORDINATE)][pixelX] = color;
-                            if (useCustomPalette) {
-                                displayState[index] = customPalette[color][0];
-                                displayState[index + 1] = customPalette[color][1];
-                                displayState[index + 2] = customPalette[color][2];
-                            } else {
-                                displayState[index] = color;
-                                displayState[index + 1] = color;
-                                displayState[index + 2] = color;
-                            }
-                        }
+            unsigned ox = spriteX + bit;
+            if (ox < 160) {
+                unsigned index = ((getReg(LCDC_Y_COORDINATE) * 160) + ox) * 4;
+                // TODO: GB enable flag behaviour in CGB mode
+                if (pixelLine[ox].type == 3) continue;
+                if (isBitSet(spriteAttr, 0x80)) {
+                    if (pixelLine[ox].type == 1 && pixelLine[ox].palette > 0) continue;
+                }
+
+                pixelLine[ox].palette = paletteIndex;
+                pixelLine[ox].type = 2;
+
+                if (cpu->gbMode == DMG) {
+                    u8 color = dmgPalette[paletteIndex];
+                    if (useCustomPalette) {
+                        displayState[index] = customPalette[color][0];
+                        displayState[index + 1] = customPalette[color][1];
+                        displayState[index + 2] = customPalette[color][2];
+                    } else {
+                        displayState[index] = color;
+                        displayState[index + 1] = color;
+                        displayState[index + 2] = color;
                     }
+                } else {
+                    u16 color = getColor(1, spriteAttr, paletteIndex);
+                    // color & 0x001F, (color & 0x03E0) >> 5, (color & 0x7C00) >> 10
+                    displayState[index] = color & 0x001F;
+                    displayState[index + 1] = (color & 0x03E0) >> 5;
+                    displayState[index + 2] = (color & 0x7C00) >> 10;
                 }
             }
         }
-
     }
+}
+
+u16 GPU::getColor(u8 type, u16 attribute, u16 paletteIndex) {
+    assert(cpu->gbMode == CGB);
+    // 2 Types x 8 Palettes x 4 Colors x 2 Bytes
+    u8 paletteNumber = attribute & 0x07;
+    u8 paletteAddress = ((paletteNumber * 4) + paletteIndex) * 2;
+    u8 offset = type ? 0x40 : 0x00;
+    paletteAddress += offset;
+    assert(paletteAddress + 1 <= 0x7F);
+    return mmu->PaletteMemory[paletteAddress] | (mmu->PaletteMemory[paletteAddress + 1] << 8);
+}
+
+unsigned GPU::hflip(unsigned data) {
+    return   (data & 0x8080) >> 7 | (data & 0x4040) >> 5
+           | (data & 0x2020) >> 3 | (data & 0x1010) >> 1
+           | (data & 0x0808) << 1 | (data & 0x0404) << 3
+           | (data & 0x0202) << 5 | (data & 0x0101) << 7;
 }
 
 u8 GPU::getReg(u16 regAddress) {
@@ -346,18 +417,18 @@ u8* GPU::getDisplayState() {
 }
 
 u8* GPU::getBackgroundState() {
+    pixelLine.resize(256);
     int counter = 0;
     for (int i=0; i<256; i++) {
-        renderBGScanline(i, 0, 0, 255);
-    }
-    for (int y=0; y<256; y++) {
+        renderBGScanline(true, i);
         for (int x=0; x<256; x++) {
-            backgroundState[counter] = background[y][x];
-            backgroundState[counter + 1] = background[y][x];
-            backgroundState[counter + 2] = background[y][x];
-            counter += 4;
+            backgroundState[counter++] = pixelLine[x].r;
+            backgroundState[counter++] = pixelLine[x].g;
+            backgroundState[counter++] = pixelLine[x].b;
+            counter++;
         }
     }
+    pixelLine.resize(160);
     if (!showViewportBorder) return backgroundState.data();
 
     // render viewport borders

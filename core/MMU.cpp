@@ -19,6 +19,7 @@ MMU::MMU() :
     ZRAM(ZRAM_SIZE, 0),
     VRAM(VRAM_SIZE, 0),
     OAM(OAM_SIZE, 0),
+    PaletteMemory(128, 0xFF),
     mbc(nullptr) {
     VramDma.reset();
     initTables();
@@ -46,8 +47,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         Log(I, "Running CGB ROM in DMG Mode\n");
     } else if (buffer[0x143] == 0x80 || buffer[0x143] == 0xC0) {
         cpu->gbMode = CGB;
-        Log(W, "Gameboy Color cartridges detected\n");
-        return false;
+        Log(I, "Running ROM in CGB Mode\n");
     }
 
     switch (cartridgeType) {
@@ -137,6 +137,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     std::fill(ZRAM.begin(), ZRAM.end(), 0);
     std::fill(VRAM.begin(), VRAM.end(), 0);
     std::fill(OAM.begin(), OAM.end(), 0);
+    std::fill(PaletteMemory.begin(), PaletteMemory.end(), 0xFF);
 
     if (cartridgeTypes[cartridgeType].find("RAM+BATTERY") != std::string::npos) {
         // look for a .sav file of valid size
@@ -265,6 +266,14 @@ u8 MMU::readByte(u16 address) {
                 return 0x00;
             }
             if (address <= 0xFF7F) {
+                if (address == 0xFF69) {
+                    // BG Palette Data
+                    return PaletteMemory[IO[0x68] & 0x3F];
+                }
+                if (address == 0xFF6B) {
+                    // Sprite Palette Data
+                    return PaletteMemory[(IO[0x6A] & 0x3F) + 0x40];
+                }
                 return IO[address - 0xFF00];
             }
             return ZRAM[address - 0xFF80];
@@ -373,7 +382,6 @@ void MMU::writeByte(u16 address, u8 value) {
                                 IO[0x55] = value & 0x7F;
                                 if (!VramDma.enabled) {
                                     VramDma.enabled = true;
-                                    // Start HDMA
                                 }
                                 break;
                             case GENERAL_PURPOSE:
@@ -381,7 +389,7 @@ void MMU::writeByte(u16 address, u8 value) {
                                     IO[0x55] = 0xFF;
                                     VramDma.enabled = false;
                                 } else {
-                                    // Start GDMA
+                                    performGDMA();
                                 }
                                 break;
                         }
@@ -391,6 +399,14 @@ void MMU::writeByte(u16 address, u8 value) {
                     case 0x56:      // Infrared (CGB Mode Only)
                         assert(cpu->gbMode == CGB);
                         Log(I, "Write to CGB Infrared Communications Port [Unimplemented]\n");
+                        break;
+                    case 0x69:      // BG Palette Data (CGB Mode Only)
+                        PaletteMemory[IO[0x68] & 0x3F] = value;
+                        if (isBitSet(IO[0x68], 0x80)) IO[0x68]++;
+                        break;
+                    case 0x6B:      // Sprite Palette Data (CGB Mode Only)
+                        PaletteMemory[(IO[0x6A] & 0x3F) + 0x40] = value;
+                        if (isBitSet(IO[0x6A], 0x80)) IO[0x6A]++;
                         break;
                     case 0x6C:
                         if (cpu->gbMode != CGB) return;
@@ -420,6 +436,74 @@ void MMU::writeByte(u16 address, u8 value) {
         default:
             return;
     }
+}
+
+void MMU::performHDMA() {
+    assert(cpu->gbMode == CGB);
+
+    u16 source = (IO[0x51] << 8) | (IO[0x52] & 0xF0);
+    u16 dest = (((IO[0x53] & 0x1F) << 8) | (IO[0x54] & 0xF0)) + 0x8000;
+
+    assert((source <= 0x7FFF) || (source >= 0xA000 && source <= 0xDFFF));
+    assert(dest >= 0x8000 && dest <= 0x9FFF);
+
+    // copy 16 bytes into VRAM
+    for (unsigned i=0; i<16; i++) {
+        writeByte(dest + i, readByte(source + i));
+    }
+
+    // update the remaining transfer length
+    VramDma.transferLength -= 16;
+    if (VramDma.transferLength == 0) {
+        // HDMA finished
+        IO[0x55] = 0xFF;
+        VramDma.enabled = false;
+    } else {
+        IO[0x55]--;
+
+        source += 16;
+        IO[0x51] = source >> 8;
+        IO[0x52] = source & 0xFF;
+        dest += 16;
+        IO[0x53] = dest >> 8;
+        IO[0x54] = dest & 0xFF;
+    }
+
+    /*
+    unsigned transferCycles = 4;
+    if (cpu->doubleSpeedMode)
+        transferCycles += 64;
+    else
+        transferCycles += 32;
+    cpu->cycles += transferCycles;
+     */
+}
+
+void MMU::performGDMA() {
+    assert(cpu->gbMode == CGB);
+
+    u16 source = (IO[0x51] << 8) | (IO[0x52] & 0xF0);
+    u16 dest = (((IO[0x53] & 0x1F) << 8) | (IO[0x54] & 0xF0)) + 0x8000;
+
+    assert((source <= 0x7FFF) || (source >= 0xA000 && source <= 0xDFFF));
+    assert(dest >= 0x8000 && dest <= 0x9FFF);
+
+    for (unsigned i=0; i<VramDma.transferLength; i++) {
+        writeByte(dest+i, readByte(source+i));
+    }
+
+    for (unsigned r=0; r<5; r++) {
+        IO[0x51+r] = 0xFF;
+    }
+
+    /*
+    unsigned transferCycles = 4;
+    if (cpu->doubleSpeedMode)
+        transferCycles += VramDma.transferLength * 64;
+    else
+        transferCycles += VramDma.transferLength * 32;
+    cpu->cycles += transferCycles;
+     */
 }
 
 void MMU::writeWord(u16 address, u16 value) {

@@ -1,6 +1,7 @@
 #include "CPU.h"
 
-CPU::CPU(): gpu(this, &mmu), joypad(this), apu(this), gbMode(DMG), halted(false), headless(false), runCGBinDMGMode(true) {
+CPU::CPU(): gpu(this, &mmu), joypad(this), apu(this), gbMode(DMG), cycles(0), halted(false), headless(false),
+            runCGBinDMGMode(false), doubleSpeedMode(false) {
     mmu.cpu = this;
     mmu.gpu = &gpu;
 
@@ -466,8 +467,12 @@ void CPU::reset() {
     r.ime = 0x0;
     r.pc = mmu.inBIOS ? 0x0000 : 0x0100;
 
+    cycles = 0;
     timerCounter = 1024;
     dividerCounter = 0;
+
+    runCGBinDMGMode = false;
+    doubleSpeedMode = false;
 
     writeByte(0xFF05, 0x00);    // TIMA
     writeByte(0xFF06, 0x00);    // TMA
@@ -522,11 +527,11 @@ void CPU::handleInputUp(u8 key) {
 }
 
 u32 CPU::tick() {
-    u32 ticks = 0;
+    cycles = 0;
     u8 opcode = 0;
     bool isCBInstruction = false;
     if (halted) {
-        ticks = NOP(0x00);
+        cycles = NOP(0x00);
     } else {
         opcode = readByte(r.pc++);
         Instruction instruction;
@@ -542,25 +547,26 @@ u32 CPU::tick() {
             Log(F, "Invalid opcode 0x%02X at address 0x%04X\n", opcode, r.pc-1);
             return 0;
         }
-        ticks = (this->*instruction)(opcode);
+        cycles = (this->*instruction)(opcode);
     }
 
-    if (ticks == 0) {
+    if (cycles == 0) {
         Log(F, "Unimplemented opcode");
         if (isCBInstruction) LogRaw(F, " 0xCB");
         LogRaw(F, " 0x%02X at address 0x%02X\n", opcode, r.pc-1);
         return 0;
     }
 
-    gpu.tick(ticks);
+    gpu.tick(cycles);
 
-    updateTimer(ticks);
+    updateTimer(cycles);
 
-    apu.update(ticks);
+    apu.update(cycles);
 
     checkInterrupts();
 
-    return ticks;
+
+    return cycles;
 }
 
 void CPU::updateTimer(u32 ticks) {

@@ -47,6 +47,9 @@ public:
 
     void printCartridgeInfo(std::vector<u8>& buffer);
 
+    void performHDMA();
+    void performGDMA();
+
     void saveState(std::ofstream& outfile);
     void loadState(std::vector<u8>& buffer);
 public:
@@ -69,6 +72,7 @@ public:
     std::vector<u8> ZRAM;
     std::vector<u8> VRAM;
     std::vector<u8> OAM;
+    std::vector<u8> PaletteMemory;
 
     std::string cartridgeTitle;
     std::map<u8, std::string> cartridgeTypes;

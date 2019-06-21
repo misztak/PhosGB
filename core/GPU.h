@@ -43,6 +43,15 @@ constexpr u8 MODE_1_VBLANK_INTERRUPT = 0x10;
 constexpr u8 MODE_0_HBLANK_INTERRUPT = 0x08;
 constexpr u8 COINCIDENCE_FLAG = 0x04;
 
+struct Pixel {
+    u8 type;
+    u8 palette;
+    u8 r, g, b;
+    Pixel() : type(0), palette(0), r(0xFF), g(0xFF), b(0xFF) {};
+    void setColor(u8 red, u8 green, u8 blue) { r = red, g = green, b = blue; }
+    void clear() { type = 0, palette = 0; setColor(0xFF, 0xFF, 0xFF); }
+};
+
 class GPU {
 public:
     bool hitVBlank;
@@ -73,7 +82,9 @@ private:
     MMU* mmu;
 
     GPU_MODE mode;
+    unsigned wyc;
 
+    std::vector<Pixel> pixelLine;
     std::vector<u8> displayState;
     std::vector<u8> backgroundState;
     std::vector<std::vector<u8>> background;
@@ -83,9 +94,12 @@ private:
     void setReg(u16 regAddress, u8 value);
 
     void renderScanline();
-    void renderBGScanline(u8 yCoord, u8 scrollY, u8 scrollX, u8 maxWidth = 160);
+    void fetchTileData(bool mapSelect, u8 posY, u8 posX, u16& tile, u16& attribute, u16& data);
+    void renderBGScanline(bool fullLine = false, u8 yCoord = 0);
     void renderWindowScanline();
     void renderSpriteScanline();
+    unsigned hflip(unsigned data);
+    u16 getColor(u8 type, u16 attribute, u16 paletteIndex);
 };
 
 #endif //PHOS_GPU_H

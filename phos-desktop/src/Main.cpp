@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
     spec.samples = 4096;
     SDL_AudioDeviceID deviceId = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
 
-    Logger::callback = DebuggerLog::DebugLog;
+    Logger::callback = StdLogger::StdLog;
 
     Emulator emulator;
     std::string filePath = "../gb/";
@@ -116,7 +116,10 @@ int main(int argc, char** argv) {
     //filePath.append("TicTacToe.gb");
     //filePath.append("SuperMarioLand.gb");
     //filePath.append("PokemonRed.gb");
-	filePath.append("Zelda.gb");
+	//filePath.append("Zelda.gb");
+
+	// CGB
+	filePath.append("PokemonYellow.gbc");
 
     //filePath.append("blargg/instr_timing.gb");
     //filePath.append("mooneye/acceptance/halt_ime0_nointr_timing.gb");
