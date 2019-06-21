@@ -103,7 +103,8 @@ int main(int argc, char** argv) {
     spec.samples = 4096;
     SDL_AudioDeviceID deviceId = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
 
-    Logger::callback = StdLogger::StdLog;
+    Logger::addSink(std::make_unique<StdSink>(false));
+    Logger::addSink(std::make_unique<DebugSink>(true));
 
     Emulator emulator;
     std::string filePath = "../gb/";

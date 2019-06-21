@@ -1,18 +1,12 @@
-#include "DebuggerLog.h"
+#include "DebugSink.h"
 
-ImGuiTextBuffer DebuggerLog::Buf;
-ImGuiTextFilter DebuggerLog::Filter;
-ImVector<int> DebuggerLog::LineOffsets;
-bool DebuggerLog::AutoScroll = true;
-bool DebuggerLog::ScrollToBottom = true;
-
-void DebuggerLog::Clear() {
+DebugSink::DebugSink(bool enabled) : Sink(enabled), AutoScroll(true), ScrollToBottom(true) {
     Buf.clear();
     LineOffsets.clear();
     LineOffsets.push_back(0);
 }
 
-void DebuggerLog::DebugLog(Severity s, const char* message) {
+void DebugSink::printLog(Severity s, const char *message) {
     int oldSize = Buf.size();
     Buf.appendf("%s", message);
     for (int new_size = Buf.size(); oldSize < new_size; oldSize++)
@@ -22,7 +16,13 @@ void DebuggerLog::DebugLog(Severity s, const char* message) {
         ScrollToBottom = true;
 }
 
-void DebuggerLog::Draw(const char* title, bool* open) {
+void DebugSink::Clear() {
+    Buf.clear();
+    LineOffsets.clear();
+    LineOffsets.push_back(0);
+}
+
+void DebugSink::Draw(const char* title, bool* open) {
     if (!ImGui::Begin(title, open))
     {
         ImGui::End();

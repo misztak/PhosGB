@@ -7,10 +7,14 @@ const char* Logger::severityStrings[] = {"info","debug","warn","fatal"};
 
 bool Logger::enabled = true;
 size_t Logger::counter = 0;
-Logger::LogCallback Logger::callback = nullptr;
+std::vector<std::unique_ptr<Sink>> Logger::sinks;
+
+void Logger::addSink(std::unique_ptr<Sink> sink) {
+    sinks.push_back(std::move(sink));
+}
 
 void Logger::Log(Severity s, const char* message, ...) {
-    if (!enabled || !callback)
+    if (!enabled)
         return;
 
     counter++;
@@ -27,11 +31,13 @@ void Logger::Log(Severity s, const char* message, ...) {
     std::ostringstream oss;
     oss << header << " " << buffer;
 
-    callback(s, oss.str().c_str());
+    for (auto& sink : sinks) {
+        if (sink->enabled) sink->printLog(s, oss.str().c_str());
+    }
 }
 
-void Logger::LogRaw(Severity s, const char *message, ...) {
-    if (!enabled || !callback)
+void Logger::LogRaw(Severity s, const char* message, ...) {
+    if (!enabled)
         return;
 
     char buffer[256];
@@ -40,10 +46,12 @@ void Logger::LogRaw(Severity s, const char *message, ...) {
     std::vsnprintf(buffer, 256, message, args);
     va_end(args);
 
-    callback(s, buffer);
+    for (auto& sink : sinks) {
+        if (sink->enabled) sink->printLog(s, buffer);
+    }
 }
 
-void StdLogger::StdLog(Severity s, const char *message) {
+void StdSink::printLog(Severity s, const char* message) {
     if (s == Severity::F)
         printf("\x1b[31m""%s""\x1b[0m", message);
     else

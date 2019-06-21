@@ -1,17 +1,13 @@
 #include "Debugger.h"
 
 Debugger::Debugger(SDL_Window* w, Emulator* emu, SDL_AudioDeviceID deviceId) :
-    IDisplay(w, emu, deviceId), show_demo_window(false), nextStep(false), singleStepMode(false), showLogWindow(true),
+    IDisplay(w, emu, deviceId), showDemoWindow(false), nextStep(false), singleStepMode(false), showLogWindow(true),
     bgTextureHandler(0), VRAMTextureHandler(0), TileTextureHandler(0) {
 
     loadTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());
     loadTexture(&bgTextureHandler, 256, 256, emulator->cpu.gpu.getBackgroundState());
     loadTexture(&VRAMTextureHandler, 8*16, 8*24, nullptr);
     loadTexture(&TileTextureHandler, 64, 64, nullptr);
-
-    DebuggerLog::Buf.clear();
-    DebuggerLog::LineOffsets.clear();
-    DebuggerLog::LineOffsets.push_back(0);
 }
 
 Debugger::~Debugger() {
@@ -59,7 +55,7 @@ void Debugger::update(u8* data) {
         ImGui::EndMenuBar();
     }
 
-    if (show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
+    if (showDemoWindow) ImGui::ShowDemoWindow(&showDemoWindow);
     emulatorView(data);
     memoryView();
     backgroundView();
@@ -199,7 +195,10 @@ void Debugger::VRAMView() {
 }
 
 void Debugger::logView() {
-    DebuggerLog::Draw("Log", &showLogWindow);
+    for (auto& sink : Logger::sinks) {
+        auto s = dynamic_cast<DebugSink*>(sink.get());
+        if (s) s->Draw("Log", &showLogWindow);
+    }
 }
 
 void Debugger::render() {

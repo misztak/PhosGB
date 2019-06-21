@@ -4,14 +4,11 @@
 #include "IDisplay.h"
 
 #include "imgui_memory_editor.h"
-#include "DebuggerLog.h"
+#include "DebugSink.h"
 
 class Debugger : public IDisplay {
 public:
-    bool show_demo_window;
-    bool nextStep;
-    bool singleStepMode;
-    bool showLogWindow;
+    bool showDemoWindow, nextStep, singleStepMode, showLogWindow;
 public:
     Debugger(SDL_Window* window, Emulator* emu, SDL_AudioDeviceID deviceId);
     ~Debugger();
