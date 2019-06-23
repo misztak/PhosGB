@@ -46,10 +46,11 @@ constexpr u8 COINCIDENCE_FLAG = 0x04;
 struct Pixel {
     u8 type;
     u8 palette;
+    u16 color;
     u8 r, g, b;
-    Pixel() : type(0), palette(0), r(0xFF), g(0xFF), b(0xFF) {};
+    Pixel() : type(0), palette(0), color(0x7FFF), r(0xFF), g(0xFF), b(0xFF) {};
     void setColor(u8 red, u8 green, u8 blue) { r = red, g = green, b = blue; }
-    void clear() { type = 0, palette = 0; setColor(0xFF, 0xFF, 0xFF); }
+    void clear() { type = 0, palette = 0, color = 0x7FFF; setColor(0xFF, 0xFF, 0xFF); }
 };
 
 class GPU {
@@ -100,6 +101,7 @@ private:
     void renderSpriteScanline();
     unsigned hflip(unsigned data);
     u16 getColor(u8 type, u16 attribute, u16 paletteIndex);
+    void colorCorrect(u16 original, u8& r, u8& g, u8& b);
 };
 
 #endif //PHOS_GPU_H

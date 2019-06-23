@@ -150,12 +150,8 @@ void GPU::renderScanline() {
                 index += 4;
             }
         } else {
-            u16 r = pixelLine[x].r * 26 + pixelLine[x].g * 4 + pixelLine[x].b * 2;
-            u16 g = pixelLine[x].g * 24 + pixelLine[x].b * 8;
-            u16 b = pixelLine[x].r * 6 + pixelLine[x].g * 4 + pixelLine[x].b * 22;
-            r = static_cast<u8>((r / 1024.f) * 255);
-            g = static_cast<u8>((g / 1024.f) * 255);
-            b = static_cast<u8>((b / 1024.f) * 255);
+            u8 r, g, b;
+            colorCorrect(pixelLine[x].color, r, g, b);
             displayState[index    ] = r;
             displayState[index + 1] = g;
             displayState[index + 2] = b;
@@ -236,6 +232,7 @@ void GPU::renderBGScanline(bool fullLine, u8 yCoord) {
             pixelLine[x].setColor(color, color, color);
         } else {
             u16 color = getColor(0, attribute, paletteIndex);
+            pixelLine[x].color = color;
             pixelLine[x].setColor(color & 0x001F, (color & 0x03E0) >> 5, (color & 0x7C00) >> 10);
         }
 
@@ -279,6 +276,7 @@ void GPU::renderWindowScanline() {
                 pixelLine[x].setColor(color, color, color);
             } else {
                 u16 color = getColor(0, attribute, paletteIndex);
+                pixelLine[x].color = color;
                 pixelLine[x].setColor(color & 0x001F, (color & 0x03E0) >> 5, (color & 0x7C00) >> 10);
             }
         }
@@ -378,22 +376,27 @@ void GPU::renderSpriteScanline() {
                     }
                 } else {
                     u16 color = getColor(1, spriteAttr, paletteIndex);
-                    u16 r = color & 0x001F;
-                    u16 g = (color & 0x03E0) >> 5;
-                    u16 b = (color & 0x7C00) >> 10;
-                    u16 rNew = r * 26 + g * 4 + b * 2;
-                    u16 gNew = g * 24 + b * 8;
-                    u16 bNew = r * 6 + g * 4 + b * 22;
-                    rNew = static_cast<u8>((rNew / 1024.f) * 255);
-                    gNew = static_cast<u8>((gNew / 1024.f) * 255);
-                    bNew = static_cast<u8>((bNew / 1024.f) * 255);
-                    displayState[index    ] = rNew;
-                    displayState[index + 1] = gNew;
-                    displayState[index + 2] = bNew;
+                    u8 r, g, b;
+                    colorCorrect(color, r, g, b);
+                    displayState[index    ] = r;
+                    displayState[index + 1] = g;
+                    displayState[index + 2] = b;
                 }
             }
         }
     }
+}
+
+void GPU::colorCorrect(u16 original, u8 &r, u8 &g, u8 &b) {
+    u16 rOld =  original & 0x001F;
+    u16 gOld = (original & 0x03E0) >> 5;
+    u16 bOld = (original & 0x7C00) >> 10;
+    u16 rNew = rOld * 26 + gOld *  4 + bOld * 2;
+    u16 gNew =             gOld * 24 + bOld * 8;
+    u16 bNew = rOld *  6 + gOld *  4 + bOld * 22;
+    r = static_cast<u8>((rNew / 1024.f) * 255);
+    g = static_cast<u8>((gNew / 1024.f) * 255);
+    b = static_cast<u8>((bNew / 1024.f) * 255);
 }
 
 u16 GPU::getColor(u8 type, u16 attribute, u16 paletteIndex) {
@@ -408,10 +411,11 @@ u16 GPU::getColor(u8 type, u16 attribute, u16 paletteIndex) {
 }
 
 unsigned GPU::hflip(unsigned data) {
-    return   (data & 0x8080) >> 7 | (data & 0x4040) >> 5
-           | (data & 0x2020) >> 3 | (data & 0x1010) >> 1
-           | (data & 0x0808) << 1 | (data & 0x0404) << 3
-           | (data & 0x0202) << 5 | (data & 0x0101) << 7;
+    // Hacker's Delight [p. 129]
+    unsigned x = (data & 0x5555) << 1 | ((data >> 1) & 0x5555);
+    x = (x & 0x3333) << 2 | ((x >> 2) & 0x3333);
+    x = (x & 0x0F0F) << 4 | ((x >> 4) & 0x0F0F);
+    return x;
 }
 
 u8 GPU::getReg(u16 regAddress) {
@@ -444,10 +448,16 @@ u8* GPU::getBackgroundState() {
     int counter = 0;
     for (int i=0; i<256; i++) {
         renderBGScanline(true, i);
+        u8 r, g, b;
         for (int x=0; x<256; x++) {
-            backgroundState[counter++] = pixelLine[x].r;
-            backgroundState[counter++] = pixelLine[x].g;
-            backgroundState[counter++] = pixelLine[x].b;
+            if (cpu->gbMode == CGB) {
+                colorCorrect(pixelLine[x].color, r, g, b);
+            } else {
+                r = pixelLine[x].r, g = pixelLine[x].g, b = pixelLine[x].b;
+            }
+            backgroundState[counter++] = r;
+            backgroundState[counter++] = g;
+            backgroundState[counter++] = b;
             counter++;
         }
     }
