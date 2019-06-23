@@ -1,11 +1,12 @@
 #include "Debugger.h"
 
-Debugger::Debugger(SDL_Window* w, Emulator* emu, SDL_AudioDeviceID deviceId) :
+Debugger::Debugger(SDL_Window* w, Emulator* emu, SDL_AudioDeviceID deviceId, DebugSink* sink) :
     IDisplay(w, emu, deviceId),
     nextStep(false),
     singleStepMode(false),
     showLogWindow(true), showDemoWindow(false), showMemWindow(false), showBGWindow(true), showVRAMWindow(true),
     showPaletteWindow(false),
+    sink(sink),
     bgTextureHandler(0), VRAMTextureHandler(0), TileTextureHandler(0) {
 
     loadTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());
@@ -90,7 +91,7 @@ void Debugger::emulatorView(u8* data) {
     ImGui::Image((void*)(intptr_t)mainTextureHandler, ImVec2(SCALED_WIDTH, SCALED_HEIGHT));
     //ImGui::ShowMetricsWindow();
     nextStep = ImGui::Button("Step");
-    if (singleStepMode && !emulator->isDead) {
+    if (singleStepMode) {
         emulator->isHalted = !nextStep;
     }
     if (ImGui::Button("Continue")) {
@@ -119,39 +120,40 @@ void Debugger::memoryView() {
     static MemoryEditor editor;
     ImGui::Begin("Memory Editor", &showMemWindow);
 
-    const char* items[] = {"ROM0", "ROM1", "WRAM", "ERAM", "ZRAM", "IO", "BIOS", "VRAM", "OAM"};
+    const char* items[] = {"ROM0", "ROM", "WRAM", "SRAM", "ZRAM", "IO", "BIOS", "VRAM", "OAM", "CGB Palette"};
     static int currentItem = 0;
     ImGui::Combo("Location", &currentItem, items, IM_ARRAYSIZE(items));
 
     switch (currentItem) {
         case 0:
-            editor.DrawContents(emulator->cpu.mmu.ROM_0.data(), ROM_BANK_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.ROM_0.data(), emulator->cpu.mmu.ROM_0.size());
             break;
         case 1:
-            // TODO: show all banks
-            editor.DrawContents(emulator->cpu.mmu.ROM.data(), ROM_BANK_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.ROM.data(), emulator->cpu.mmu.ROM.size());
             break;
         case 2:
-            editor.DrawContents(emulator->cpu.mmu.WRAM.data(), WRAM_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.WRAM.data(), emulator->cpu.mmu.WRAM.size());
             break;
         case 3:
-            // TODO: show all banks
-            editor.DrawContents(emulator->cpu.mmu.RAM.data(), RAM_BANK_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.RAM.data(), emulator->cpu.mmu.RAM.size());
             break;
         case 4:
-            editor.DrawContents(emulator->cpu.mmu.ZRAM.data(), ZRAM_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.ZRAM.data(), emulator->cpu.mmu.ZRAM.size());
             break;
         case 5:
-            editor.DrawContents(emulator->cpu.mmu.IO.data(), IO_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.IO.data(), emulator->cpu.mmu.IO.size());
             break;
         case 6:
-            editor.DrawContents(emulator->cpu.mmu.BIOS.data(), BIOS_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.BIOS.data(), emulator->cpu.mmu.BIOS.size());
             break;
         case 7:
-            editor.DrawContents(emulator->cpu.mmu.VRAM.data(), VRAM_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.VRAM.data(), emulator->cpu.mmu.VRAM.size());
             break;
         case 8:
-            editor.DrawContents(emulator->cpu.mmu.OAM.data(), OAM_SIZE);
+            editor.DrawContents(emulator->cpu.mmu.OAM.data(), emulator->cpu.mmu.OAM.size());
+            break;
+        case 9:
+            editor.DrawContents(emulator->cpu.mmu.PaletteMemory.data(), emulator->cpu.mmu.PaletteMemory.size());
             break;
         default:
             break;
@@ -170,6 +172,27 @@ void Debugger::backgroundView() {
 }
 
 void Debugger::VRAMView() {
+
+
+    ImGui::Begin("VRAM Viewer", &showVRAMWindow);
+    if (ImGui::BeginTabBar("VRAMTabs")) {
+        if (ImGui::BeginTabItem("Bank 1")) {
+            renderVRAMView(0x0000);
+            ImGui::EndTabItem();
+        }
+        if (emulator->cpu.gbMode == CGB) {
+            if (ImGui::BeginTabItem("Bank 2")) {
+                renderVRAMView(VRAM_BANK_SIZE);
+                ImGui::EndTabItem();
+            }
+        }
+        ImGui::EndTabBar();
+    }
+
+    ImGui::End();
+}
+
+void Debugger::renderVRAMView(u16 offset) {
     glBindTexture(GL_TEXTURE_2D, VRAMTextureHandler);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8*16, 8*24, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
@@ -177,11 +200,11 @@ void Debugger::VRAMView() {
     int tileCounter = 0;
     for (int y=0; y<24; y++) {
         for (int x=0; x<16; x++) {
-            glTexSubImage2D(GL_TEXTURE_2D, 0, x*8, y*8, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getTileData(tileCounter++ * tileSize));
+            glTexSubImage2D(GL_TEXTURE_2D, 0, x*8, y*8, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE,
+                    emulator->cpu.gpu.getTileData(tileCounter++ * tileSize + offset));
         }
     }
 
-    ImGui::Begin("VRAM Viewer", &showVRAMWindow);
     ImGui::Image((void*)(intptr_t)VRAMTextureHandler, ImVec2(8*16*2, 8*24*2));
     ImGuiIO& io = ImGui::GetIO();
     ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -197,15 +220,14 @@ void Debugger::VRAMView() {
         else if (tileID < 256) ImGui::Text("Tile ID: (Set #1: %d)\nTile ID: (Set #2: %d)", tileID, static_cast<char>(tileID));
         else ImGui::Text("Tile ID: (Set #2: %d)", tileID - 256);
         ImGui::Text("Tile Pos: (%d, %d)", tileColumn, tileRow);
-        ImGui::Text("Tile Address: 0x%4X", tileID * tileSize + 0x8000);
+        ImGui::Text("Tile Address: 0x%4X", tileID * tileSize + 0x8000 + offset);
 
         glBindTexture(GL_TEXTURE_2D, TileTextureHandler);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getTileData(tileID * tileSize));
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                emulator->cpu.gpu.getTileData(tileID * tileSize + offset));
         ImGui::Image((void*)(intptr_t)TileTextureHandler, ImVec2(8 * zoom, 8 * zoom));
         ImGui::EndTooltip();
     }
-
-    ImGui::End();
 }
 
 void Debugger::paletteView() {
@@ -236,10 +258,7 @@ void Debugger::paletteView() {
 }
 
 void Debugger::logView() {
-    for (auto& sink : Logger::sinks) {
-        auto s = dynamic_cast<DebugSink*>(sink.get());
-        if (s) s->Draw("Log", &showLogWindow);
-    }
+    if (sink) sink->Draw("Log", &showLogWindow);
 }
 
 void Debugger::render() {

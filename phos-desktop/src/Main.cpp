@@ -101,8 +101,10 @@ int main(int argc, char** argv) {
     spec.samples = 4096;
     SDL_AudioDeviceID deviceId = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
 
-    Logger::addSink(std::make_unique<StdSink>(false));
-    Logger::addSink(std::make_unique<DebugSink>(true));
+    std::shared_ptr<StdSink> stdSink = std::make_shared<StdSink>(false);
+    std::shared_ptr<DebugSink> debugSink = std::make_shared<DebugSink>(true);
+    Logger::addSink(stdSink);
+    Logger::addSink(debugSink);
 
     Emulator emulator;
     std::string filePath = "../gb/";
@@ -131,11 +133,11 @@ int main(int argc, char** argv) {
     IDisplay::ImGuiInit(window, glContext);
     IDisplay* host;
     Display display(window, &emulator, deviceId);
-    Debugger debugger(window, &emulator, deviceId);
+    Debugger debugger(window, &emulator, deviceId, debugSink.get());
 
     if (!emulator.load(filePath)) {
-        fprintf(stderr, "Failed to load BootROM or Cartridge\n");
-        return 2;
+        Log(W, "Failed to load hardcoded file\n");
+        emulator.isHalted = true;
     }
 
     // Main loop
@@ -175,7 +177,7 @@ int main(int argc, char** argv) {
                     Log(I, "Switched to mode %d\n", frameTimer.getMode());
                 }
                 if (event.key.keysym.scancode == SDL_SCANCODE_H) {
-                    emulator.toggle();
+                    emulator.pause();
                 }
             }
             handleJoypadInput(event, emulator);

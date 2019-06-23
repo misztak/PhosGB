@@ -10,8 +10,9 @@ class Debugger : public IDisplay {
 public:
     bool nextStep, singleStepMode, showLogWindow, showDemoWindow, showMemWindow, showBGWindow, showVRAMWindow,
          showPaletteWindow;
+    DebugSink* sink;
 public:
-    Debugger(SDL_Window* window, Emulator* emu, SDL_AudioDeviceID deviceId);
+    Debugger(SDL_Window* window, Emulator* emu, SDL_AudioDeviceID deviceId, DebugSink* sink = nullptr);
     ~Debugger();
     void render() override;
     void processEvent(SDL_Event& event) override;
@@ -27,6 +28,8 @@ private:
     void VRAMView();
     void paletteView();
     void logView();
+
+    void renderVRAMView(u16 offset);
 };
 
 

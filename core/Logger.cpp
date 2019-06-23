@@ -7,9 +7,9 @@ const char* Logger::severityStrings[] = {"info","debug","warn","fatal"};
 
 bool Logger::enabled = true;
 size_t Logger::counter = 0;
-std::vector<std::unique_ptr<Sink>> Logger::sinks;
+std::vector<std::shared_ptr<Sink>> Logger::sinks;
 
-void Logger::addSink(std::unique_ptr<Sink> sink) {
+void Logger::addSink(std::shared_ptr<Sink> sink) {
     sinks.push_back(std::move(sink));
 }
 

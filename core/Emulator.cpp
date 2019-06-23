@@ -1,12 +1,12 @@
 #include "Emulator.h"
 
-Emulator::Emulator(): isHalted(false), isDead(false) {}
+Emulator::Emulator(): isHalted(false), waitingForFile(true) {}
 
 bool Emulator::load(std::string& romPath) {
     bool success = cpu.init(romPath);
     if (success) {
         isHalted = false;
-        isDead = false;
+        waitingForFile = false;
         currentFilePath = romPath;
         if (std::find(recentFiles.begin(), recentFiles.end(), romPath) == recentFiles.end()) {
             recentFiles.push_back(romPath);
@@ -21,8 +21,8 @@ u32 Emulator::tick() {
     return cpu.tick();
 }
 
-void Emulator::toggle() {
-    if (isDead) {
+void Emulator::pause() {
+    if (waitingForFile) {
         return;
     }
     isHalted = !isHalted;

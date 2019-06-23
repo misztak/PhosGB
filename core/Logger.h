@@ -29,12 +29,12 @@ public:
 
 struct Logger {
     static const char* severityStrings[4];
-    static std::vector<std::unique_ptr<Sink>> sinks;
+    static std::vector<std::shared_ptr<Sink>> sinks;
 
     static bool enabled;
     static size_t counter;
 
-    static void addSink(std::unique_ptr<Sink>);
+    static void addSink(std::shared_ptr<Sink>);
 
     static void Log(Severity s, const char* message, ...) FMT_ARGS(2);
     static void LogRaw(Severity s, const char* message, ...) FMT_ARGS(2);

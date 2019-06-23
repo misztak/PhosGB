@@ -10,9 +10,9 @@ class Emulator {
 public:
     Emulator();
     bool load(std::string& romPath);
-    u32 tick();
-    void toggle();
+    void pause();
     void shutdown();
+    u32 tick();
     u8* getDisplayState();
     bool hitVBlank();
     void handleInputDown(u8 key);
@@ -22,11 +22,12 @@ public:
     std::string currentDateTime();
 public:
     bool isHalted;
-    bool isDead;
     CPU cpu;
     std::string currentFile;
     std::string currentFilePath;
     std::vector<std::string> recentFiles;
+private:
+    bool waitingForFile;
 };
 
 #endif //PHOS_EMULATOR_H

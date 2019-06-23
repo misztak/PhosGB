@@ -52,6 +52,9 @@ void IDisplay::showMainMenu() {
         ImGui::EndMenu();
     }
     ImGui::Separator();
+    if (ImGui::MenuItem("Pause", "H")) {
+        emulator->pause();
+    }
     if (ImGui::MenuItem("Save State", "F5")) {
         emulator->saveState();
     }
