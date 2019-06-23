@@ -1,7 +1,11 @@
 #include "Debugger.h"
 
 Debugger::Debugger(SDL_Window* w, Emulator* emu, SDL_AudioDeviceID deviceId) :
-    IDisplay(w, emu, deviceId), showDemoWindow(false), nextStep(false), singleStepMode(false), showLogWindow(true),
+    IDisplay(w, emu, deviceId),
+    nextStep(false),
+    singleStepMode(false),
+    showLogWindow(true), showDemoWindow(false), showMemWindow(false), showBGWindow(true), showVRAMWindow(true),
+    showPaletteWindow(false),
     bgTextureHandler(0), VRAMTextureHandler(0), TileTextureHandler(0) {
 
     loadTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());
@@ -48,20 +52,29 @@ void Debugger::update(u8* data) {
     ImGui::SetWindowPos(ImVec2(0, 0));
     // Menu
     if (ImGui::BeginMenuBar()) {
-        if (ImGui::BeginMenu("Menu")) {
+        if (ImGui::BeginMenu("File")) {
             showMainMenu();
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Window")) {
+            ImGui::MenuItem("Background Viewer", nullptr, &showBGWindow);
+            ImGui::MenuItem("VRAM Viewer", nullptr, &showVRAMWindow);
+            ImGui::MenuItem("Palette Viewer", nullptr, &showPaletteWindow);
+            ImGui::MenuItem("Memory Editor", nullptr, &showMemWindow);
+            ImGui::MenuItem("Debug Log", nullptr, &showLogWindow);
+            ImGui::MenuItem("Imgui Demo", nullptr, &showDemoWindow);
             ImGui::EndMenu();
         }
         ImGui::EndMenuBar();
     }
 
-    if (showDemoWindow) ImGui::ShowDemoWindow(&showDemoWindow);
     emulatorView(data);
-    memoryView();
-    backgroundView();
-    VRAMView();
-    paletteView();
+    if (showMemWindow) memoryView();
+    if (showBGWindow) backgroundView();
+    if (showVRAMWindow) VRAMView();
+    if (showPaletteWindow) paletteView();
     if (showLogWindow) logView();
+    if (showDemoWindow) ImGui::ShowDemoWindow(&showDemoWindow);
 
     ImGui::End();
     // Rendering
@@ -104,7 +117,7 @@ void Debugger::emulatorView(u8* data) {
 
 void Debugger::memoryView() {
     static MemoryEditor editor;
-    ImGui::Begin("Memory Editor");
+    ImGui::Begin("Memory Editor", &showMemWindow);
 
     const char* items[] = {"ROM0", "ROM1", "WRAM", "ERAM", "ZRAM", "IO", "BIOS", "VRAM", "OAM"};
     static int currentItem = 0;
@@ -151,7 +164,7 @@ void Debugger::backgroundView() {
     glBindTexture(GL_TEXTURE_2D, bgTextureHandler);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getBackgroundState());
 
-    ImGui::Begin("Background");
+    ImGui::Begin("Background", &showBGWindow);
     ImGui::Image((void*)(intptr_t)bgTextureHandler, ImVec2(256, 256));
     ImGui::End();
 }
@@ -168,7 +181,7 @@ void Debugger::VRAMView() {
         }
     }
 
-    ImGui::Begin("VRAM Viewer");
+    ImGui::Begin("VRAM Viewer", &showVRAMWindow);
     ImGui::Image((void*)(intptr_t)VRAMTextureHandler, ImVec2(8*16*2, 8*24*2));
     ImGuiIO& io = ImGui::GetIO();
     ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -196,7 +209,7 @@ void Debugger::VRAMView() {
 }
 
 void Debugger::paletteView() {
-    ImGui::Begin("Palette Viewer");
+    ImGui::Begin("Palette Viewer", &showPaletteWindow);
 
 //    GLuint pHandlers[32] = {};
 //    for (GLuint pHandler : pHandlers) {

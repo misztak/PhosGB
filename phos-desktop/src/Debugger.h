@@ -8,7 +8,8 @@
 
 class Debugger : public IDisplay {
 public:
-    bool showDemoWindow, nextStep, singleStepMode, showLogWindow;
+    bool nextStep, singleStepMode, showLogWindow, showDemoWindow, showMemWindow, showBGWindow, showVRAMWindow,
+         showPaletteWindow;
 public:
     Debugger(SDL_Window* window, Emulator* emu, SDL_AudioDeviceID deviceId);
     ~Debugger();
