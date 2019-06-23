@@ -24,6 +24,7 @@ private:
     void memoryView();
     void backgroundView();
     void VRAMView();
+    void paletteView();
     void logView();
 };
 

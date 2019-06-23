@@ -60,6 +60,7 @@ void Debugger::update(u8* data) {
     memoryView();
     backgroundView();
     VRAMView();
+    paletteView();
     if (showLogWindow) logView();
 
     ImGui::End();
@@ -189,6 +190,33 @@ void Debugger::VRAMView() {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getTileData(tileID * tileSize));
         ImGui::Image((void*)(intptr_t)TileTextureHandler, ImVec2(8 * zoom, 8 * zoom));
         ImGui::EndTooltip();
+    }
+
+    ImGui::End();
+}
+
+void Debugger::paletteView() {
+    ImGui::Begin("Palette Viewer");
+
+//    GLuint pHandlers[32] = {};
+//    for (GLuint pHandler : pHandlers) {
+//        glBindTexture(GL_TEXTURE_2D, pHandler);
+//        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 16, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+//    }
+    u32 palettePtr = 0;
+    for (u32 t=0; t<2; t++) {
+        for (u32 i=0; i<8; i++) {
+            u16 color1 = emulator->cpu.mmu.PaletteMemory[palettePtr] | (emulator->cpu.mmu.PaletteMemory[palettePtr+1] << 8);
+            u16 color2 = emulator->cpu.mmu.PaletteMemory[palettePtr+2] | (emulator->cpu.mmu.PaletteMemory[palettePtr+3] << 8);
+            u16 color3 = emulator->cpu.mmu.PaletteMemory[palettePtr+4] | (emulator->cpu.mmu.PaletteMemory[palettePtr+5] << 8);
+            u16 color4 = emulator->cpu.mmu.PaletteMemory[palettePtr+6] | (emulator->cpu.mmu.PaletteMemory[palettePtr+7] << 8);
+            palettePtr += 8;
+            ImGui::Text("0x%04X", color1); ImGui::SameLine();
+            ImGui::Text("0x%04X", color2); ImGui::SameLine();
+            ImGui::Text("0x%04X", color3); ImGui::SameLine();
+            ImGui::Text("0x%04X", color4);
+        }
+        ImGui::NewLine();
     }
 
     ImGui::End();
