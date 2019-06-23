@@ -46,6 +46,7 @@ void GPU::reset() {
 }
 
 void GPU::tick(u32 ticks) {
+    if (cpu->doubleSpeedMode) ticks /= 2;
     modeclock += ticks;
     u8 line = getReg(LCDC_Y_COORDINATE);
     switch (mode) {

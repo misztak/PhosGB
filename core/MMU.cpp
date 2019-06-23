@@ -340,7 +340,7 @@ void MMU::writeByte(u16 address, u8 value) {
                         bool wasLCDEnabled = IO[0x40] & LCD_DISPLAY_ENABLE;
                         IO[0x40] = value;
                         if (wasLCDEnabled && !(value & LCD_DISPLAY_ENABLE)) {
-                            assert(gpu->getMode() == VBLANK && "Tried to disable display outside of VBLANK period\n");
+                            //assert(gpu->getMode() == VBLANK && "Tried to disable display outside of VBLANK period\n");
                             gpu->setBGColor(0xFF);      // set display to all white
                             // reset some STAT values
                             // TODO: see if this is right
@@ -363,9 +363,9 @@ void MMU::writeByte(u16 address, u8 value) {
                         IO[relAddress] = value;
                         cpu->gpu.DMATicks = 648;
                         break; }
-                    case 0x4D:      // TODO: Speed Switch (CGB Mode Only)
+                    case 0x4D:      // Speed Switch (CGB Mode Only)
                         IO[relAddress] = (IO[relAddress] & 0xFE) | (value & 0x01);
-                        Log(I, "Tried to change speed mode [Unimplemented]\n");
+                        Log(I, "Changed speed mode\n");
                         break;
                     case 0x4F:      // Select VRAM Bank (CGB Mode Only)
                         if (cpu->gbMode != CGB) return;
@@ -496,14 +496,13 @@ void MMU::performGDMA() {
         IO[0x51+r] = 0xFF;
     }
 
-    /*
+
     unsigned transferCycles = 4;
     if (cpu->doubleSpeedMode)
         transferCycles += VramDma.transferLength * 64;
     else
         transferCycles += VramDma.transferLength * 32;
     cpu->cycles += transferCycles;
-     */
 }
 
 void MMU::writeWord(u16 address, u16 value) {

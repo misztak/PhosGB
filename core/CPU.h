@@ -62,6 +62,7 @@ public:
     GB_MODE gbMode;
 
     u32 cycles;
+    int ticksPerFrame;
     bool halted;
     int timerCounter;
     int dividerCounter;

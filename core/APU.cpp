@@ -152,18 +152,12 @@ void NoiseChannel::updateWave() {
 
 
 
-APU::APU(CPU* cpu) : cpu(cpu), ch1(cpu), ch2(cpu), ch3(cpu), ch4(cpu) {
+APU::APU(CPU* cpu) : cpu(cpu), left_buffer(nullptr), right_buffer(nullptr), ch1(cpu), ch2(cpu), ch3(cpu), ch4(cpu) {
     channels[0] = &ch1;
     channels[1] = &ch2;
     channels[2] = &ch3;
     channels[3] = &ch4;
-
-    // match divider timer
-    left_buffer = blip_new(16383);
-    right_buffer = blip_new(16383);
-    // downsample
-    blip_set_rates(left_buffer, 2097152, 44200);
-    blip_set_rates(right_buffer, 2097152, 44200);
+    reset();
 }
 
 APU::~APU() {
@@ -189,8 +183,9 @@ void APU::reset() {
 
 void APU::update(u32 cycles) {
     if (cpu->headless) return;
+    if (cpu->doubleSpeedMode) cycles /= 2;
     u32 mCycles = cycles / 4;
-    bool dividerCycle = isBitSet(cpu->mmu.IO[0x04], 0x10);
+    bool dividerCycle = isBitSet(cpu->mmu.IO[0x04], 0x10 << (cpu->doubleSpeedMode ? 1 : 0));
     if (lastCounter && !dividerCycle) {
         frame = (frame + 1) & 0x7;
         for (auto& channel : channels) {

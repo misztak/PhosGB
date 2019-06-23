@@ -19,8 +19,6 @@
     const int compatFlag = 0;
 #endif
 
-constexpr int ticksPerFrame = 70224;
-
 void render(SDL_Window* window, SDL_GLContext& glContext, IDisplay* host, Emulator* emulator) {
     host->update(emulator->getDisplayState());
     SDL_GL_MakeCurrent(window, glContext);
@@ -97,7 +95,7 @@ int main(int argc, char** argv) {
     // Create audio context
     SDL_AudioSpec spec;
     SDL_zero(spec);
-    spec.freq = 44100;
+    spec.freq = 44200;
     spec.format = AUDIO_S16;
     spec.channels = 2;
     spec.samples = 4096;
@@ -120,7 +118,12 @@ int main(int argc, char** argv) {
 	//filePath.append("Zelda.gb");
 
 	// CGB
-	filePath.append("PokemonYellow.gbc");
+	//filePath.append("PokemonYellow.gbc");
+	filePath.append("ZeldaDX.gbc");
+	//filePath.append("ZeldaOracle.gbc");
+	//filePath.append("WarioLand3.gbc");
+	//filePath.append("DKC.gbc");
+	//filePath.append("Aladdin.gbc");
 
     //filePath.append("blargg/instr_timing.gb");
     //filePath.append("mooneye/acceptance/halt_ime0_nointr_timing.gb");
@@ -182,7 +185,7 @@ int main(int argc, char** argv) {
 
         // emulator tick
         if (!emulator.isHalted) {
-            while (ticks < ticksPerFrame) {
+            while (ticks < emulator.cpu.ticksPerFrame) {
                 int cycles = emulator.tick();
                 if (cycles == 0) {
                     done = true;
@@ -194,7 +197,8 @@ int main(int argc, char** argv) {
                     render(window, glContext, host, &emulator);
                     emulator.cpu.apu.readSamples();
                     if (SDL_GetAudioDeviceStatus(deviceId) == SDL_AUDIO_PLAYING)
-                        SDL_QueueAudio(deviceId, emulator.cpu.apu.audioBuffer.data(), emulator.cpu.apu.audioBuffer.size() * 2);
+                        SDL_QueueAudio(deviceId, emulator.cpu.apu.audioBuffer.data(),
+                                       emulator.cpu.apu.audioBuffer.size() * 2);
                 }
 
                 ticks += cycles;
@@ -215,12 +219,12 @@ int main(int argc, char** argv) {
                     debugger.nextStep = false;
                     emulator.isHalted = true;
                     render(window, glContext, host, &emulator);
-                    ticks = ticksPerFrame;
+                    ticks = emulator.cpu.ticksPerFrame;
                     Log(D, "Step\n");
                     break;
                 }
             }
-            ticks -= ticksPerFrame;
+            ticks -= emulator.cpu.ticksPerFrame;
         } else {
             // Just keep rendering if the debugger has halted execution or if a fatal error has occurred.
             render(window, glContext, host, &emulator);

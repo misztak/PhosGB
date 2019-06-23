@@ -1,7 +1,7 @@
 #include "CPU.h"
 
-CPU::CPU(): gpu(this, &mmu), joypad(this), apu(this), gbMode(DMG), cycles(0), halted(false), headless(false),
-            runCGBinDMGMode(false), doubleSpeedMode(false) {
+CPU::CPU(): gpu(this, &mmu), joypad(this), apu(this), gbMode(DMG), cycles(0), ticksPerFrame(70224), halted(false),
+            headless(false), runCGBinDMGMode(false), doubleSpeedMode(false) {
     mmu.cpu = this;
     mmu.gpu = &gpu;
 
@@ -468,6 +468,7 @@ void CPU::reset() {
     r.pc = mmu.inBIOS ? 0x0000 : 0x0100;
 
     cycles = 0;
+    ticksPerFrame = 70224;
     timerCounter = 1024;
     dividerCounter = 0;
 
@@ -564,7 +565,6 @@ u32 CPU::tick() {
     apu.update(cycles);
 
     checkInterrupts();
-
 
     return cycles;
 }
@@ -1427,6 +1427,12 @@ u32 CPU::HALT(const u8& opcode) {
 
 u32 CPU::STOP(const u8& opcode) {
     halted = true;
+    if (gbMode == CGB && isBitSet(mmu.IO[0x4D], 0x01)) {
+        doubleSpeedMode = !isBitSet(mmu.IO[0x4D], 0x80);
+        mmu.IO[0x4D]--;
+        mmu.IO[0x4D] = doubleSpeedMode ? setBit(mmu.IO[0x4D], 0x80) : clearBit(mmu.IO[0x4D], 0x80);
+        ticksPerFrame = doubleSpeedMode ? (70224 * 2) : 70224;
+    }
     return 4;
 }
 
