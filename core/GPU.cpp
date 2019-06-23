@@ -137,15 +137,28 @@ void GPU::renderScanline() {
     int y = getReg(LCDC_Y_COORDINATE);
     int index = y * 160 * 4;
     for (int x=0; x<160; x++) {
-        if (useCustomPalette && cpu->gbMode == DMG) {
-            displayState[index] = customPalette[pixelLine[x].r][0];
-            displayState[index + 1] = customPalette[pixelLine[x].g][1];
-            displayState[index + 2] = customPalette[pixelLine[x].b][2];
-            index += 4;
+        if (cpu->gbMode == DMG) {
+            if (useCustomPalette) {
+                displayState[index] = customPalette[pixelLine[x].r][0];
+                displayState[index + 1] = customPalette[pixelLine[x].g][1];
+                displayState[index + 2] = customPalette[pixelLine[x].b][2];
+                index += 4;
+            } else {
+                displayState[index] = pixelLine[x].r;
+                displayState[index + 1] = pixelLine[x].g;
+                displayState[index + 2] = pixelLine[x].b;
+                index += 4;
+            }
         } else {
-            displayState[index] = pixelLine[x].r;
-            displayState[index + 1] = pixelLine[x].g;
-            displayState[index + 2] = pixelLine[x].b;
+            u16 r = pixelLine[x].r * 26 + pixelLine[x].g * 4 + pixelLine[x].b * 2;
+            u16 g = pixelLine[x].g * 24 + pixelLine[x].b * 8;
+            u16 b = pixelLine[x].r * 6 + pixelLine[x].g * 4 + pixelLine[x].b * 22;
+            r = static_cast<u8>((r / 1024.f) * 255);
+            g = static_cast<u8>((g / 1024.f) * 255);
+            b = static_cast<u8>((b / 1024.f) * 255);
+            displayState[index    ] = r;
+            displayState[index + 1] = g;
+            displayState[index + 2] = b;
             index += 4;
         }
     }
@@ -339,18 +352,18 @@ void GPU::renderSpriteScanline() {
             // transparent
             if (paletteIndex == 0) continue;
 
-            unsigned ox = spriteX + bit;
-            if (ox < 160) {
-                unsigned index = ((getReg(LCDC_Y_COORDINATE) * 160) + ox) * 4;
+            unsigned x = spriteX + bit;
+            if (x < 160) {
+                unsigned index = ((getReg(LCDC_Y_COORDINATE) * 160) + x) * 4;
                 if (isBitSet(getReg(LCD_CONTROL), BG_DISPLAY)) {
-                    if (pixelLine[ox].type == 3) continue;
+                    if (pixelLine[x].type == 3) continue;
                     if (isBitSet(spriteAttr, 0x80)) {
-                        if (pixelLine[ox].type == 1 && pixelLine[ox].palette > 0) continue;
+                        if (pixelLine[x].type == 1 && pixelLine[x].palette > 0) continue;
                     }
                 }
 
-                pixelLine[ox].palette = paletteIndex;
-                pixelLine[ox].type = 2;
+                pixelLine[x].palette = paletteIndex;
+                pixelLine[x].type = 2;
 
                 if (cpu->gbMode == DMG) {
                     u8 color = dmgPalette[paletteIndex];
@@ -365,10 +378,18 @@ void GPU::renderSpriteScanline() {
                     }
                 } else {
                     u16 color = getColor(1, spriteAttr, paletteIndex);
-                    // color & 0x001F, (color & 0x03E0) >> 5, (color & 0x7C00) >> 10
-                    displayState[index] = color & 0x001F;
-                    displayState[index + 1] = (color & 0x03E0) >> 5;
-                    displayState[index + 2] = (color & 0x7C00) >> 10;
+                    u16 r = color & 0x001F;
+                    u16 g = (color & 0x03E0) >> 5;
+                    u16 b = (color & 0x7C00) >> 10;
+                    u16 rNew = r * 26 + g * 4 + b * 2;
+                    u16 gNew = g * 24 + b * 8;
+                    u16 bNew = r * 6 + g * 4 + b * 22;
+                    rNew = static_cast<u8>((rNew / 1024.f) * 255);
+                    gNew = static_cast<u8>((gNew / 1024.f) * 255);
+                    bNew = static_cast<u8>((bNew / 1024.f) * 255);
+                    displayState[index    ] = rNew;
+                    displayState[index + 1] = gNew;
+                    displayState[index + 2] = bNew;
                 }
             }
         }
