@@ -15,6 +15,7 @@
 
 #define READ_U8(PTR) (*reinterpret_cast<unsigned char *>(PTR))
 #define READ_U16(PTR) (*reinterpret_cast<unsigned short *>(PTR))
+#define READ_U32(PTR) (*reinterpret_cast<unsigned int *>(PTR))
 #define READ_S32(PTR) (*reinterpret_cast<int *>(PTR))
 #define READ_BOOL(PTR) (*reinterpret_cast<bool *>(PTR))
 

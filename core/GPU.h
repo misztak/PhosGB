@@ -83,7 +83,7 @@ private:
     MMU* mmu;
 
     GPU_MODE mode;
-    unsigned wyc;
+    u32 wyc;
 
     std::vector<Pixel> pixelLine;
     std::vector<u8> displayState;

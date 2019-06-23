@@ -83,17 +83,8 @@ void Emulator::saveState() {
     // start with cartridge info
     outfile.write(cpu.mmu.cartridgeTitle.c_str(), cpu.mmu.cartridgeTitle.size());
     outfile.write(WRITE_A(cpu.mmu.ROM_0, 0x147), 3);
-    // dump CPU values
-    outfile.write(WRITE_V(cpu.r.af), 2);
-    outfile.write(WRITE_V(cpu.r.bc), 2);
-    outfile.write(WRITE_V(cpu.r.de), 2);
-    outfile.write(WRITE_V(cpu.r.hl), 2);
-    outfile.write(WRITE_V(cpu.r.pc), 2);
-    outfile.write(WRITE_V(cpu.r.sp), 2);
-    outfile.write(WRITE_V(cpu.halted), sizeof(bool));
-    outfile.write(WRITE_V(cpu.timerCounter), 4);
-    outfile.write(WRITE_V(cpu.dividerCounter), 4);
     // dump subsystems
+    cpu.saveState(outfile);
     cpu.joypad.saveState(outfile);
     cpu.gpu.saveState(outfile);
     cpu.apu.reset();
@@ -143,15 +134,7 @@ bool Emulator::loadState(std::string &path) {
     }
 
     // initialize saved state
-    cpu.r.af = READ_U16(&buffer[0x1D]);
-    cpu.r.bc = READ_U16(&buffer[0x1F]);
-    cpu.r.de = READ_U16(&buffer[0x21]);
-    cpu.r.hl = READ_U16(&buffer[0x23]);
-    cpu.r.pc = READ_U16(&buffer[0x25]);
-    cpu.r.sp = READ_U16(&buffer[0x27]);
-    cpu.halted = READ_BOOL(&buffer[0x29]);
-    cpu.timerCounter = READ_S32(&buffer[0x2A]);
-    cpu.dividerCounter = READ_S32(&buffer[0x2E]);
+    cpu.loadState(buffer);
     cpu.joypad.loadState(buffer);
     cpu.apu.reset();
     cpu.mmu.loadState(buffer);

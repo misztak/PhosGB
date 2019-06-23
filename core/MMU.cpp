@@ -515,33 +515,54 @@ void MMU::writeWord(u16 address, u16 value) {
 
 void MMU::saveState(std::ofstream &outfile) {
     outfile.write(WRITE_V(inBIOS), sizeof(bool));
+    outfile.write(WRITE_V(runBIOS), sizeof(bool));
+    outfile.write(WRITE_V(WRAMBankPtr), 1);
+    outfile.write(WRITE_V(VRAMBankPtr), 1);
+    outfile.write(WRITE_V(VramDma.enabled), sizeof(bool));
+    outfile.write(WRITE_V(VramDma.mode), 4);
+    outfile.write(WRITE_V(VramDma.transferLength), 2);
     // values with constant size
-    outfile.write(WRITE_A(WRAM, 0), WRAM_SIZE);
     outfile.write(WRITE_A(IO, 0), IO_SIZE);
     outfile.write(WRITE_A(ZRAM, 0), ZRAM_SIZE);
-    outfile.write(WRITE_A(VRAM, 0), VRAM_SIZE);
     outfile.write(WRITE_A(OAM, 0), OAM_SIZE);
-    // values with MBC-dependent size
+    outfile.write(WRITE_A(PaletteMemory, 0), 128);
+    // values with GB Mode dependent size
+    outfile.write(WRITE_A(WRAM, 0), cpu->gbMode == CGB ? 32768 : WRAM_SIZE);
+    outfile.write(WRITE_A(VRAM, 0), cpu->gbMode == CGB ? 16384 : VRAM_SIZE);
+    // values with MBC dependent size
     if (!RAM.empty())
         outfile.write(WRITE_A(RAM, 0), RAM.size());
     mbc->saveState(outfile);
 }
 
 void MMU::loadState(std::vector<u8>& buffer) {
-    // MMU Offset == 0x44
-    size_t offset = 0x44;
+    // MMU Offset == 0x57
+    u32 offset = 0x57;
     inBIOS = READ_BOOL(&buffer[offset++]);
+    runBIOS = READ_BOOL(&buffer[offset++]);
+    WRAMBankPtr = READ_U8(&buffer[offset++]);
+    VRAMBankPtr = READ_U8(&buffer[offset++]);
+    VramDma.enabled = READ_BOOL(&buffer[offset++]);
+    VramDma.mode = static_cast<VramDmaMode>(READ_S32(&buffer[offset]));
+    offset += 4;
+    VramDma.transferLength = READ_U16(&buffer[offset]);
+    offset += 2;
     // values with constant size
-    std::copy_n(buffer.begin() + offset, WRAM_SIZE, WRAM.begin());
-    offset += WRAM_SIZE;
     std::copy_n(buffer.begin() + offset, IO_SIZE, IO.begin());
     offset += IO_SIZE;
     std::copy_n(buffer.begin() + offset, ZRAM_SIZE, ZRAM.begin());
     offset += ZRAM_SIZE;
-    std::copy_n(buffer.begin() + offset, VRAM_SIZE, VRAM.begin());
-    offset += VRAM_SIZE;
     std::copy_n(buffer.begin() + offset, OAM_SIZE, OAM.begin());
     offset += OAM_SIZE;
+    std::copy_n(buffer.begin() + offset, 128, PaletteMemory.begin());
+    offset += 128;
+    // values with GB Mode dependent size
+    u32 wramSize = cpu->gbMode == CGB ? 32768 : WRAM_SIZE;
+    std::copy_n(buffer.begin() + offset, wramSize, WRAM.begin());
+    offset += wramSize;
+    u32 vramSize = cpu->gbMode == CGB ? 16384 : VRAM_SIZE;
+    std::copy_n(buffer.begin() + offset, vramSize, VRAM.begin());
+    offset += vramSize;
     // values with MBC-dependant size
     if (!RAM.empty()) {
         std::copy_n(buffer.begin() + offset, RAM.size(), RAM.begin());

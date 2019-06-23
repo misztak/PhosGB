@@ -53,7 +53,7 @@ void Joypad::saveState(std::ofstream& outfile) {
 }
 
 void Joypad::loadState(std::vector<u8>& buffer) {
-    // Joypad Offset == 0x32
-    joypadState = READ_U8(&buffer[0x32]);
-    lane = static_cast<JOYPAD_LANE>(READ_S32(&buffer[0x33]));
+    // Joypad Offset == 0x41
+    joypadState = READ_U8(&buffer[0x41]);
+    lane = static_cast<JOYPAD_LANE>(READ_S32(&buffer[0x42]));
 }
