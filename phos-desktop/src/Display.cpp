@@ -37,11 +37,15 @@ void Display::update(u8* data) {
             ImGuiWindowFlags_NoBackground |
             ImGuiWindowFlags_NoResize;
 
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0,0));
+
     ImGui::Begin("Emu", &open, ImVec2(SCALED_WIDTH, SCALED_HEIGHT), -1.0f, flags);
     ImGui::SetWindowSize(ImVec2(SCALED_WIDTH, SCALED_HEIGHT));
     ImGui::SetWindowPos(ImVec2(0, 0));
     ImGui::Image((void*)(intptr_t)mainTextureHandler, ImVec2(SCALED_WIDTH, SCALED_HEIGHT));
     ImGui::End();
+
+    ImGui::PopStyleVar();
 
     for (int i = 0; i < IM_ARRAYSIZE(ImGui::GetIO().MouseDown); i++) {
         if (ImGui::IsMouseClicked(i) && i == 1 && !requestOverlay) {

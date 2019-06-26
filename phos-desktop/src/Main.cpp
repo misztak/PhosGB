@@ -51,15 +51,10 @@ void handleJoypadInput(SDL_Event& event, Emulator& emulator) {
 }
 
 void resize(SDL_Window* window, bool isDebugger) {
-    if (isDebugger) {
+    if (isDebugger)
         SDL_SetWindowSize(window, 1200, 900);
-        ImGui::GetStyle().WindowPadding = ImVec2(8, 8);
-        ImGui::GetStyle().WindowRounding = 5;
-    } else {
+    else
         SDL_SetWindowSize(window, SCALED_WIDTH, SCALED_HEIGHT);
-        ImGui::GetStyle().WindowPadding = ImVec2(0, 0);
-        ImGui::GetStyle().WindowRounding = 0;
-    }
     SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }
 
