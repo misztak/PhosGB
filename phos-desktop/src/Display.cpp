@@ -58,7 +58,7 @@ void Display::update(u8* data) {
         ImGui::EndPopup();
     }
 
-    if (overlayEnable && requestOverlay) showOverlay(&overlayEnable);
+    if (enableOverlay && requestOverlay) showOverlay(&enableOverlay);
 
     ImGui::Render();
 }

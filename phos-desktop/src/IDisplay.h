@@ -38,7 +38,7 @@ public:
 
     SDL_AudioDeviceID deviceId;
 
-    bool overlayEnable;
+    bool enableOverlay;
     bool requestOverlay;
 protected:
     bool loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* data);

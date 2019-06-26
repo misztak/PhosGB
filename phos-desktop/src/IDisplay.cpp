@@ -2,7 +2,7 @@
 
 IDisplay::IDisplay(SDL_Window* window, Emulator* emulator, SDL_AudioDeviceID deviceId)
     : mainTextureHandler(0), window(window), emulator(emulator), deviceId(deviceId),
-      overlayEnable(true), requestOverlay(false) {}
+      enableOverlay(true), requestOverlay(false) {}
 
 
 bool IDisplay::loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* data) {
