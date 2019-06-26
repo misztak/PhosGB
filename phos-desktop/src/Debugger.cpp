@@ -63,6 +63,7 @@ void Debugger::update(u8* data) {
             ImGui::MenuItem("Palette Viewer", nullptr, &showPaletteWindow);
             ImGui::MenuItem("Memory Editor", nullptr, &showMemWindow);
             ImGui::MenuItem("Debug Log", nullptr, &showLogWindow);
+            ImGui::MenuItem("Overlay", nullptr, &overlayEnable);
             ImGui::MenuItem("Imgui Demo", nullptr, &showDemoWindow);
             ImGui::EndMenu();
         }
@@ -76,6 +77,7 @@ void Debugger::update(u8* data) {
     if (showPaletteWindow) paletteView();
     if (showLogWindow) logView();
     if (showDemoWindow) ImGui::ShowDemoWindow(&showDemoWindow);
+    if (overlayEnable && requestOverlay) showOverlay(&overlayEnable);
 
     ImGui::End();
     // Rendering

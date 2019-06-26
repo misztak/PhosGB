@@ -1,7 +1,8 @@
 #include "IDisplay.h"
 
 IDisplay::IDisplay(SDL_Window* window, Emulator* emulator, SDL_AudioDeviceID deviceId)
-    : mainTextureHandler(0), window(window), emulator(emulator), deviceId(deviceId) {}
+    : mainTextureHandler(0), window(window), emulator(emulator), deviceId(deviceId),
+      overlayEnable(true), requestOverlay(false) {}
 
 
 bool IDisplay::loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* data) {
@@ -162,6 +163,39 @@ void IDisplay::showMainMenu() {
         }
         ImGui::EndMenu();
     }
+}
+
+void IDisplay::showOverlay(bool *open, const char* extraMsg) {
+    const float DISTANCE = 10.0f;
+    static int corner = 0;
+    ImGuiIO& io = ImGui::GetIO();
+    if (corner != -1)
+    {
+        ImVec2 window_pos = ImVec2((corner & 1) ? io.DisplaySize.x - DISTANCE : DISTANCE, (corner & 2) ? io.DisplaySize.y - DISTANCE : DISTANCE);
+        ImVec2 window_pos_pivot = ImVec2((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
+        ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+    }
+    ImGui::SetNextWindowBgAlpha(0.5f); // Transparent background
+    if (ImGui::Begin("Overlay", open,
+            (corner != -1 ? ImGuiWindowFlags_NoMove : 0) | ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoResize |ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
+            ImGuiWindowFlags_NoNav))
+    {
+        if (emulator->cpu.ticksPerFrame == 280896 ||
+            (!emulator->cpu.doubleSpeedMode && emulator->cpu.ticksPerFrame == 140448)) ImGui::Text("Fast-Forwarding x2");
+        if (extraMsg) ImGui::Text("\n%s", extraMsg);
+        if (ImGui::BeginPopupContextWindow())
+        {
+            if (ImGui::MenuItem("Custom",       nullptr, corner == -1)) corner = -1;
+            if (ImGui::MenuItem("Top-left",     nullptr, corner ==  0)) corner = 0;
+            if (ImGui::MenuItem("Top-right",    nullptr, corner ==  1)) corner = 1;
+            if (ImGui::MenuItem("Bottom-left",  nullptr, corner ==  2)) corner = 2;
+            if (ImGui::MenuItem("Bottom-right", nullptr, corner ==  3)) corner = 3;
+            if (open && ImGui::MenuItem("Close")) *open = false;
+            ImGui::EndPopup();
+        }
+    }
+    ImGui::End();
 }
 
 void IDisplay::scaleFrame(std::vector<u8>& src, std::vector<u8>& dest, unsigned scale) {

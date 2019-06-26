@@ -29,9 +29,6 @@ public:
     virtual void render() = 0;
     virtual void processEvent(SDL_Event& event) = 0;
 
-    bool loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* data);
-    void showMainMenu();
-
     static void ImGuiInit(SDL_Window* window, void* glContext);
     static void ImGuiDestroy();
 public:
@@ -40,8 +37,14 @@ public:
     Emulator* emulator;
 
     SDL_AudioDeviceID deviceId;
+
+    bool overlayEnable;
+    bool requestOverlay;
 protected:
+    bool loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* data);
+    void showMainMenu();
     void scaleFrame(std::vector<u8>& src, std::vector<u8>& dest, unsigned scale);
+    void showOverlay(bool* open, const char* extraMsg = nullptr);
 private:
     unsigned IX(unsigned x, unsigned y, unsigned width=160) { return y * width + x; }
 };

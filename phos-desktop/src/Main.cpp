@@ -171,6 +171,10 @@ int main(int argc, char** argv) {
                     }
                     resize(window, isDebugger);
                 }
+                if (event.key.keysym.scancode == SDL_SCANCODE_F) {
+                    emulator.cpu.ticksPerFrame = emulator.cpu.doubleSpeedMode ? 140448 : 70224;
+                    host->requestOverlay = false;
+                }
                 if (event.key.keysym.scancode == SDL_SCANCODE_M) {
                     frameTimer.toggleMode();
                     SDL_GL_SetSwapInterval(frameTimer.getMode() == VSYNC ? 1 : 0);
@@ -178,6 +182,12 @@ int main(int argc, char** argv) {
                 }
                 if (event.key.keysym.scancode == SDL_SCANCODE_H) {
                     emulator.pause();
+                }
+            }
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.scancode == SDL_SCANCODE_F) {
+                    emulator.cpu.ticksPerFrame = emulator.cpu.doubleSpeedMode ? 280896 : 140448;
+                    host->requestOverlay = true;
                 }
             }
             handleJoypadInput(event, emulator);

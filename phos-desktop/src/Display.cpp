@@ -44,7 +44,7 @@ void Display::update(u8* data) {
     ImGui::End();
 
     for (int i = 0; i < IM_ARRAYSIZE(ImGui::GetIO().MouseDown); i++) {
-        if (ImGui::IsMouseClicked(i) && i == 1) {
+        if (ImGui::IsMouseClicked(i) && i == 1 && !requestOverlay) {
             ImGui::OpenPopup("menu_popup");
             break;
         }
@@ -53,6 +53,8 @@ void Display::update(u8* data) {
         showMainMenu();
         ImGui::EndPopup();
     }
+
+    if (overlayEnable && requestOverlay) showOverlay(&overlayEnable);
 
     ImGui::Render();
 }
