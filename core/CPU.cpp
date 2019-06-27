@@ -9,22 +9,14 @@ CPU::CPU():
     cycles(0),
     ticksPerFrame(70224),
     halted(false),
+    timerCounter(1024),
+    dividerCounter(0),
     headless(false),
     runCGBinDMGMode(false),
     doubleSpeedMode(false)
     {
     mmu.cpu = this;
     mmu.gpu = &gpu;
-
-    timerCounter = 1024;
-    dividerCounter = 0;
-
-    r.af = 0;
-    r.bc = 0;
-    r.de = 0;
-    r.hl = 0;
-    r.sp = 0;
-    r.pc = 0;
 
     byteRegisterMap[0x0] = &r.b;
     byteRegisterMap[0x1] = &r.c;
