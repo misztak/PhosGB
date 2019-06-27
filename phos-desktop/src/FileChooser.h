@@ -42,7 +42,7 @@ struct FileChooser {
     void DrawWindow() {
         static bool invalidate = false;
         if (ImGui::Button("Down") && currentPath.has_parent_path()) {
-            currentPath = currentPath.parent_path();
+            currentPath.assign(currentPath.parent_path());
             UpdateFiles();
         }
         ImGui::SameLine();
@@ -63,7 +63,7 @@ struct FileChooser {
                 if (selected != counter) badFile = false;
                 selected = counter;
                 if (ImGui::IsMouseDoubleClicked(0) && fs::is_directory(entry)) {
-                    currentPath = entry;
+                    currentPath.assign(entry);
                     invalidate = true;
                 }
             }
@@ -85,7 +85,6 @@ struct FileChooser {
             fs::is_directory(selectedPath)) {
             return std::string();
         } else {
-            //printf("%s\n", selectedPath.string().c_str());
             return selectedPath.string();
         }
     }
