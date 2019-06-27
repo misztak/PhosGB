@@ -8,6 +8,7 @@
 #include "imgui_impl_opengl3.h"
 
 #include "lodepng.h"
+#include "FileChooser.h"
 
 #if __APPLE__
 #define GLSL_VERSION "#version 150"
@@ -40,6 +41,7 @@ public:
 
     bool enableOverlay;
     bool requestOverlay;
+    bool requestFileChooser;
 protected:
     bool loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* data);
     void showMainMenu();
