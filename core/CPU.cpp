@@ -1,7 +1,18 @@
 #include "CPU.h"
 
-CPU::CPU(): gpu(this, &mmu), joypad(this), apu(this), gbMode(DMG), cycles(0), ticksPerFrame(70224), halted(false),
-            headless(false), runCGBinDMGMode(false), doubleSpeedMode(false) {
+CPU::CPU():
+    r(0, 0, 0, 0, 0, 0, 0),
+    gpu(this, &mmu),
+    joypad(this),
+    apu(this),
+    gbMode(DMG),
+    cycles(0),
+    ticksPerFrame(70224),
+    halted(false),
+    headless(false),
+    runCGBinDMGMode(false),
+    doubleSpeedMode(false)
+    {
     mmu.cpu = this;
     mmu.gpu = &gpu;
 
@@ -453,6 +464,8 @@ bool CPU::init(std::string& romPath) {
     gpu.reset();
     // Joypad reset
     joypad.reset();
+    // APU reset
+    apu.reset();
 
     return true;
 }

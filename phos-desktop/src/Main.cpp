@@ -55,7 +55,6 @@ void resize(SDL_Window* window, bool isDebugger) {
         SDL_SetWindowSize(window, 1200, 900);
     else
         SDL_SetWindowSize(window, SCALED_WIDTH, SCALED_HEIGHT);
-    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }
 
 int main(int argc, char** argv) {
@@ -110,13 +109,13 @@ int main(int argc, char** argv) {
     //filePath.append("F1-Race.gb");
     //filePath.append("Opus.gb");
     //filePath.append("TicTacToe.gb");
-    //filePath.append("SuperMarioLand.gb");
+    filePath.append("SuperMarioLand.gb");
     //filePath.append("PokemonRed.gb");
 	//filePath.append("Zelda.gb");
 
 	// CGB
 	//filePath.append("PokemonYellow.gbc");
-	filePath.append("ZeldaDX.gbc");
+	//filePath.append("ZeldaDX.gbc");
 	//filePath.append("ZeldaOracle.gbc");
 	//filePath.append("WarioLand3.gbc");
 	//filePath.append("DKC.gbc");

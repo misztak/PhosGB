@@ -157,7 +157,6 @@ APU::APU(CPU* cpu) : cpu(cpu), left_buffer(nullptr), right_buffer(nullptr), ch1(
     channels[1] = &ch2;
     channels[2] = &ch3;
     channels[3] = &ch4;
-    reset();
 }
 
 APU::~APU() {

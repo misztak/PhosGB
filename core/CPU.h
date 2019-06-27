@@ -13,7 +13,7 @@ enum GB_MODE { DMG, CGB };
 enum FLAG { ZERO = 0x80, ADD_SUB = 0x40, HALF_CARRY = 0x20, CARRY = 0x10 };
 
 // first four registers can be accessed as one 16bit or two separate 8bit registers
-typedef struct registers {
+typedef struct Registers {
     union {
         struct {
             u8 f;
@@ -49,11 +49,14 @@ typedef struct registers {
     u16 sp;
     u16 pc;
     u8 ime;
-} registers;
+
+    Registers(u16 af, u16 bc, u16 de, u16 hl, u16 sp, u16 pc, u8 ime) :
+        af(af), bc(bc), de(de), hl(hl), sp(sp), pc(pc), ime(ime) {};
+} Registers;
 
 class CPU {
 public:
-    registers r;
+    Registers r;
     MMU mmu;
     GPU gpu;
     Joypad joypad;
@@ -87,12 +90,12 @@ public:
     void saveState(std::ofstream& outfile);
     void loadState(std::vector<u8>& buffer);
 private:
-    u8* byteRegisterMap[8];
-    u16* shortRegisterMap[4];
+    u8*  byteRegisterMap[8]  = {nullptr};
+    u16* shortRegisterMap[4] = {nullptr};
 
     typedef u32 (CPU::*Instruction)(const u8& opcode);
-    Instruction instructions[256];
-    Instruction instructionsCB[256];
+    Instruction instructions[256]   = {nullptr};
+    Instruction instructionsCB[256] = {nullptr};
 private:
     void setFlag(FLAG flag);
     void clearFlag(FLAG flag);
