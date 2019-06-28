@@ -70,37 +70,10 @@ void Debugger::update(u8* data) {
         ImGui::EndMenuBar();
     }
 
-    if (requestFileChooser) ImGui::OpenPopup("FileChooser");
-    ImGui::SetNextWindowSize(ImVec2(600, 400));
-    if (ImGui::BeginPopupModal("FileChooser", nullptr, ImGuiWindowFlags_NoScrollbar)) {
-        static FileChooser fileChooser;
-        fileChooser.DrawWindow();
-
-
-        ImGui::Separator();
-        if (ImGui::Button("Close")) {
-            ImGui::CloseCurrentPopup();
-            requestFileChooser = false;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Select")) {
-            std::string file = fileChooser.GetSelected();
-            if (file.empty()) {
-                fileChooser.badFile = true;
-            } else {
-                ImGui::CloseCurrentPopup();
-                requestFileChooser = false;
-                emulator->load(file);
-            }
-        }
-        if (fileChooser.badFile) {
-            ImGui::SameLine();
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.f, 0.f, 1.f));
-            ImGui::Text("Invalid File");
-            ImGui::PopStyleColor();
-        }
-        ImGui::EndPopup();
-    }
+    if (requestFileChooser)
+        ImGui::OpenPopup("FileBrowser");
+    static FileBrowser fileChooser(std::bind(&IDisplay::loadFile, this, std::placeholders::_1));
+    fileChooser.DrawWindow(&requestFileChooser, 600, 400);
 
     emulatorView(data);
     if (showMemWindow) memoryView();

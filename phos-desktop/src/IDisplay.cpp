@@ -39,7 +39,7 @@ void IDisplay::ImGuiDestroy() {
 
 void IDisplay::showMainMenu() {
     ImGui::MenuItem("Menu", nullptr, false, false);
-    if (ImGui::MenuItem("Open ROM [TODO]")) {
+    if (ImGui::MenuItem("Open ROM")) {
         requestFileChooser = true;
     }
     if (ImGui::MenuItem("Reset ROM")) {
@@ -243,4 +243,8 @@ void IDisplay::scaleFrame(std::vector<u8>& src, std::vector<u8>& dest, unsigned 
             Log(W, "Invalid scale factor %u\n", scale);
             return;
     }
+}
+
+void IDisplay::loadFile(std::string& file) {
+    emulator->load(file);
 }

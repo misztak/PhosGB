@@ -8,7 +8,7 @@
 #include "imgui_impl_opengl3.h"
 
 #include "lodepng.h"
-#include "FileChooser.h"
+#include "FileBrowser.h"
 
 #if __APPLE__
 #define GLSL_VERSION "#version 150"
@@ -32,6 +32,8 @@ public:
 
     static void ImGuiInit(SDL_Window* window, void* glContext);
     static void ImGuiDestroy();
+
+    void loadFile(std::string& file);
 public:
     GLuint mainTextureHandler;
     SDL_Window* window;
