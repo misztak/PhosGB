@@ -2,7 +2,7 @@
 
 IDisplay::IDisplay(SDL_Window* window, Emulator* emulator, SDL_AudioDeviceID deviceId)
     : mainTextureHandler(0), window(window), emulator(emulator), deviceId(deviceId),
-      enableOverlay(true), requestOverlay(false) {}
+      enableOverlay(true), requestOverlay(false), requestFileChooser(false) {}
 
 
 bool IDisplay::loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* data) {
@@ -39,7 +39,9 @@ void IDisplay::ImGuiDestroy() {
 
 void IDisplay::showMainMenu() {
     ImGui::MenuItem("Menu", nullptr, false, false);
-    if (ImGui::MenuItem("Open ROM [TODO]")) {}
+    if (ImGui::MenuItem("Open ROM")) {
+        requestFileChooser = true;
+    }
     if (ImGui::MenuItem("Reset ROM")) {
         emulator->load(emulator->currentFilePath);
     }
@@ -241,4 +243,8 @@ void IDisplay::scaleFrame(std::vector<u8>& src, std::vector<u8>& dest, unsigned 
             Log(W, "Invalid scale factor %u\n", scale);
             return;
     }
+}
+
+void IDisplay::loadFile(std::string& file) {
+    emulator->load(file);
 }

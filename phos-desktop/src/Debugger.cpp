@@ -70,6 +70,11 @@ void Debugger::update(u8* data) {
         ImGui::EndMenuBar();
     }
 
+    if (requestFileChooser)
+        ImGui::OpenPopup("FileBrowser");
+    static FileBrowser fileChooser(std::bind(&IDisplay::loadFile, this, std::placeholders::_1));
+    fileChooser.DrawWindow(&requestFileChooser, 600, 400);
+
     emulatorView(data);
     if (showMemWindow) memoryView();
     if (showBGWindow) backgroundView();

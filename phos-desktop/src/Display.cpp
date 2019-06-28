@@ -58,6 +58,13 @@ void Display::update(u8* data) {
         ImGui::EndPopup();
     }
 
+    if (requestFileChooser)
+        ImGui::OpenPopup("FileBrowser");
+    static FileBrowser fileChooser(std::bind(&IDisplay::loadFile, this, std::placeholders::_1));
+    int w, h;
+    SDL_GetWindowSize(window, &w, &h);
+    fileChooser.DrawWindow(&requestFileChooser, w-10, h-10);
+
     if (enableOverlay && requestOverlay) showOverlay(&enableOverlay);
 
     ImGui::Render();
