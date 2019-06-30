@@ -80,6 +80,11 @@ public:
     std::map<u8, int> RAMSizeTypes;
 
     std::unique_ptr<MBC> mbc;
+
+    // Only used for debugging
+    size_t DMACounter;
+    size_t GDMACounter;
+    size_t HDMACounter;
 private:
     bool loadFile(std::string& path, FileType fileType, std::vector<u8>& buffer);
     void initTables();

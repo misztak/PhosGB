@@ -107,6 +107,7 @@ void Debugger::emulatorView(u8* data) {
     }
 
     ImGui::Text("GB Mode: %s", (emulator->cpu.gbMode == DMG) ? "DMG" : "CGB");
+    ImGui::Text("OAM DMAs: %zu  GDMAs: %zu  HDMAs: %zu", emulator->cpu.mmu.DMACounter, emulator->cpu.mmu.GDMACounter, emulator->cpu.mmu.HDMACounter);
     ImGui::Text("Registers:");
     ImGui::Text("PC: 0x%04X", emulator->cpu.r.pc);
     ImGui::Text("SP: 0x%04X", emulator->cpu.r.sp);

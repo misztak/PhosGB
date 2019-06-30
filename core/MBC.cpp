@@ -300,11 +300,10 @@ void MBC5::writeROMByte(u16 address, u8 value) {
             break;
         case 0x2000:
             ROMBankPtr = (ROMBankPtr & 0xFF00) | value;
-            assert(ROMBankPtr < 256);
             break;
         case 0x3000:
-            // TODO: find out what to do here
-            Log(W, "Tried to access upper byte of MBC5 Bank Pointer\n");
+            ROMBankPtr = value ? (ROMBankPtr | 0x0100) : (ROMBankPtr & ~0x0100);
+            Log(W, "Changed MSB of MBC5 Bank Pointer to %u\n", value);
             break;
         case 0x4000:
         case 0x5000: {

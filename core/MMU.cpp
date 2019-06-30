@@ -20,7 +20,11 @@ MMU::MMU() :
     VRAM(VRAM_SIZE, 0),
     OAM(OAM_SIZE, 0),
     PaletteMemory(128, 0xFF),
-    mbc(nullptr) {
+    mbc(nullptr),
+    DMACounter(0),
+    GDMACounter(0),
+    HDMACounter(0)
+    {
     VramDma.reset();
     initTables();
 }
@@ -154,6 +158,7 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     }
 
     VramDma.reset();
+    DMACounter = 0, GDMACounter = 0, HDMACounter = 0;
     printCartridgeInfo(buffer);
     return true;
 }
@@ -362,6 +367,7 @@ void MMU::writeByte(u16 address, u8 value) {
                         }
                         IO[relAddress] = value;
                         cpu->gpu.DMATicks = 648;
+                        DMACounter++;
                         break; }
                     case 0x4D:      // Speed Switch (CGB Mode Only)
                         IO[relAddress] = (IO[relAddress] & 0xFE) | (value & 0x01);
@@ -375,26 +381,23 @@ void MMU::writeByte(u16 address, u8 value) {
                     case 0x55: {    // VRAM DMA Transfer (CGB Mode Only)
                         if (cpu->gbMode != CGB) return;
                         VramDma.transferLength = ((value & 0x7F) + 1) * 16;
-                        VramDma.mode = isBitSet(value, 0x80) ? DURING_HBLANK : GENERAL_PURPOSE;
+                        bool stat = isBitSet(value, 0x80);
 
-                        switch (VramDma.mode) {
-                            case DURING_HBLANK:
-                                IO[0x55] = value & 0x7F;
-                                if (!VramDma.enabled) {
-                                    VramDma.enabled = true;
-                                }
-                                break;
-                            case GENERAL_PURPOSE:
-                                if (VramDma.enabled) {
-                                    IO[0x55] = 0xFF;
-                                    VramDma.enabled = false;
-                                } else {
-                                    performGDMA();
-                                }
-                                break;
+                        if (stat) {
+                            IO[0x55] = value & 0x7F;
+                            if (!VramDma.enabled) {
+                                VramDma.enabled = true;
+                                HDMACounter++;
+                            }
+                        } else {
+                            if (VramDma.enabled) {
+                                IO[0x55] = 0xFF;
+                                VramDma.enabled = false;
+                            } else {
+                                performGDMA();
+                                GDMACounter++;
+                            }
                         }
-
-                        IO[0x55] = value;
                         break; }
                     case 0x56:      // Infrared (CGB Mode Only)
                         assert(cpu->gbMode == CGB);
@@ -454,17 +457,20 @@ void MMU::performHDMA() {
 
     // update the remaining transfer length
     VramDma.transferLength -= 16;
-    if (VramDma.transferLength == 0) {
+    IO[0x55]--;
+    if (IO[0x55] == 0xFF) {
         // HDMA finished
-        IO[0x55] = 0xFF;
+        //assert(IO[0x55] == 0xFF);
         VramDma.enabled = false;
     } else {
-        IO[0x55]--;
-
         source += 16;
+        // check overflow
+        if (source == 0x8000) source = 0xA000;
         IO[0x51] = source >> 8;
         IO[0x52] = source & 0xFF;
         dest += 16;
+        // check overflow
+        if (dest == 0xA000) dest = 0x8000;
         IO[0x53] = dest >> 8;
         IO[0x54] = dest & 0xFF;
     }
@@ -495,7 +501,6 @@ void MMU::performGDMA() {
     for (unsigned r=0; r<5; r++) {
         IO[0x51+r] = 0xFF;
     }
-
 
     unsigned transferCycles = 4;
     if (cpu->doubleSpeedMode)
