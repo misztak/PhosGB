@@ -202,7 +202,7 @@ int main(int argc, char** argv) {
                     // Under normal circumstances the display should update at the start of every VBLANK period.
                     render(window, glContext, host, &emulator);
                     emulator.cpu.apu.readSamples();
-                    if (SDL_GetAudioDeviceStatus(deviceId) == SDL_AUDIO_PLAYING)
+                    if (SDL_GetAudioDeviceStatus(deviceId) == SDL_AUDIO_PLAYING && !host->requestOverlay)
                         SDL_QueueAudio(deviceId, emulator.cpu.apu.audioBuffer.data(),
                                        emulator.cpu.apu.audioBuffer.size() * 2);
                 }
