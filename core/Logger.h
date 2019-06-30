@@ -8,7 +8,7 @@
 #if defined(__clang__) || defined(__GNUC__)
 #define FMT_ARGS(FMT)   __attribute__((format(printf, FMT, FMT+1)))
 #else
-#define IM_FMTARGS(FMT)
+#define FMT_ARGS(FMT)
 #endif
 
 enum Severity { I, D, W, F };

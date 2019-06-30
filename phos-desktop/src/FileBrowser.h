@@ -3,7 +3,7 @@
 
 #include <filesystem>
 #include <iostream>
-#include <ostream>
+#include <sstream>
 #include <vector>
 #include <functional>
 
@@ -51,7 +51,7 @@ struct FileBrowser {
                 UpdateFiles();
             }
             ImGui::SameLine();
-            ImGui::Text("Path: %s", currentPath.c_str());
+            ImGui::Text("Path: %s", currentPath.string().c_str());
             ImGui::Separator();
             ImGui::BeginChild("FileList",
                               ImVec2(ImGui::GetWindowWidth() - 5, -ImGui::GetItemsLineHeightWithSpacing() - 20),
@@ -79,7 +79,7 @@ struct FileBrowser {
             }
             ImGui::EndChild();
             ImGui::Separator();
-            ImGui::Text("Selected: %s", (selected < files.size() ? files[selected].filename().c_str() : ""));
+            ImGui::Text("Selected: %s", (selected < files.size() ? files[selected].filename().string().c_str() : ""));
 
             ImGui::Separator();
             if (ImGui::Button("Close")) {
