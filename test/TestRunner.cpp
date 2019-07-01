@@ -6,7 +6,7 @@
 TEST_CASE("CPU INSTRUCTION TEST") {
     Emulator emulator;
     emulator.cpu.headless = true;
-    std::string filePath = "../../gb/blargg/cpu_instrs.gb";
+    std::string filePath = "../gb/blargg/cpu_instrs.gb";
     REQUIRE(emulator.load(filePath));
 
     auto duration = std::chrono::system_clock::now() + std::chrono::seconds(5);
