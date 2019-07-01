@@ -3,20 +3,24 @@
 An experimental Gameboy and Gameboy Color Emulator written in modern C++
 
 <p align="center">
+  <img src="examples/PokemonYellow_1.png" hspace="10">
+  <img src="examples/PokemonYellow_2.png" hspace="10">
+</p>
+<p align="center">
+  <img src="examples/DKC_1.png" hspace="10">
+  <img src="examples/DKC_2.png" hspace="10">
+</p>
+<p align="center">
+  <img src="examples/WarioLand3_1.png" hspace="10">
+  <img src="examples/WarioLand3_2.png" hspace="10">
+</p>
+<p align="center">
   <img src="examples/Zelda_1.png" hspace="10">
-  <img src="examples/Zelda_2.png" hspace="10">
+  <img src="examples/Zelda_2.5.png" hspace="10">
 </p>
 <p align="center">
   <img src="examples/F1-Race_1.png" hspace="10">
   <img src="examples/F1-Race_2.png" hspace="10">
-</p>
-<p align="center">
-  <img src="examples/SuperMarioLand_1.png" hspace="10">
-  <img src="examples/SuperMarioLand_2.png" hspace="10">
-</p>
-<p align="center">
-  <img src="examples/PokemonRed_1.png" hspace="10">
-  <img src="examples/PokemonRed_2.png" hspace="10">
 </p>
 <p align="center">
   <img src="examples/Tetris_1.png" hspace="10">
@@ -28,11 +32,15 @@ An experimental Gameboy and Gameboy Color Emulator written in modern C++
 
 ## Features
 
+* WIP Gameboy Color support
+
 * Support for MBC1, MBC2, MBC3 and MBC5 cartridges
 
 * Full audio emulation
 
-* Save States
+* Save States & Fast Forward
+
+* Screenshots
 
 * Saves SRAM to file
 
@@ -43,6 +51,18 @@ An experimental Gameboy and Gameboy Color Emulator written in modern C++
 ### Input
 
 <img src="examples/Controls.png" hspace="15">
+
+| Key           | Function      |
+| ------------- |:-------------:|
+| ```G```       | Toggle Debug Mode |
+|```H```|Pause|
+| ```F```      | Fast Forward      |
+| ```F5``` | Save State      |
+| ```F6```| Load State |
+|```M```| Change Frame-Timer Mode |
+
+**Right-Click** opens the main menu in Normal Mode.
+
 
 ## Building
 
