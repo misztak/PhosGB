@@ -1474,6 +1474,7 @@ u32 CPU::STOP(const u8& opcode) {
         mmu.IO[0x4D]--;
         mmu.IO[0x4D] = doubleSpeedMode ? setBit(mmu.IO[0x4D], 0x80) : clearBit(mmu.IO[0x4D], 0x80);
         ticksPerFrame = doubleSpeedMode ? (70224 * 2) : 70224;
+        apu.reset();
     }
     return 4;
 }

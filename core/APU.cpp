@@ -170,8 +170,9 @@ void APU::reset() {
     blip_delete(right_buffer);
     left_buffer = blip_new(16383);
     right_buffer = blip_new(16383);
-    blip_set_rates(left_buffer, 2097152, 44200);
-    blip_set_rates(right_buffer, 2097152, 44200);
+    u32 srcRate = cpu->doubleSpeedMode ? 2097152*2 : 2097152;
+    blip_set_rates(left_buffer, srcRate, 44100);
+    blip_set_rates(right_buffer, srcRate, 44100);
 
     audioBuffer.clear();
     for (auto& c : channels)
@@ -182,7 +183,7 @@ void APU::reset() {
 
 void APU::update(u32 cycles) {
     if (cpu->headless) return;
-    if (cpu->doubleSpeedMode) cycles /= 2;
+    //if (cpu->doubleSpeedMode) cycles /= 2;
     u32 mCycles = cycles / 4;
     bool dividerCycle = isBitSet(cpu->mmu.IO[0x04], 0x10 << (cpu->doubleSpeedMode ? 1 : 0));
     if (lastCounter && !dividerCycle) {

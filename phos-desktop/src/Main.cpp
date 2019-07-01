@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
     // Create audio context
     SDL_AudioSpec spec;
     SDL_zero(spec);
-    spec.freq = 44200;
+    spec.freq = 44100;
     spec.format = AUDIO_S16;
     spec.channels = 2;
     spec.samples = 4096;
