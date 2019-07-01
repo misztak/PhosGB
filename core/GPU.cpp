@@ -192,7 +192,7 @@ void GPU::fetchTileData(bool mapSelect, u8 posY, u8 posX, u16& tile, u16& attrib
     data |= mmu->VRAM[tileData] << 8;
 
     // check for left/right flip
-    if (cpu->gbMode == CGB && attribute & 0x20) hflip(data);
+    if (cpu->gbMode == CGB && attribute & 0x20) data = hflip(data);
 }
 
 void GPU::renderBGScanline(bool fullLine, u8 yCoord) {
