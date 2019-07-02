@@ -115,6 +115,10 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         return false;
     }
 
+    if (RAMSizeTypes[RAMType] == 0 && cartridgeTypes[cartridgeType].find("RAM") != std::string::npos) {
+        Log(W, "Cartridge type and RAM size type don't match\n");
+    }
+
     std::copy_n(buffer.begin(), ROM_BANK_SIZE, ROM_0.begin());
     ROM.resize(buffer.size() - ROM_BANK_SIZE);
     std::copy(buffer.begin() + ROM_BANK_SIZE, buffer.end(), ROM.begin());
@@ -249,6 +253,7 @@ u8 MMU::readByte(u16 address) {
             else if (cpu->gbMode == CGB) return VRAM[(address - 0x8000) + VRAMBankPtr * VRAM_BANK_SIZE];
         case 0xA000:
         case 0xB000:
+            if (RAM.empty()) return 0xFF;
             return mbc->readRAMByte(address - 0xA000);
         case 0xC000:
         case 0xD000:
@@ -312,6 +317,7 @@ void MMU::writeByte(u16 address, u8 value) {
             return;
         case 0xA000:
         case 0xB000:
+            if (RAM.empty()) return;
             mbc->writeRAMByte(address - 0xA000, value);
             return;
         case 0xC000:
