@@ -582,35 +582,39 @@ void CPU::updateTimer(u32 ticks) {
         mmu.IO[0x4]++;
     }
 
-    if (isBitSet(readByte(0xFF07), 0x4)) {
-        timerCounter -= ticks;
+    u8 tac = readByte(0xFF07);
+    if (!isBitSet(tac, 0x04)) return;
+    static bool delayedOverflow = false;
+
+    for (u32 i=0; i<ticks; i++) {
+        timerCounter--;
+
+        if (delayedOverflow) {
+            writeByte(0xFF05, readByte(0xFF06));
+            requestInterrupt(INTERRUPT_TIMER);
+            delayedOverflow = false;
+        }
 
         if (timerCounter <= 0) {
+            int remainder = timerCounter;
             setTimerFreq();
+            timerCounter += remainder;
 
-            if (readByte(0xFF05) == 0xFF) {
-                // TODO: delayed overflow
-                writeByte(0xFF05, readByte(0xFF06));
-                requestInterrupt(INTERRUPT_TIMER);
-            } else {
-                writeByte(0xFF05, readByte(0xFF05) + 1);
-            }
+            writeByte(0xFF05, readByte(0xFF05) + 1);
+            delayedOverflow = (readByte(0xFF05) == 0);
         }
     }
-
 }
 
 void CPU::setTimerFreq() {
     u8 freq = readByte(0xFF07) & 0x03;
-    int remainder = (timerCounter < 0) ? timerCounter : 0;
     switch (freq) {
         case 0: timerCounter = 1024; break;
-        case 1: timerCounter = 16; break;
-        case 2: timerCounter = 64; break;
-        case 3: timerCounter = 256; break;
+        case 1: timerCounter = 16;   break;
+        case 2: timerCounter = 64;   break;
+        case 3: timerCounter = 256;  break;
         default: Log(W, "Invalid timer frequency\n");
     }
-    timerCounter += remainder;
 }
 
 void CPU::checkInterrupts() {
@@ -620,6 +624,8 @@ void CPU::checkInterrupts() {
     u8 activeInterrupts = (IE & IF) & 0x1F;
     if (r.ime) {
         if (activeInterrupts > 0) {
+            if (halted) cycles += 4;
+            cycles += 20;
             halted = false;
             r.ime = 0;
             pushWord(r.pc);
@@ -882,12 +888,12 @@ u32 CPU::LD_nn_A(const u8& opcode) {
 
 u32 CPU::LD_A_Cff00(const u8& opcode) {
     r.a = readByte(0xFF00 + r.c);
-    return 2;
+    return 8;
 }
 
 u32 CPU::LD_Cff00_A(const u8& opcode) {
     writeByte(0xFF00 + r.c, r.a);
-    return 2;
+    return 8;
 }
 
 u32 CPU::LDD_A_HL(const u8& opcode) {
