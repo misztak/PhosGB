@@ -1,16 +1,16 @@
-#include "Display.h"
+#include "NormalHost.h"
 
-Display::Display(SDL_Window* w, Emulator* emu, SDL_AudioDeviceID deviceId) : IDisplay(w, emu, deviceId) {
+NormalHost::NormalHost(SDL_Window* w, Emulator* emu, SDL_AudioDeviceID deviceId) : Host(w, emu, deviceId) {
     loadTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());
 }
 
-Display::~Display() {
+NormalHost::~NormalHost() {
     if (mainTextureHandler != 0) {
         glDeleteTextures(1, &mainTextureHandler);
     }
 }
 
-void Display::processEvent(SDL_Event &event) {
+void NormalHost::processEvent(SDL_Event &event) {
     if (event.type == SDL_KEYUP) {
         if (event.key.keysym.sym == SDLK_F5) {
             emulator->saveState();
@@ -22,7 +22,7 @@ void Display::processEvent(SDL_Event &event) {
     ImGui_ImplSDL2_ProcessEvent(&event);
 }
 
-void Display::update(u8* data) {
+void NormalHost::update(u8* data) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
@@ -60,7 +60,7 @@ void Display::update(u8* data) {
 
     if (requestFileChooser)
         ImGui::OpenPopup("FileBrowser");
-    static FileBrowser fileChooser(std::bind(&IDisplay::loadFile, this, std::placeholders::_1));
+    static FileBrowser fileChooser(std::bind(&Host::loadFile, this, std::placeholders::_1));
     int w, h;
     SDL_GetWindowSize(window, &w, &h);
     fileChooser.DrawWindow(&requestFileChooser, w-10, h-10);
@@ -70,7 +70,7 @@ void Display::update(u8* data) {
     ImGui::Render();
 }
 
-void Display::render() {
+void NormalHost::render() {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 

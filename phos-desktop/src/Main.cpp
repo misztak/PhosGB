@@ -2,8 +2,8 @@
 #include <GL/glew.h>
 
 #include "Common.h"
-#include "Debugger.h"
-#include "Display.h"
+#include "DebugHost.h"
+#include "NormalHost.h"
 #include "Timer.h"
 #include "Emulator.h"
 
@@ -19,7 +19,7 @@
     const int compatFlag = 0;
 #endif
 
-void render(SDL_Window* window, SDL_GLContext& glContext, IDisplay* host, Emulator* emulator) {
+void render(SDL_Window* window, SDL_GLContext& glContext, Host* host, Emulator* emulator) {
     host->update(emulator->getDisplayState());
     SDL_GL_MakeCurrent(window, glContext);
 
@@ -50,8 +50,8 @@ void handleJoypadInput(SDL_Event& event, Emulator& emulator) {
     }
 }
 
-void resize(SDL_Window* window, bool isDebugger) {
-    if (isDebugger)
+void resize(SDL_Window* window, bool wasInNormalMode) {
+    if (wasInNormalMode)
         SDL_SetWindowSize(window, 1200, 900);
     else
         SDL_SetWindowSize(window, SCALED_WIDTH, SCALED_HEIGHT);
@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
     //filePath.append("F1-Race.gb");
     //filePath.append("Opus.gb");
     //filePath.append("TicTacToe.gb");
-    filePath.append("SuperMarioLand.gb");
+    //filePath.append("SuperMarioLand.gb");
     //filePath.append("PokemonRed.gb");
 	//filePath.append("Zelda.gb");
 
@@ -124,10 +124,10 @@ int main(int argc, char** argv) {
     //filePath.append("blargg/instr_timing.gb");
     //filePath.append("mooneye/acceptance/halt_ime0_nointr_timing.gb");
 
-    IDisplay::ImGuiInit(window, glContext);
-    IDisplay* host;
-    Display display(window, &emulator, deviceId);
-    Debugger debugger(window, &emulator, deviceId, debugSink.get());
+    Host::ImGuiInit(window, glContext);
+    Host* host;
+    NormalHost display(window, &emulator, deviceId);
+    DebugHost debugger(window, &emulator, deviceId, debugSink.get());
 
     if (!emulator.load(filePath)) {
         Log(W, "Failed to load hardcoded file\n");
@@ -136,11 +136,6 @@ int main(int argc, char** argv) {
 
     // Main loop
     host = &debugger;
-    bool isDebugger = true;
-    if (isDebugger && debugger.singleStepMode) {
-        emulator.isHalted = true;
-    }
-
     bool done = false;
 
     int ticks = 0;
@@ -156,14 +151,9 @@ int main(int argc, char** argv) {
                 done = true;
             if (event.type == SDL_KEYUP) {
                 if (event.key.keysym.scancode == SDL_SCANCODE_G) {
-                    if (isDebugger) {
-                        isDebugger = false;
-                        host = &display;
-                    } else {
-                        isDebugger = true;
-                        host = &debugger;
-                    }
-                    resize(window, isDebugger);
+                    bool inDebugMode = host == &debugger;
+                    inDebugMode ? host = &display : host = &debugger;
+                    resize(window, !inDebugMode);
                 }
                 if (event.key.keysym.scancode == SDL_SCANCODE_F) {
                     emulator.cpu.ticksPerFrame = emulator.cpu.doubleSpeedMode ? 140448 : 70224;
@@ -210,16 +200,13 @@ int main(int argc, char** argv) {
                 ticks += cycles;
 
                 // exit early if not in debugger
-                if (!isDebugger) continue;
+                if (host != &debugger) continue;
 
-//                if (emulator.cpu.r.pc == 0x0100) {
-//                    emulator.isHalted = true;
-//                    debugger.singleStepMode = true;
-//                    debugger.nextStep = false;
-//                    ticks = ticksPerFrame;
-//                    printf("Break\n");
-//                    break;
-//                }
+                if (debugger.checkBreakpoints()) {
+                    ticks = emulator.cpu.ticksPerFrame;
+                    Log(D, "Hit breakpoint at pc 0x%4X\n", emulator.cpu.r.pc);
+                    break;
+                }
 
                 if (debugger.singleStepMode) {
                     debugger.nextStep = false;
@@ -242,7 +229,7 @@ int main(int argc, char** argv) {
     // Save state if cartridge has persistent storage (battery buffered SRAM or flash ROM)
     emulator.shutdown();
     // Cleanup
-    IDisplay::ImGuiDestroy();
+    Host::ImGuiDestroy();
     SDL_GL_DeleteContext(glContext);
     SDL_DestroyWindow(window);
     SDL_Quit();

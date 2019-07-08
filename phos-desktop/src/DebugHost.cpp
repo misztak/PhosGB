@@ -1,7 +1,7 @@
-#include "Debugger.h"
+#include "DebugHost.h"
 
-Debugger::Debugger(SDL_Window* w, Emulator* emu, SDL_AudioDeviceID deviceId, DebugSink* sink) :
-    IDisplay(w, emu, deviceId),
+DebugHost::DebugHost(SDL_Window* w, Emulator* emu, SDL_AudioDeviceID deviceId, DebugSink* sink) :
+    Host(w, emu, deviceId),
     nextStep(false),
     singleStepMode(false),
     showLogWindow(true), showDemoWindow(false), showMemWindow(false), showBGWindow(true), showVRAMWindow(true),
@@ -15,14 +15,26 @@ Debugger::Debugger(SDL_Window* w, Emulator* emu, SDL_AudioDeviceID deviceId, Deb
     loadTexture(&TileTextureHandler, 64, 64, nullptr);
 }
 
-Debugger::~Debugger() {
+DebugHost::~DebugHost() {
     if (mainTextureHandler != 0)    glDeleteTextures(1, &mainTextureHandler);
     if (bgTextureHandler != 0)      glDeleteTextures(1, &bgTextureHandler);
     if (VRAMTextureHandler != 0)    glDeleteTextures(1, &VRAMTextureHandler);
     if (TileTextureHandler != 0)    glDeleteTextures(1, &TileTextureHandler);
 }
 
-void Debugger::processEvent(SDL_Event& event) {
+bool DebugHost::checkBreakpoints() {
+    u16 currentPc = emulator->cpu.r.pc;
+    if (breakpoints.find(currentPc) == breakpoints.end() || !breakpoints[currentPc])
+        return false;
+
+    emulator->isHalted = true;
+    singleStepMode = true;
+    nextStep = false;
+
+    return true;
+}
+
+void DebugHost::processEvent(SDL_Event& event) {
     if (event.type == SDL_KEYUP) {
         if (event.key.keysym.sym == SDLK_F5) {
             emulator->saveState();
@@ -34,7 +46,7 @@ void Debugger::processEvent(SDL_Event& event) {
     ImGui_ImplSDL2_ProcessEvent(&event);
 }
 
-void Debugger::update(u8* data) {
+void DebugHost::update(u8* data) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(window);
     ImGui::NewFrame();
@@ -72,7 +84,7 @@ void Debugger::update(u8* data) {
 
     if (requestFileChooser)
         ImGui::OpenPopup("FileBrowser");
-    static FileBrowser fileChooser(std::bind(&IDisplay::loadFile, this, std::placeholders::_1));
+    static FileBrowser fileChooser(std::bind(&Host::loadFile, this, std::placeholders::_1));
     fileChooser.DrawWindow(&requestFileChooser, 600, 400);
 
     emulatorView(data);
@@ -89,7 +101,7 @@ void Debugger::update(u8* data) {
     ImGui::Render();
 }
 
-void Debugger::emulatorView(u8* data) {
+void DebugHost::emulatorView(u8* data) {
     glBindTexture(GL_TEXTURE_2D, mainTextureHandler);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
@@ -124,7 +136,7 @@ void Debugger::emulatorView(u8* data) {
     ImGui::End();
 }
 
-void Debugger::memoryView() {
+void DebugHost::memoryView() {
     static MemoryEditor editor;
     ImGui::Begin("Memory Editor", &showMemWindow);
 
@@ -170,7 +182,7 @@ void Debugger::memoryView() {
     ImGui::End();
 }
 
-void Debugger::backgroundView() {
+void DebugHost::backgroundView() {
     glBindTexture(GL_TEXTURE_2D, bgTextureHandler);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, emulator->cpu.gpu.getBackgroundState());
 
@@ -179,7 +191,7 @@ void Debugger::backgroundView() {
     ImGui::End();
 }
 
-void Debugger::VRAMView() {
+void DebugHost::VRAMView() {
 
 
     ImGui::Begin("VRAM Viewer", &showVRAMWindow);
@@ -200,7 +212,7 @@ void Debugger::VRAMView() {
     ImGui::End();
 }
 
-void Debugger::renderVRAMView(u16 offset) {
+void DebugHost::renderVRAMView(u16 offset) {
     glBindTexture(GL_TEXTURE_2D, VRAMTextureHandler);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8*16, 8*24, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
@@ -238,7 +250,7 @@ void Debugger::renderVRAMView(u16 offset) {
     }
 }
 
-void Debugger::paletteView() {
+void DebugHost::paletteView() {
     ImGui::Begin("Palette Viewer", &showPaletteWindow);
 
 //    GLuint pHandlers[32] = {};
@@ -265,10 +277,10 @@ void Debugger::paletteView() {
     ImGui::End();
 }
 
-void Debugger::logView() {
+void DebugHost::logView() {
     if (sink) sink->Draw("Log", &showLogWindow);
 }
 
-void Debugger::render() {
+void DebugHost::render() {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

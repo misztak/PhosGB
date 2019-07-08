@@ -28,7 +28,7 @@ struct FileBrowser {
     }
 
     bool checkExtension(const std::string& fileExt) {
-        for (const char* ext : extensions) {
+        for (auto ext : extensions) {
             if (fileExt == ext) return true;
         }
         return false;

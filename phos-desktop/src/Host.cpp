@@ -1,11 +1,11 @@
-#include "IDisplay.h"
+#include "Host.h"
 
-IDisplay::IDisplay(SDL_Window* window, Emulator* emulator, SDL_AudioDeviceID deviceId)
+Host::Host(SDL_Window* window, Emulator* emulator, SDL_AudioDeviceID deviceId)
     : mainTextureHandler(0), window(window), emulator(emulator), deviceId(deviceId),
       enableOverlay(true), requestOverlay(false), requestFileChooser(false) {}
 
 
-bool IDisplay::loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* data) {
+bool Host::loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* data) {
     glGenTextures(1, textureHandler);
     glBindTexture(GL_TEXTURE_2D, *textureHandler);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -21,7 +21,7 @@ bool IDisplay::loadTexture(GLuint* textureHandler, u32 width, u32 height, u8* da
     return true;
 }
 
-void IDisplay::ImGuiInit(SDL_Window *window, void *glContext) {
+void Host::ImGuiInit(SDL_Window *window, void *glContext) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::StyleColorsDark();
@@ -31,13 +31,13 @@ void IDisplay::ImGuiInit(SDL_Window *window, void *glContext) {
     ImGui::GetStyle().WindowBorderSize = 0;
 }
 
-void IDisplay::ImGuiDestroy() {
+void Host::ImGuiDestroy() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 }
 
-void IDisplay::showMainMenu() {
+void Host::showMainMenu() {
     ImGui::MenuItem("Menu", nullptr, false, false);
     if (ImGui::MenuItem("Open ROM")) {
         requestFileChooser = true;
@@ -151,23 +151,9 @@ void IDisplay::showMainMenu() {
         // End of Options Menu
         ImGui::EndMenu();
     }
-    if (ImGui::BeginMenu("Colors"))
-    {
-        float sz = ImGui::GetTextLineHeight();
-        for (int i = 0; i < ImGuiCol_COUNT; i++)
-        {
-            const char* name = ImGui::GetStyleColorName((ImGuiCol)i);
-            ImVec2 p = ImGui::GetCursorScreenPos();
-            ImGui::GetWindowDrawList()->AddRectFilled(p, ImVec2(p.x+sz, p.y+sz), ImGui::GetColorU32((ImGuiCol)i));
-            ImGui::Dummy(ImVec2(sz, sz));
-            ImGui::SameLine();
-            ImGui::MenuItem(name);
-        }
-        ImGui::EndMenu();
-    }
 }
 
-void IDisplay::showOverlay(bool *open, const char* extraMsg) {
+void Host::showOverlay(bool *open, const char* extraMsg) {
     const float DISTANCE = 10.0f;
     static int corner = 0;
     ImGuiIO& io = ImGui::GetIO();
@@ -200,7 +186,7 @@ void IDisplay::showOverlay(bool *open, const char* extraMsg) {
     ImGui::End();
 }
 
-void IDisplay::scaleFrame(std::vector<u8>& src, std::vector<u8>& dest, unsigned scale) {
+void Host::scaleFrame(std::vector<u8>& src, std::vector<u8>& dest, unsigned scale) {
     if (src.size() * scale * scale != dest.size()) {
         Log(W, "Vector size and scale value don't match\n");
         return;
@@ -245,6 +231,6 @@ void IDisplay::scaleFrame(std::vector<u8>& src, std::vector<u8>& dest, unsigned 
     }
 }
 
-void IDisplay::loadFile(std::string& file) {
+void Host::loadFile(std::string& file) {
     emulator->load(file);
 }
