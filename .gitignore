@@ -12,5 +12,8 @@ compile_commands.json
 # Windows
 .vs
 
+# Gameboy
+gb
+
 # Misc
 .directory
