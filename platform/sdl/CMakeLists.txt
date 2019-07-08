@@ -10,7 +10,7 @@ find_package(SDL2 CONFIG REQUIRED)
 
 add_executable(phos ${phos_SOURCES})
 
-target_include_directories(phos PUBLIC ../core)
+target_include_directories(phos PUBLIC ../../core)
 target_include_directories(phos PUBLIC libs/glew)
 target_include_directories(phos PUBLIC libs/imgui)
 target_include_directories(phos PUBLIC libs/lodepng)
