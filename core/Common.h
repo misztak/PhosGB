@@ -5,9 +5,8 @@
 #include <vector>
 #include <cassert>
 
-#include "Logger.h"
-
 #ifndef __ANDROID__
+#include "Logger.h"
 #define Log(S, MSG, ...) Logger::Log(S, MSG, ##__VA_ARGS__)
 #define LogRaw(S, MSG, ...) Logger::LogRaw(S, MSG, ##__VA_ARGS__)
 #else
