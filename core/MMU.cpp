@@ -115,7 +115,8 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
         return false;
     }
 
-    if (RAMSizeTypes[RAMType] == 0 && cartridgeTypes[cartridgeType].find("RAM") != std::string::npos) {
+    if (RAMSizeTypes[RAMType] == 0 && cartridgeTypes[cartridgeType].find("RAM") != std::string::npos &&
+        cartridgeTypes[cartridgeType].find("MBC2") == std::string::npos) {
         Log(W, "Cartridge type and RAM size type don't match\n");
     }
 
@@ -134,11 +135,9 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     if (cpu->gbMode == DMG) {
         WRAM.resize(WRAM_SIZE);
         VRAM.resize(VRAM_SIZE);
-        OAM.resize(OAM_SIZE);
     } else if (cpu->gbMode == CGB) {
         WRAM.resize(WRAM_BANK_SIZE * 8);
         VRAM.resize(VRAM_SIZE * 2);
-        OAM.resize(OAM_SIZE);
     }
     std::fill(WRAM.begin(), WRAM.end(), 0);
     std::fill(IO.begin(), IO.end(), 0);
@@ -195,7 +194,6 @@ bool MMU::loadFile(std::string& path, FileType fileType, std::vector<u8>& buffer
         case FileType::ROM:
             // check type id and underlying value
             if (ROMSizeTypes.count(buffer[0x148]) && ROMSizeTypes[buffer[0x148]] == length) return true;
-            // TODO: turn this into an option or a warning
             Log(W, "Cartridge type %d with size %li is invalid\n", buffer[0x148], length);
             return false;
         case FileType::SRAM:
@@ -591,7 +589,7 @@ void MMU::initTables() {
     cartridgeTypes[0x01] = "MBC1";
     cartridgeTypes[0x02] = "MBC1+RAM";
     cartridgeTypes[0x03] = "MBC1+RAM+BATTERY";
-    cartridgeTypes[0xFF] = "HuC1+RAM+BATTERY";  // TODO: see what's different
+    cartridgeTypes[0xFF] = "HuC1+RAM+BATTERY";
     // MBC2
     cartridgeTypes[0x05] = "MBC2+RAM";          // MBC2 has build-in RAM
     cartridgeTypes[0x06] = "MBC2+RAM+BATTERY";  // same here
