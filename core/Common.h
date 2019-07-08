@@ -7,8 +7,14 @@
 
 #include "Logger.h"
 
+#ifndef __ANDROID__
 #define Log(S, MSG, ...) Logger::Log(S, MSG, ##__VA_ARGS__)
 #define LogRaw(S, MSG, ...) Logger::LogRaw(S, MSG, ##__VA_ARGS__)
+#else
+#include <android/log.h>
+#define Log(S, ...) __android_log_print(ANDROID_LOG_INFO, "PhosGB", __VA_ARGS__)
+#define LogRaw(S, ...) __android_log_print(ANDROID_LOG_INFO, "PhosGB", __VA_ARGS__)
+#endif
 
 #define WRITE_V(VALUE) (reinterpret_cast<char *>(&VALUE))
 #define WRITE_A(ARRAY, OFFSET) (reinterpret_cast<char *>(&ARRAY[0]) + OFFSET)
