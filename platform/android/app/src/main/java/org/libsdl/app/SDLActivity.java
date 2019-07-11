@@ -31,6 +31,8 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ApplicationInfo;
 
+import org.miami.phos.R;
+
 /**
     SDL Activity
 */
@@ -257,6 +259,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
         mLayout = new RelativeLayout(this);
         mLayout.addView(mSurface);
+        mLayout.addView(LayoutInflater.from(this).inflate(R.layout.joypad, null));
 
         // Get our current screen orientation and pass it down.
         mCurrentOrientation = SDLActivity.getCurrentOrientation();
@@ -1862,7 +1865,7 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
             // Since we may have an orientation set, we won't receive onConfigurationChanged events.
             // We thus should check here.
             int newOrientation = SDLActivity.SDL_ORIENTATION_UNKNOWN;
-    
+
             float x, y;
             switch (mDisplay.getRotation()) {
                 case Surface.ROTATION_90:
@@ -1896,7 +1899,7 @@ class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
                                       y / SensorManager.GRAVITY_EARTH,
                                       event.values[2] / SensorManager.GRAVITY_EARTH);
 
-            
+
         }
     }
 

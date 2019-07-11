@@ -21,7 +21,7 @@ CORE_FILES :=   $(CORE_PATH)/sound/blip_buf.c \
                 $(CORE_PATH)/MBC.cpp \
                 $(CORE_PATH)/MMU.cpp
 
-MAIN_FILES := $(LOCAL_PATH)/main.c
+MAIN_FILES := $(LOCAL_PATH)/Main.cpp
 
 LOCAL_CFLAGS += -std=c99 -O2
 LOCAL_CPPFLAGS += -std=c++17 -O2 -frtti
