@@ -5,6 +5,37 @@
 
 #include "../../../../../core/Emulator.h"
 
+std::string getFile() {
+    // find the class
+    JNIEnv* env = (JNIEnv*) SDL_AndroidGetJNIEnv();
+    if (!env) {
+        Log(nullptr, "Could not get pointer to JNI environment");
+        return std::string();
+    }
+    jobject sdlActivityInstance = (jobject) SDL_AndroidGetActivity();
+    jclass phosActivity = env->GetObjectClass(sdlActivityInstance);
+    if (!phosActivity) {
+        Log(nullptr, "Could not find PhosActivity class");
+        return std::string();
+    }
+    // find the method
+    jmethodID getFilePathMethodId = env->GetMethodID(phosActivity, "getFilePath", "()Ljava/lang/String;");
+    if (!getFilePathMethodId) {
+        Log(nullptr, "Could not find getFilePath method");
+        return std::string();
+    }
+
+    // call the method
+    jstring result = (jstring) env->CallObjectMethod(sdlActivityInstance, getFilePathMethodId);
+    std::string path = env->GetStringUTFChars(result, nullptr);
+
+    //cleanup
+    env->DeleteLocalRef(sdlActivityInstance);
+    env->DeleteLocalRef(phosActivity);
+
+    return path;
+}
+
 int main(int argc, char* argv[]) {
     // init
     Log(nullptr, "Initialising SDL");
@@ -51,8 +82,14 @@ int main(int argc, char* argv[]) {
     Log(nullptr, "Starting emulator");
     Emulator emu;
 
-    std::string filePath = "";
-    emu.load(filePath);
+    // call the file chooser
+    std::string filePath = getFile();
+    if (filePath.empty()) {
+        Log(nullptr, "Could not load file %s", filePath.c_str());
+    } else {
+        Log(nullptr, "Attempting to load file from path %s", filePath.c_str());
+        emu.load(filePath);
+    }
 
     bool done = false;
     SDL_Event event;
