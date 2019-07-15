@@ -1,4 +1,4 @@
-package org.miami.phos;
+package org.phos.phos;
 
 // Source code taken from PPSSPP emulator
 // https://github.com/hrydgard/ppsspp/blob/master/android/src/org/ppsspp/ppsspp/SimpleFileChooser.java

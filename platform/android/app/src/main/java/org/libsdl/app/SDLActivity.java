@@ -31,7 +31,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ApplicationInfo;
 
-import org.miami.phos.R;
+import org.phos.phos.R;
 
 /**
     SDL Activity

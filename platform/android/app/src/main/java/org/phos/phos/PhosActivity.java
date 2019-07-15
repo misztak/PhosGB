@@ -1,4 +1,4 @@
-package org.miami.phos;
+package org.phos.phos;
 
 import android.Manifest;
 import android.content.pm.PackageManager;

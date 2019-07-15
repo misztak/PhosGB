@@ -11,7 +11,7 @@ android {
     compileSdkVersion 27
     defaultConfig {
         if (buildAsApplication) {
-            applicationId "org.miami.phos"
+            applicationId "org.phos.phos"
         }
         minSdkVersion 16
         targetSdkVersion 27
