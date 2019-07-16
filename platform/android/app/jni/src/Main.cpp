@@ -3,7 +3,27 @@
 #include <android/log.h>
 #include <jni.h>
 
+#include <chrono>
+#include <thread>
+
 #include "../../../../../core/Emulator.h"
+
+constexpr double frameTimeMicro = (1.0 / 60) * 1e6;
+
+Emulator emu;
+bool shutdown = false;
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_phos_phos_PhosActivity_handleInputDown(JNIEnv* env, jobject obj, jint keyCode) {
+    emu.handleInputDown(keyCode);
+    Log(nullptr, "JNI call to handleInputDown with keyCode %d\n", keyCode);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_phos_phos_PhosActivity_handleInputUp(JNIEnv* env, jobject obj, jint keyCode) {
+    emu.handleInputUp(keyCode);
+    Log(nullptr, "JNI call to handleInputUp with keyCode %d\n", keyCode);
+}
 
 std::string getFile() {
     // find the class
@@ -34,6 +54,20 @@ std::string getFile() {
     env->DeleteLocalRef(phosActivity);
 
     return path;
+}
+
+void render(SDL_Renderer* renderer, SDL_Texture* texture, SDL_Rect* viewport) {
+    SDL_SetRenderDrawColor(renderer, 0x7F, 0x7F, 0x7F, 0xFF);
+    SDL_RenderClear(renderer);
+
+    int pitch = 0;
+    unsigned char* displayPtr;
+    SDL_LockTexture(texture, nullptr, (void**) &displayPtr, &pitch);
+    memcpy(displayPtr, emu.getDisplayState(), 160 * 144 *4);
+    SDL_UnlockTexture(texture);
+    SDL_RenderCopy(renderer, texture, nullptr, viewport);
+
+    SDL_RenderPresent(renderer);
 }
 
 int main(int argc, char* argv[]) {
@@ -67,9 +101,6 @@ int main(int argc, char* argv[]) {
         Log(nullptr, "Could not create SDL texture. Error: %s", SDL_GetError());
         return 1;
     }
-    int pitch = 0;
-    std::vector<unsigned char> placeholder(160*144*4, 0xFF);
-    unsigned char* ph = placeholder.data();
 
     SDL_Rect viewport;
     int scale = 6;
@@ -80,34 +111,64 @@ int main(int argc, char* argv[]) {
     SDL_SetRenderDrawColor(renderer, 0x7F, 0x7F, 0x7F, 0xFF);
 
     Log(nullptr, "Starting emulator");
-    Emulator emu;
 
     // call the file chooser
+    emu.isHalted = true;
     std::string filePath = getFile();
     if (filePath.empty()) {
         Log(nullptr, "Could not load file %s", filePath.c_str());
     } else {
-        Log(nullptr, "Attempting to load file from path %s", filePath.c_str());
         emu.load(filePath);
+        emu.isHalted = false;
     }
 
-    bool done = false;
-    SDL_Event event;
-    while (!done) {
+    // init frame sync
+    auto frameStart = std::chrono::system_clock::now();
+    auto frameEnd = std::chrono::system_clock::now();
+
+    // init audio context
+    SDL_AudioSpec spec;
+    SDL_zero(spec);
+    spec.freq = 44100;
+    spec.format = AUDIO_S16;
+    spec.channels = 2;
+    spec.samples = 4096;
+    SDL_AudioDeviceID audio = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
+    // TODO: start audio device
+
+    int ticks = 0;
+    while (!shutdown) {
         // emulation loop
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) done = true;
+
+        if (!emu.isHalted) {
+            while (ticks < emu.cpu.ticksPerFrame) {
+                int cycles = emu.tick();
+                if (cycles == 0) {
+                    shutdown = true;
+                    break;
+                }
+
+                if (emu.hitVBlank()) {
+                    render(renderer, texture, &viewport);
+                    emu.cpu.apu.readSamples();
+//                    if (SDL_GetAudioDeviceStatus(audio) == SDL_AUDIO_PLAYING)
+//                        SDL_QueueAudio(audio, emu.cpu.apu.audioBuffer.data(), emu.cpu.apu.audioBuffer.size() * 2);
+                }
+
+                ticks += cycles;
+            }
+            ticks -= emu.cpu.ticksPerFrame;
         }
 
-        SDL_SetRenderDrawColor(renderer, 0x7F, 0x7F, 0x7F, 0xFF);
-        SDL_RenderClear(renderer);
-
-        pitch = 0;
-        SDL_LockTexture(texture, nullptr, (void**) &ph, &pitch);
-        SDL_UnlockTexture(texture);
-        SDL_RenderCopy(renderer, texture, nullptr, &viewport);
-
-        SDL_RenderPresent(renderer);
+        // frame sync
+        frameStart = std::chrono::system_clock::now();
+        std::chrono::duration<double, std::micro> usedFrameTime = frameStart - frameEnd;
+        if (usedFrameTime.count() < frameTimeMicro) {
+            std::chrono::duration<double, std::micro> remainingFrameTime(frameTimeMicro - usedFrameTime.count());
+            auto remainingFrameTimeLong = std::chrono::duration_cast<std::chrono::microseconds>(remainingFrameTime);
+            std::this_thread::sleep_for(std::chrono::microseconds(remainingFrameTimeLong.count()));
+        }
+        frameEnd = std::chrono::system_clock::now();
 
     }
 

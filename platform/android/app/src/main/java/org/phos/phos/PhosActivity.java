@@ -39,6 +39,12 @@ public class PhosActivity extends SDLActivity {
     private String selectedFilePath;
     private boolean isFileSelected = false;
 
+    public native void handleInputDown(int keyCode);
+    public native void handleInputUp(int keyCode);
+    static {
+        System.loadLibrary("main");
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,15 +60,14 @@ public class PhosActivity extends SDLActivity {
             String buttonId = "joypad_" + idName;
             int id = getResources().getIdentifier(buttonId, "id", getPackageName());
             Button button = findViewById(id);
+            final int keyCode = index;
             button.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean onTouch(View view, MotionEvent motionEvent) {
                     if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
-                        Log.v(tag, "Pressed button " + idName);
-                        // emulator.handleInputDown(index);
+                        handleInputDown(keyCode);
                     } else if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
-                        // emulator.handleInputUp(index);
-                        Log.v(tag, "Released button " + idName);
+                        handleInputUp(keyCode);
                     }
                     return true;
                 }
