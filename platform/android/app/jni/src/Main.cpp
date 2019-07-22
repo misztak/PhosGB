@@ -63,7 +63,7 @@ void render(SDL_Renderer* renderer, SDL_Texture* texture, SDL_Rect* viewport) {
     int pitch = 0;
     unsigned char* displayPtr;
     SDL_LockTexture(texture, nullptr, (void**) &displayPtr, &pitch);
-    memcpy(displayPtr, emu.getDisplayState(), 160 * 144 *4);
+    memcpy(displayPtr, emu.getDisplayState(), 160 * 144 * 4);
     SDL_UnlockTexture(texture);
     SDL_RenderCopy(renderer, texture, nullptr, viewport);
 
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, 160, 144);
+    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, 160, 144);
     if (texture == nullptr) {
         Log(nullptr, "Could not create SDL texture. Error: %s", SDL_GetError());
         return 1;
@@ -134,8 +134,9 @@ int main(int argc, char* argv[]) {
     spec.channels = 2;
     spec.samples = 4096;
     SDL_AudioDeviceID audio = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
-    // TODO: start audio device
+    SDL_PauseAudioDevice(audio, 0);
 
+    SDL_GL_SetSwapInterval(0);
     int ticks = 0;
     while (!shutdown) {
         // emulation loop
@@ -151,13 +152,15 @@ int main(int argc, char* argv[]) {
                 if (emu.hitVBlank()) {
                     render(renderer, texture, &viewport);
                     emu.cpu.apu.readSamples();
-//                    if (SDL_GetAudioDeviceStatus(audio) == SDL_AUDIO_PLAYING)
-//                        SDL_QueueAudio(audio, emu.cpu.apu.audioBuffer.data(), emu.cpu.apu.audioBuffer.size() * 2);
+                    if (SDL_GetAudioDeviceStatus(audio) == SDL_AUDIO_PLAYING)
+                        SDL_QueueAudio(audio, emu.cpu.apu.audioBuffer.data(), emu.cpu.apu.audioBuffer.size() * 2);
                 }
 
                 ticks += cycles;
             }
             ticks -= emu.cpu.ticksPerFrame;
+        } else {
+            render(renderer, texture, &viewport);
         }
 
         // frame sync

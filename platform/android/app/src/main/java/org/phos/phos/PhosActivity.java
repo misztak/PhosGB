@@ -8,7 +8,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
@@ -54,7 +53,7 @@ public class PhosActivity extends SDLActivity {
         while (!hasAllRequiredPermissions)
             hasAllRequiredPermissions = checkPermissions();
 
-        // sorry
+        // joypad listeners
         int index = 0;
         for (final String idName : joypadIds) {
             String buttonId = "joypad_" + idName;
