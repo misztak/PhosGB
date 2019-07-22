@@ -24,7 +24,7 @@ CORE_FILES :=   $(CORE_PATH)/sound/blip_buf.c \
 MAIN_FILES := $(LOCAL_PATH)/Main.cpp
 
 LOCAL_CFLAGS += -std=c99 -O2
-LOCAL_CPPFLAGS += -std=c++17 -O2 -frtti
+LOCAL_CPPFLAGS += -std=c++17 -O2 -frtti -fsigned-char
 
 LOCAL_SRC_FILES := $(CORE_FILES) $(MAIN_FILES)
 
