@@ -1,6 +1,7 @@
 # CMake
 cmake-build-debug
 cmake-build-release
+emscripten-build
 compile_commands.json
 
 # CLion
