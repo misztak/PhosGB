@@ -23,7 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class PhosActivity extends SDLActivity {
     private final String tag = getClass().getName();
-    private final String[] joypadIds = {"RIGHT", "LEFT", "UP", "DOWN", "A", "B", "START", "SELECT"};
+    private final String[] joypadIds = {"RIGHT", "LEFT", "UP", "DOWN", "A", "B", "SELECT", "START"};
     private final String[] permissions = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -40,6 +40,8 @@ public class PhosActivity extends SDLActivity {
 
     public native void handleInputDown(int keyCode);
     public native void handleInputUp(int keyCode);
+    public native void pause();
+    public native void resume();
     static {
         System.loadLibrary("main");
     }
@@ -97,6 +99,18 @@ public class PhosActivity extends SDLActivity {
             }
         };
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        resume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        pause();
     }
 
     private boolean checkPermissions() {

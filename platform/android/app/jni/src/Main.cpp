@@ -13,16 +13,28 @@ constexpr double frameTimeMicro = (1.0 / 60) * 1e6;
 Emulator emu;
 bool shutdown = false;
 
+SDL_AudioDeviceID audio;
+
 extern "C" JNIEXPORT void JNICALL
 Java_org_phos_phos_PhosActivity_handleInputDown(JNIEnv* env, jobject obj, jint keyCode) {
     emu.handleInputDown(keyCode);
-    Log(nullptr, "JNI call to handleInputDown with keyCode %d\n", keyCode);
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_org_phos_phos_PhosActivity_handleInputUp(JNIEnv* env, jobject obj, jint keyCode) {
     emu.handleInputUp(keyCode);
-    Log(nullptr, "JNI call to handleInputUp with keyCode %d\n", keyCode);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_phos_phos_PhosActivity_pause(JNIEnv* env, jobject obj) {
+    SDL_PauseAudioDevice(audio, 1);
+    emu.isHalted = true;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_phos_phos_PhosActivity_resume(JNIEnv* env, jobject obj) {
+    SDL_PauseAudioDevice(audio, 0);
+    emu.isHalted = false;
 }
 
 std::string getFile() {
@@ -133,7 +145,7 @@ int main(int argc, char* argv[]) {
     spec.format = AUDIO_S16;
     spec.channels = 2;
     spec.samples = 4096;
-    SDL_AudioDeviceID audio = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
+    audio = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
     SDL_PauseAudioDevice(audio, 0);
 
     SDL_GL_SetSwapInterval(0);
