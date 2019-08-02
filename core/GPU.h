@@ -75,6 +75,7 @@ public:
     void setMode(GPU_MODE mode);
 
     void setBGColor(u8 color);
+    void colorCorrect(u16 original, u8& r, u8& g, u8& b);
 
     void saveState(std::ofstream& outfile);
     void loadState(std::vector<u8>& buffer);
@@ -101,7 +102,6 @@ private:
     void renderSpriteScanline();
     unsigned hflip(unsigned data);
     u16 getColor(u8 type, u16 attribute, u16 paletteIndex);
-    void colorCorrect(u16 original, u8& r, u8& g, u8& b);
 };
 
 #endif //PHOS_GPU_H

@@ -253,27 +253,22 @@ void DebugHost::renderVRAMView(u16 offset) {
 void DebugHost::paletteView() {
     ImGui::Begin("Palette Viewer", &showPaletteWindow);
 
-//    GLuint pHandlers[32] = {};
-//    for (GLuint pHandler : pHandlers) {
-//        glBindTexture(GL_TEXTURE_2D, pHandler);
-//        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 16, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-//    }
     u32 palettePtr = 0;
     for (u32 t=0; t<2; t++) {
         for (u32 i=0; i<8; i++) {
-            u16 color1 = emulator->cpu.mmu.PaletteMemory[palettePtr] | (emulator->cpu.mmu.PaletteMemory[palettePtr+1] << 8);
-            u16 color2 = emulator->cpu.mmu.PaletteMemory[palettePtr+2] | (emulator->cpu.mmu.PaletteMemory[palettePtr+3] << 8);
-            u16 color3 = emulator->cpu.mmu.PaletteMemory[palettePtr+4] | (emulator->cpu.mmu.PaletteMemory[palettePtr+5] << 8);
-            u16 color4 = emulator->cpu.mmu.PaletteMemory[palettePtr+6] | (emulator->cpu.mmu.PaletteMemory[palettePtr+7] << 8);
+            ImGui::Text("%s Palette %d:", t ? "OB" : "BG", i); ImGui::SameLine();
+            for (u32 c=0; c<4; c++) {
+                u16 color = emulator->cpu.mmu.PaletteMemory[palettePtr+c*2] | (emulator->cpu.mmu.PaletteMemory[palettePtr+c*2+1] << 8);
+                u8 r,g,b;
+                emulator->cpu.gpu.colorCorrect(color, r, g, b);
+                const ImVec4 colorVec = ImVec4(r / 255.f, g / 255.f, b / 255.f, 1.f);
+                ImGui::ColorButton("", colorVec, 0, ImVec2(40, 15));
+                if (c != 3) ImGui::SameLine();
+            }
             palettePtr += 8;
-            ImGui::Text("0x%04X", color1); ImGui::SameLine();
-            ImGui::Text("0x%04X", color2); ImGui::SameLine();
-            ImGui::Text("0x%04X", color3); ImGui::SameLine();
-            ImGui::Text("0x%04X", color4);
         }
         ImGui::NewLine();
     }
-
     ImGui::End();
 }
 
