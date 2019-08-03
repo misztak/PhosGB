@@ -4,8 +4,9 @@
 #include <filesystem>
 #include <iostream>
 #include <sstream>
-#include <vector>
+#include <filesystem>
 #include <functional>
+#include <algorithm>
 
 #include "imgui.h"
 
@@ -14,6 +15,7 @@ namespace fs = std::filesystem;
 struct FileBrowser {
     const char* extensions[2] = {".gb", ".gbc"};
     bool onlyAllowValidExtensions = true;
+    bool sort = true;
 
     bool badFile = false;
     unsigned selected = 0xFFFFFFFF;
@@ -40,11 +42,26 @@ struct FileBrowser {
         for (const auto& entry : fs::directory_iterator(currentPath)) {
             files.push_back(entry.path());
         }
+        if (!sort) return;
+
+        std::sort(files.begin(), files.end(), [](const auto& lhs, const auto& rhs) {
+            if (fs::is_directory(lhs) && !fs::is_directory(rhs)) {
+                return true;
+            } else if (fs::is_directory(rhs) && !fs::is_directory(lhs)) {
+                return false;
+            } else {
+                auto s1 = lhs.filename().string();
+                auto s2 = rhs.filename().string();
+                std::transform(s1.begin(), s1.end(), s1.begin(), ::toupper);
+                std::transform(s2.begin(), s2.end(), s2.begin(), ::toupper);
+                return s1 < s2;
+            }
+        });
     }
 
     void DrawWindow(bool* open, int width, int height) {
         ImGui::SetNextWindowSize(ImVec2(width, height));
-        if (ImGui::BeginPopupModal("FileBrowser", nullptr, ImGuiWindowFlags_NoScrollbar)) {
+        if (ImGui::BeginPopupModal("FileBrowser", nullptr, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoResize)) {
             static bool invalidate = false;
             if (ImGui::Button("Down") && currentPath.has_parent_path()) {
                 currentPath.assign(currentPath.parent_path());
@@ -97,6 +114,15 @@ struct FileBrowser {
                     callback(file);
                 }
             }
+
+            if (ImGui::BeginPopup("Options")) {
+                if (ImGui::Checkbox("Sort", &sort)) UpdateFiles();
+                if (ImGui::Checkbox("Filter", &onlyAllowValidExtensions)) UpdateFiles();
+                ImGui::EndPopup();
+            }
+            ImGui::SameLine(ImGui::GetWindowWidth() - 60);
+            if (ImGui::Button("Options")) ImGui::OpenPopup("Options");
+
             if (badFile) {
                 ImGui::SameLine();
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.f, 0.f, 1.f));
@@ -122,19 +148,6 @@ struct FileBrowser {
         }
     }
 
-    void fsTest() {
-        const fs::path pathToShow = fs::current_path();
-        std::cout << "exists() = " << fs::exists(pathToShow) << "\n"
-             << "root_name() = " << pathToShow.root_name() << "\n"
-             << "root_path() = " << pathToShow.root_path() << "\n"
-             << "relative_path() = " << pathToShow.relative_path() << "\n"
-             << "parent_path() = " << pathToShow.parent_path() << "\n"
-             << "filename() = " << pathToShow.filename() << "\n"
-             << "stem() = " << pathToShow.stem() << "\n"
-             << "isDirectory " << fs::is_directory(pathToShow) << "\n"
-             << "absolutePath = " << pathToShow << "\n"
-             << "extension() = " << pathToShow.extension() << "\n";
-    }
 };
 
 #endif //PHOS_FILEBROWSER_H
