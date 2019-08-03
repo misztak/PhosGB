@@ -29,7 +29,7 @@ else()
 endif ()
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LIBS}")
 
-add_subdirectory(platform/sdl)
+add_subdirectory(platform/imgui)
 add_subdirectory(core)
 add_subdirectory(test)
 
