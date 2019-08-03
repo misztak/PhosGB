@@ -113,6 +113,12 @@ struct FileBrowser {
                     callback(file);
                 }
             }
+            if (badFile) {
+                ImGui::SameLine();
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.f, 0.f, 1.f));
+                ImGui::Text("Invalid File");
+                ImGui::PopStyleColor();
+            }
 
             if (ImGui::BeginPopup("Options")) {
                 if (ImGui::Checkbox("Sort", &sort)) UpdateFiles();
@@ -122,12 +128,6 @@ struct FileBrowser {
             ImGui::SameLine(ImGui::GetWindowWidth() - 60);
             if (ImGui::Button("Options")) ImGui::OpenPopup("Options");
 
-            if (badFile) {
-                ImGui::SameLine();
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.f, 0.f, 1.f));
-                ImGui::Text("Invalid File");
-                ImGui::PopStyleColor();
-            }
             ImGui::EndPopup();
 
             if (invalidate) {
