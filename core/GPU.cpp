@@ -518,19 +518,10 @@ void GPU::setBGColor(u8 color) {
     }
 }
 
-void GPU::saveState(std::ofstream& outfile) {
-    outfile.write(WRITE_V(hitVBlank), sizeof(bool));
-    outfile.write(WRITE_V(modeclock), 4);
-    outfile.write(WRITE_V(DMATicks), 4);
-    outfile.write(WRITE_V(mode), sizeof(GPU_MODE));
-    outfile.write(WRITE_V(wyc), 4);
-}
-
-void GPU::loadState(std::vector<u8>& buffer) {
-    // GPU Offset == 0x46
-    hitVBlank = READ_BOOL(&buffer[0x46]);
-    modeclock = READ_S32(&buffer[0x47]);
-    DMATicks = READ_S32(&buffer[0x4B]);
-    setMode(static_cast<GPU_MODE>(READ_S32(&buffer[0x4F])));
-    wyc = READ_U32(&buffer[0x53]);
+void GPU::serialize(phos::serializer &s) {
+    s.integer(hitVBlank);
+    s.integer(modeclock);
+    s.integer(DMATicks);
+    s.enumeration(mode);
+    s.integer(wyc);
 }

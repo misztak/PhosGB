@@ -47,13 +47,7 @@ void Joypad::writeByte(u8 val) {
     else if (laneVal == 0x30) lane = BOTH;
 }
 
-void Joypad::saveState(std::ofstream& outfile) {
-    outfile.write(WRITE_V(joypadState), 1);
-    outfile.write(WRITE_V(lane), sizeof(JOYPAD_LANE));
-}
-
-void Joypad::loadState(std::vector<u8>& buffer) {
-    // Joypad Offset == 0x41
-    joypadState = READ_U8(&buffer[0x41]);
-    lane = static_cast<JOYPAD_LANE>(READ_S32(&buffer[0x42]));
+void Joypad::serialize(phos::serializer &s) {
+    s.integer(joypadState);
+    s.enumeration(lane);
 }

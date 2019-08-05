@@ -781,41 +781,22 @@ void CPU::checkCarry(u8 reg) {
     ((r.a & 0xFF) < (reg & 0xFF)) ? setFlag(CARRY) : clearFlag(CARRY);
 }
 
-void CPU::saveState(std::ofstream& outfile) {
-    outfile.write(WRITE_V(r.af), 2);
-    outfile.write(WRITE_V(r.bc), 2);
-    outfile.write(WRITE_V(r.de), 2);
-    outfile.write(WRITE_V(r.hl), 2);
-    outfile.write(WRITE_V(r.pc), 2);
-    outfile.write(WRITE_V(r.sp), 2);
-    outfile.write(WRITE_V(gbMode), 4);
-    outfile.write(WRITE_V(cycles), 4);
-    outfile.write(WRITE_V(ticksPerFrame), 4);
-    outfile.write(WRITE_V(halted), sizeof(bool));
-    outfile.write(WRITE_V(timerCounter), 4);
-    outfile.write(WRITE_V(dividerCounter), 4);
-    outfile.write(WRITE_V(headless), sizeof(bool));
-    outfile.write(WRITE_V(runCGBinDMGMode), sizeof(bool));
-    outfile.write(WRITE_V(doubleSpeedMode), sizeof(bool));
-}
-
-void CPU::loadState(std::vector<u8>& buffer) {
-    u32 offset = 0x1D;
-    r.af = READ_U16(&buffer[offset]); offset += 2;
-    r.bc = READ_U16(&buffer[offset]); offset += 2;
-    r.de = READ_U16(&buffer[offset]); offset += 2;
-    r.hl = READ_U16(&buffer[offset]); offset += 2;
-    r.pc = READ_U16(&buffer[offset]); offset += 2;
-    r.sp = READ_U16(&buffer[offset]); offset += 2;
-    gbMode = static_cast<GB_MODE>(READ_S32(&buffer[offset])); offset += 4;
-    cycles = READ_U32(&buffer[offset]); offset += 4;
-    ticksPerFrame = READ_S32(&buffer[offset]); offset += 4;
-    halted = READ_BOOL(&buffer[offset++]);
-    timerCounter = READ_S32(&buffer[offset]); offset += 4;
-    dividerCounter = READ_S32(&buffer[offset]); offset += 4;
-    headless = READ_BOOL(&buffer[offset++]);
-    runCGBinDMGMode = READ_BOOL(&buffer[offset++]);
-    doubleSpeedMode = READ_BOOL(&buffer[offset]);
+void CPU::serialize(phos::serializer &s) {
+    s.integer(r.af);
+    s.integer(r.bc);
+    s.integer(r.de);
+    s.integer(r.hl);
+    s.integer(r.pc);
+    s.integer(r.sp);
+    s.enumeration(gbMode);
+    s.integer(cycles);
+    s.integer(ticksPerFrame);
+    s.integer(halted);
+    s.integer(timerCounter);
+    s.integer(dividerCounter);
+    s.integer(headless);
+    s.integer(runCGBinDMGMode);
+    s.integer(doubleSpeedMode);
 }
 
 // CPU Instructions //

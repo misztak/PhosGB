@@ -5,6 +5,8 @@
 #include <vector>
 #include <cassert>
 
+#include "Serializer.h"
+
 #ifndef __ANDROID__
 #include "Logger.h"
 #define Log(S, MSG, ...) Logger::Log(S, MSG, ##__VA_ARGS__)
@@ -14,15 +16,6 @@
 #define Log(S, ...) __android_log_print(ANDROID_LOG_INFO, "PhosGB", __VA_ARGS__)
 #define LogRaw(S, ...) __android_log_print(ANDROID_LOG_INFO, "PhosGB", __VA_ARGS__)
 #endif
-
-#define WRITE_V(VALUE) (reinterpret_cast<char *>(&VALUE))
-#define WRITE_A(ARRAY, OFFSET) (reinterpret_cast<char *>(&ARRAY[0]) + OFFSET)
-
-#define READ_U8(PTR) (*reinterpret_cast<unsigned char *>(PTR))
-#define READ_U16(PTR) (*reinterpret_cast<unsigned short *>(PTR))
-#define READ_U32(PTR) (*reinterpret_cast<unsigned int *>(PTR))
-#define READ_S32(PTR) (*reinterpret_cast<int *>(PTR))
-#define READ_BOOL(PTR) (*reinterpret_cast<bool *>(PTR))
 
 typedef unsigned char u8;
 typedef unsigned short u16;

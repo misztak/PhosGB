@@ -18,8 +18,7 @@ public:
     u8 readByte();
     void writeByte(u8 val);
 
-    void saveState(std::ofstream& outfile);
-    void loadState(std::vector<u8>& buffer);
+    void serialize(phos::serializer& s);
 private:
     CPU* cpu;
     u8 joypadState;

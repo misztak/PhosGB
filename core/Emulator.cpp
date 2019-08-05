@@ -77,23 +77,21 @@ void Emulator::handleInputUp(u8 key) {
 }
 
 void Emulator::saveState() {
+    u32 serializerSize = serializeInit();
+    phos::serializer s(serializerSize);
+
+    char header[11] = "PHOS-STATE";
+    s.array(header);
+
+    serializeAll(s);
+
     std::string saveName = currentFile + "_Quicksave.state";
     std::ofstream outfile(saveName, std::ios::out | std::ios::binary);
-    outfile.write("PHOS-STATE ", 11);
-    // start with cartridge info
-    outfile.write(cpu.mmu.cartridgeTitle.c_str(), cpu.mmu.cartridgeTitle.size());
-    outfile.write(WRITE_A(cpu.mmu.ROM_0, 0x147), 3);
-    // dump subsystems
-    cpu.saveState(outfile);
-    cpu.joypad.saveState(outfile);
-    cpu.gpu.saveState(outfile);
-    cpu.apu.reset();
-    cpu.mmu.saveState(outfile);
-
+    outfile.write((char*) s.data(), s.size());
     Log(I, "Saved state in file %s\n", saveName.c_str());
 }
 
-bool Emulator::loadState(std::string &path) {
+bool Emulator::loadState(std::string& path) {
     if (path.substr(path.find_last_of('.')) != ".state") {
         Log(W, "Invalid save state file suffix\n");
         return false;
@@ -108,40 +106,52 @@ bool Emulator::loadState(std::string &path) {
     long length = file.tellg();
     file.seekg(0, std::ifstream::beg);
 
-    if (length == -1 || length == 0x7FFFFFFFFFFFFFFF) {
+    if (length == -1 || length > 8388608) {
         Log(W, "Failed to load file %s\n", path.c_str());
         return false;
     }
 
-    std::vector<u8> buffer;
-    buffer.resize(length);
-    file.read((char *) buffer.data(), length);
+    u8* buf = new u8[length];
+    file.read((char *) buf, length);
 
-    // check if state file matches with the current cartridge
-    std::string header = std::string(&buffer[0], &buffer[0] + 11);
-    if (header != "PHOS-STATE ") {
-        Log(W, "Invalid header of .state file. Expected 'PHOS-STATE ' but read '%s'\n", header.c_str());
+    u32 serializerSize = serializeInit();
+    if (serializerSize != length) {
+        Log(W, "Size of save state file does not match serializer size\n");
         return false;
     }
-    std::string cartName = std::string(&buffer[11], &buffer[11] + 15);
-    u8 cartType = READ_U8(&buffer[0x1A]);
-    u8 romType = READ_U8(&buffer[0x1B]);
-    u8 ramType = READ_U8(&buffer[0x1C]);
-    if (cartName != cpu.mmu.cartridgeTitle || cartType != cpu.mmu.ROM_0[0x147] || romType != cpu.mmu.ROM_0[0x148] ||
-    ramType != cpu.mmu.ROM_0[0x149]) {
-        Log(W, "Save state file does not match with current cartridge\n");
+    phos::serializer s(buf, length);
+    delete[] buf;
+
+    char header[11] = {0};
+    s.array(header);
+    if (std::string(header) != "PHOS-STATE") {
+        Log(W, "Save state file has invalid header\n");
         return false;
     }
 
-    // initialize saved state
-    cpu.loadState(buffer);
-    cpu.joypad.loadState(buffer);
-    cpu.apu.reset();
-    cpu.mmu.loadState(buffer);
-    cpu.gpu.loadState(buffer);
+    serializeAll(s);
 
     Log(I, "Load state from file %s\n", path.c_str());
     return true;
+}
+
+u32 Emulator::serializeInit() {
+    phos::serializer s;
+
+    char header[11] = {0};
+    // TODO: add some sort of checksum
+    s.array(header);
+
+    serializeAll(s);
+    return s.size();
+}
+
+void Emulator::serializeAll(phos::serializer& s) {
+    cpu.serialize(s);
+    cpu.joypad.serialize(s);
+    cpu.gpu.serialize(s);
+    cpu.apu.reset();
+    cpu.mmu.serialize(s);
 }
 
 std::string Emulator::currentDateTime() {

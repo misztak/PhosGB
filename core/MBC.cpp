@@ -9,15 +9,6 @@ NO_MBC::NO_MBC(MMU *mmu) : MBC(mmu) {
     // both bank pointers are always zero
 }
 
-void NO_MBC::saveState(std::ofstream& outfile) {
-    outfile.write(WRITE_V(ROMBankPtr), 2); outfile.write(WRITE_V(RAMBankPtr), 2);
-}
-
-void NO_MBC::loadState(std::vector<u8> &buffer, size_t offset) {
-    ROMBankPtr = READ_U16(&buffer[offset]); RAMBankPtr = READ_U16(&buffer[offset + 2]);
-    assert((offset + 4) == buffer.size());
-}
-
 u8 NO_MBC::readROMByte(u16 address) {
     return mmu->ROM[address];
 }
@@ -35,22 +26,14 @@ void NO_MBC::writeRAMByte(u16 address, u8 value) {
     mmu->RAM[address] = value;
 }
 
+void NO_MBC::serialize(phos::serializer &s) {
+    s.integer(ROMBankPtr);
+    s.integer(RAMBankPtr);
+}
+
 // MBC1
 
 MBC1::MBC1(MMU *mmu) : MBC(mmu), RAMEnable(false), ROM_RAM_ModeSelect(0) {}
-
-void MBC1::saveState(std::ofstream& outfile) {
-    outfile.write(WRITE_V(ROMBankPtr), 2); outfile.write(WRITE_V(RAMBankPtr), 2);
-    outfile.write(WRITE_V(RAMEnable), sizeof(bool));
-    outfile.write(WRITE_V(ROM_RAM_ModeSelect), 1);
-}
-
-void MBC1::loadState(std::vector<u8> &buffer, size_t offset) {
-    ROMBankPtr = READ_U16(&buffer[offset]); RAMBankPtr = READ_U16(&buffer[offset + 2]);
-    RAMEnable = READ_BOOL(&buffer[offset + 4]);
-    ROM_RAM_ModeSelect = READ_U8(&buffer[offset + 5]);
-    assert((offset + 6) == buffer.size());
-}
 
 u8 MBC1::readROMByte(u16 address) {
     return mmu->ROM[address + ROMBankPtr * ROM_BANK_SIZE];
@@ -103,20 +86,16 @@ void MBC1::writeRAMByte(u16 address, u8 value) {
     if (RAMEnable) mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE] = value;
 }
 
+void MBC1::serialize(phos::serializer &s) {
+    s.integer(ROMBankPtr);
+    s.integer(RAMBankPtr);
+    s.integer(RAMEnable);
+    s.integer(ROM_RAM_ModeSelect);
+}
+
 // MBC2
 
 MBC2::MBC2(MMU *mmu) : MBC(mmu), RAMEnable(false) {}
-
-void MBC2::saveState(std::ofstream &outfile) {
-    outfile.write(WRITE_V(ROMBankPtr), 2); outfile.write(WRITE_V(RAMBankPtr), 2);
-    outfile.write(WRITE_V(RAMEnable), sizeof(bool));
-}
-
-void MBC2::loadState(std::vector<u8> &buffer, size_t offset) {
-    ROMBankPtr = READ_U16(&buffer[offset]); RAMBankPtr = READ_U16(&buffer[offset + 2]);
-    RAMEnable = READ_BOOL(&buffer[offset + 4]);
-    assert((offset + 5) == buffer.size());
-}
 
 u8 MBC2::readROMByte(u16 address) {
     return mmu->ROM[address + ROMBankPtr * ROM_BANK_SIZE];
@@ -152,6 +131,12 @@ void MBC2::writeRAMByte(u16 address, u8 value) {
     if (RAMEnable) mmu->RAM[address] = value & 0x0F;
 }
 
+void MBC2::serialize(phos::serializer &s) {
+    s.integer(ROMBankPtr);
+    s.integer(RAMBankPtr);
+    s.integer(RAMEnable);
+}
+
 // MBC 3
 
 MBC3::MBC3(MMU *mmu) :
@@ -159,31 +144,6 @@ MBC3::MBC3(MMU *mmu) :
     // init latchTime to now
     // this will be overridden if a .sav file was found
     latchClockData();
-}
-
-void MBC3::saveState(std::ofstream &outfile) {
-    outfile.write(WRITE_V(ROMBankPtr), 2); outfile.write(WRITE_V(RAMBankPtr), 2);
-    outfile.write(WRITE_V(latchedTime), 8);
-    outfile.write(WRITE_V(RAM_RTC_Enable), sizeof(bool));
-    outfile.write(WRITE_V(latchInit), sizeof(bool));
-    outfile.write(WRITE_V(RAM_RTC_ModeSelect), 1);
-    outfile.write(WRITE_V(RTCRegisterPtr), 1);
-    outfile.write(WRITE_A(RTCRegisters, 0), 5);
-}
-
-void MBC3::loadState(std::vector<u8> &buffer, size_t offset) {
-    ROMBankPtr = READ_U16(&buffer[offset]); RAMBankPtr = READ_U16(&buffer[offset + 2]);
-    latchedTime = *reinterpret_cast<long *>(&buffer[offset + 4]);
-    RAM_RTC_Enable = READ_BOOL(&buffer[offset + 12]);
-    latchInit = READ_BOOL(&buffer[offset + 13]);
-    RAM_RTC_ModeSelect = READ_U8(&buffer[offset + 14]);
-    RTCRegisterPtr = READ_U8(&buffer[offset + 15]);
-    RTCRegisters[0] = READ_U8(&buffer[offset + 16]);
-    RTCRegisters[1] = READ_U8(&buffer[offset + 17]);
-    RTCRegisters[2] = READ_U8(&buffer[offset + 18]);
-    RTCRegisters[3] = READ_U8(&buffer[offset + 19]);
-    RTCRegisters[4] = READ_U8(&buffer[offset + 20]);
-    assert((offset + 21) == buffer.size());
 }
 
 u8 MBC3::readROMByte(u16 address) {
@@ -265,23 +225,21 @@ void MBC3::latchClockData() {
     latchedTime = currentTime;
 }
 
+void MBC3::serialize(phos::serializer &s) {
+    s.integer(ROMBankPtr);
+    s.integer(RAMBankPtr);
+    s.integer(latchedTime);
+    s.integer(RAM_RTC_Enable);
+    s.integer(latchInit);
+    s.integer(RAM_RTC_ModeSelect);
+    s.integer(RTCRegisterPtr);
+    s.array(RTCRegisters);
+}
+
 // MBC 5
 
 MBC5::MBC5(MMU* mmu, bool hasRumble) : MBC(mmu), RAMEnable(false), hasRumble(hasRumble) {
     ROMBankPtr = 1;
-}
-
-void MBC5::saveState(std::ofstream& outfile) {
-    outfile.write(WRITE_V(ROMBankPtr), 2); outfile.write(WRITE_V(RAMBankPtr), 2);
-    outfile.write(WRITE_V(RAMEnable), sizeof(bool));
-    outfile.write(WRITE_V(hasRumble), sizeof(bool));
-}
-
-void MBC5::loadState(std::vector<u8>& buffer, size_t offset) {
-    ROMBankPtr = READ_U16(&buffer[offset]); RAMBankPtr = READ_U16(&buffer[offset + 2]);
-    RAMEnable = READ_BOOL(&buffer[offset + 4]);
-    hasRumble = READ_BOOL(&buffer[offset + 5]);
-    assert((offset + 6) == buffer.size());
 }
 
 u8 MBC5::readROMByte(u16 address) {
@@ -325,4 +283,11 @@ u8 MBC5::readRAMByte(u16 address) {
 void MBC5::writeRAMByte(u16 address, u8 value) {
     if (!RAMEnable) return;
     mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE] = value;
+}
+
+void MBC5::serialize(phos::serializer &s) {
+    s.integer(ROMBankPtr);
+    s.integer(RAMBankPtr);
+    s.integer(RAMEnable);
+    s.integer(hasRumble);
 }

@@ -77,8 +77,7 @@ public:
     void setBGColor(u8 color);
     void colorCorrect(u16 original, u8& r, u8& g, u8& b);
 
-    void saveState(std::ofstream& outfile);
-    void loadState(std::vector<u8>& buffer);
+    void serialize(phos::serializer& s);
 private:
     CPU* cpu;
     MMU* mmu;

@@ -15,8 +15,7 @@ public:
     virtual void writeROMByte(u16 address, u8 value) = 0;
     virtual u8 readRAMByte(u16 address) = 0;
     virtual void writeRAMByte(u16 address, u8 value) = 0;
-    virtual void saveState(std::ofstream& outfile) = 0;
-    virtual void loadState(std::vector<u8>& buffer, size_t offset) = 0;
+    virtual void serialize(phos::serializer& s) = 0;
 public:
     MMU* mmu;
     u16 ROMBankPtr;
@@ -30,8 +29,7 @@ public:
     void writeROMByte(u16 address, u8 value) override;
     u8 readRAMByte(u16 address) override;
     void writeRAMByte(u16 address, u8 value) override;
-    void saveState(std::ofstream& outfile) override;
-    void loadState(std::vector<u8>& buffer, size_t offset) override;
+    void serialize(phos::serializer& s) override;
 };
 
 class MBC1 : public MBC {
@@ -41,8 +39,7 @@ public:
     void writeROMByte(u16 address, u8 value) override;
     u8 readRAMByte(u16 address) override;
     void writeRAMByte(u16 address, u8 value) override;
-    void saveState(std::ofstream& outfile) override;
-    void loadState(std::vector<u8>& buffer, size_t offset) override;
+    void serialize(phos::serializer& s) override;
 private:
     bool RAMEnable;
     u8 ROM_RAM_ModeSelect;
@@ -55,8 +52,7 @@ public:
     void writeROMByte(u16 address, u8 value) override;
     u8 readRAMByte(u16 address) override;
     void writeRAMByte(u16 address, u8 value) override;
-    void saveState(std::ofstream& outfile) override;
-    void loadState(std::vector<u8>& buffer, size_t offset) override;
+    void serialize(phos::serializer& s) override;
 private:
     bool RAMEnable;
 };
@@ -68,8 +64,7 @@ public:
     void writeROMByte(u16 address, u8 value) override;
     u8 readRAMByte(u16 address) override;
     void writeRAMByte(u16 address, u8 value) override;
-    void saveState(std::ofstream& outfile) override;
-    void loadState(std::vector<u8>& buffer, size_t offset) override;
+    void serialize(phos::serializer& s) override;
     void latchClockData();
 public:
     long latchedTime;
@@ -88,8 +83,7 @@ public:
     void writeROMByte(u16 address, u8 value) override;
     u8 readRAMByte(u16 address) override;
     void writeRAMByte(u16 address, u8 value) override;
-    void saveState(std::ofstream& outfile) override;
-    void loadState(std::vector<u8>& buffer, size_t offset) override;
+    void serialize(phos::serializer& s) override;
 private:
     bool RAMEnable;
     bool hasRumble;

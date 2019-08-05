@@ -27,6 +27,9 @@ public:
     std::string currentFilePath;
     std::vector<std::string> recentFiles;
 private:
+    u32 serializeInit();
+    void serializeAll(phos::serializer& s);
+private:
     bool waitingForFile;
 };
 

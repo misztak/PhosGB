@@ -87,8 +87,7 @@ public:
     u16 readWord(u16 address);
     void writeWord(u16 address, u16 value);
 
-    void saveState(std::ofstream& outfile);
-    void loadState(std::vector<u8>& buffer);
+    void serialize(phos::serializer& s);
 private:
     u8*  byteRegisterMap[8]  = {nullptr};
     u16* shortRegisterMap[4] = {nullptr};

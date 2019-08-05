@@ -50,8 +50,7 @@ public:
     void performHDMA();
     void performGDMA();
 
-    void saveState(std::ofstream& outfile);
-    void loadState(std::vector<u8>& buffer);
+    void serialize(phos::serializer& s);
 public:
     CPU* cpu;
     GPU* gpu;
