@@ -1,11 +1,11 @@
 #include <SDL.h>
 #include <GL/gl3w.h>
 
-#include "Common.h"
-#include "DebugHost.h"
-#include "NormalHost.h"
-#include "Timer.h"
-#include "Emulator.h"
+#include "Common.hpp"
+#include "DebugHost.hpp"
+#include "NormalHost.hpp"
+#include "Timer.hpp"
+#include "Emulator.hpp"
 
 #if __APPLE__
     // GL 3.2

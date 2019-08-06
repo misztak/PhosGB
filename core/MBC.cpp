@@ -1,5 +1,5 @@
-#include "MBC.h"
-#include "MMU.h"
+#include "MBC.hpp"
+#include "MMU.hpp"
 
 MBC::MBC(MMU *mmu) : mmu(mmu), ROMBankPtr(0), RAMBankPtr(0) {}
 

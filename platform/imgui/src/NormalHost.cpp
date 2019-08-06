@@ -1,4 +1,4 @@
-#include "NormalHost.h"
+#include "NormalHost.hpp"
 
 NormalHost::NormalHost(SDL_Window* w, Emulator* emu, SDL_AudioDeviceID deviceId) : Host(w, emu, deviceId) {
     loadTexture(&mainTextureHandler, WIDTH, HEIGHT, emulator->getDisplayState());

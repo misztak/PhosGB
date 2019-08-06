@@ -1,4 +1,4 @@
-#include "Host.h"
+#include "Host.hpp"
 
 Host::Host(SDL_Window* window, Emulator* emulator, SDL_AudioDeviceID deviceId)
     : mainTextureHandler(0), window(window), emulator(emulator), deviceId(deviceId),

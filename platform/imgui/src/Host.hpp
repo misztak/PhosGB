@@ -1,5 +1,5 @@
-#ifndef PHOS_HOST_H
-#define PHOS_HOST_H
+#ifndef PHOS_HOST_HPP
+#define PHOS_HOST_HPP
 
 #include <GL/gl3w.h>
 #include <SDL.h>
@@ -9,10 +9,10 @@
 #include "imgui_impl_opengl3.h"
 
 #include "lodepng.h"
-#include "FileBrowser.h"
+#include "FileBrowser.hpp"
 
-#include "Common.h"
-#include "Emulator.h"
+#include "Common.hpp"
+#include "Emulator.hpp"
 
 #if __APPLE__
 #define GLSL_VERSION "#version 150"
@@ -54,4 +54,4 @@ private:
     unsigned IX(unsigned x, unsigned y, unsigned width=160) { return y * width + x; }
 };
 
-#endif //PHOS_HOST_H
+#endif //PHOS_HOST_HPP

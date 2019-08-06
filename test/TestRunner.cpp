@@ -1,7 +1,7 @@
 #include <chrono>
 
 #include "catch.hpp"
-#include "Emulator.h"
+#include "Emulator.hpp"
 
 Emulator emu;
 

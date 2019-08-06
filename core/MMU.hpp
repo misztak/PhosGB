@@ -1,13 +1,13 @@
-#ifndef PHOS_MMU_H
-#define PHOS_MMU_H
+#ifndef PHOS_MMU_HPP
+#define PHOS_MMU_HPP
 
 #include <fstream>
 #include <algorithm>
 #include <map>
 #include <memory>
 
-#include "Common.h"
-#include "MBC.h"
+#include "Common.hpp"
+#include "MBC.hpp"
 
 constexpr int BIOS_SIZE     = 256;
 constexpr int ROM_BANK_SIZE = 16384;
@@ -89,4 +89,4 @@ private:
     void initTables();
 };
 
-#endif //PHOS_MMU_H
+#endif //PHOS_MMU_HPP

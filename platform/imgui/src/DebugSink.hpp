@@ -1,8 +1,8 @@
-#ifndef PHOS_DEBUGSINK_H
-#define PHOS_DEBUGSINK_H
+#ifndef PHOS_DEBUGSINK_HPP
+#define PHOS_DEBUGSINK_HPP
 
 #include "imgui.h"
-#include "Logger.h"
+#include "Logger.hpp"
 
 class DebugSink : public Sink {
 public:
@@ -19,4 +19,4 @@ private:
     void Clear();
 };
 
-#endif //PHOS_DEBUGSINK_H
+#endif //PHOS_DEBUGSINK_HPP

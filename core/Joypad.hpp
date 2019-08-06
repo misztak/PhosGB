@@ -1,7 +1,7 @@
-#ifndef PHOS_JOYPAD_H
-#define PHOS_JOYPAD_H
+#ifndef PHOS_JOYPAD_HPP
+#define PHOS_JOYPAD_HPP
 
-#include "Common.h"
+#include "Common.hpp"
 
 class CPU;
 
@@ -25,4 +25,4 @@ private:
     JOYPAD_LANE lane;
 };
 
-#endif //PHOS_JOYPAD_H
+#endif //PHOS_JOYPAD_HPP

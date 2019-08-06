@@ -1,14 +1,14 @@
-#ifndef PHOS_COMMON_H
-#define PHOS_COMMON_H
+#ifndef PHOS_COMMON_HPP
+#define PHOS_COMMON_HPP
 
 #include <string>
 #include <vector>
 #include <cassert>
 
-#include "Serializer.h"
+#include "Serializer.hpp"
 
 #ifndef __ANDROID__
-#include "Logger.h"
+#include "Logger.hpp"
 #define Log(S, MSG, ...) Logger::Log(S, MSG, ##__VA_ARGS__)
 #define LogRaw(S, MSG, ...) Logger::LogRaw(S, MSG, ##__VA_ARGS__)
 #else
@@ -44,4 +44,4 @@ inline u8 clearBit(u8 value, u8 bitMask) {
     return value & ~bitMask;
 }
 
-#endif //PHOS_COMMON_H
+#endif //PHOS_COMMON_HPP

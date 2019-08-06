@@ -1,5 +1,5 @@
-#ifndef PHOS_SERIALIZER_H
-#define PHOS_SERIALIZER_H
+#ifndef PHOS_SERIALIZER_HPP
+#define PHOS_SERIALIZER_HPP
 
 // this is a slightly modified version of the serializer used in the higan emulator made by byuu
 
@@ -183,4 +183,4 @@ namespace phos {
 
 }
 
-#endif //PHOS_SERIALIZER_H
+#endif //PHOS_SERIALIZER_HPP

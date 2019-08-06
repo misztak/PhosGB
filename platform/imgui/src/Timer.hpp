@@ -1,5 +1,5 @@
-#ifndef PHOS_TIMER_H
-#define PHOS_TIMER_H
+#ifndef PHOS_TIMER_HPP
+#define PHOS_TIMER_HPP
 
 #include <thread>
 #include <chrono>
@@ -22,4 +22,4 @@ private:
     std::chrono::system_clock::time_point frameEnd;
 };
 
-#endif //PHOS_TIMER_H
+#endif //PHOS_TIMER_HPP

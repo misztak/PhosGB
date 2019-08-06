@@ -1,4 +1,4 @@
-#include "Emulator.h"
+#include "Emulator.hpp"
 
 Emulator::Emulator(): isHalted(false), waitingForFile(true) {}
 

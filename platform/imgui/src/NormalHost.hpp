@@ -1,7 +1,7 @@
-#ifndef PHOS_NORMALHOST_H
-#define PHOS_NORMALHOST_H
+#ifndef PHOS_NORMALHOST_HPP
+#define PHOS_NORMALHOST_HPP
 
-#include "Host.h"
+#include "Host.hpp"
 
 class NormalHost : public Host {
 public:
@@ -13,4 +13,4 @@ public:
 };
 
 
-#endif //PHOS_NORMALHOST_H
+#endif //PHOS_NORMALHOST_HPP

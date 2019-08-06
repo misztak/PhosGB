@@ -1,10 +1,10 @@
-#ifndef PHOS_DEBUGHOST_H
-#define PHOS_DEBUGHOST_H
+#ifndef PHOS_DEBUGHOST_HPP
+#define PHOS_DEBUGHOST_HPP
 
-#include "Host.h"
+#include "Host.hpp"
 
 #include "MemoryEditor.hpp"
-#include "DebugSink.h"
+#include "DebugSink.hpp"
 
 class DebugHost : public Host {
 public:
@@ -37,4 +37,4 @@ private:
 };
 
 
-#endif //PHOS_DEBUGHOST_H
+#endif //PHOS_DEBUGHOST_HPP

@@ -1,4 +1,4 @@
-#include "CPU.h"
+#include "CPU.hpp"
 
 CPU::CPU():
     r(0, 0, 0, 0, 0, 0, 0),

@@ -1,7 +1,7 @@
 #include <string>
 #include <sstream>
 
-#include "Logger.h"
+#include "Logger.hpp"
 
 const char* Logger::severityStrings[] = {"info","debug","warn","fatal"};
 

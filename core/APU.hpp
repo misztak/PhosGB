@@ -1,7 +1,7 @@
-#ifndef PHOS_APU_H
-#define PHOS_APU_H
+#ifndef PHOS_APU_HPP
+#define PHOS_APU_HPP
 
-#include "Common.h"
+#include "Common.hpp"
 #include "sound/blip_buf.h"
 
 // Channel 1
@@ -119,4 +119,4 @@ public:
     bool masterEnable[4] = {true, true, true, true};
 };
 
-#endif //PHOS_APU_H
+#endif //PHOS_APU_HPP

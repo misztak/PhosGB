@@ -1,4 +1,4 @@
-#include "DebugHost.h"
+#include "DebugHost.hpp"
 
 DebugHost::DebugHost(SDL_Window* w, Emulator* emu, SDL_AudioDeviceID deviceId, DebugSink* sink) :
     Host(w, emu, deviceId),

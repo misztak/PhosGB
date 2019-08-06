@@ -1,5 +1,5 @@
-#ifndef PHOS_LOGGER_H
-#define PHOS_LOGGER_H
+#ifndef PHOS_LOGGER_HPP
+#define PHOS_LOGGER_HPP
 
 #include <stdarg.h>
 #include <vector>
@@ -40,4 +40,4 @@ struct Logger {
     static void LogRaw(Severity s, const char* message, ...) FMT_ARGS(2);
 };
 
-#endif //PHOS_LOGGER_H
+#endif //PHOS_LOGGER_HPP

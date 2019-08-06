@@ -1,11 +1,11 @@
-#ifndef PHOS_CPU_H
-#define PHOS_CPU_H
+#ifndef PHOS_CPU_HPP
+#define PHOS_CPU_HPP
 
-#include "Common.h"
-#include "MMU.h"
-#include "GPU.h"
-#include "Joypad.h"
-#include "APU.h"
+#include "Common.hpp"
+#include "MMU.hpp"
+#include "GPU.hpp"
+#include "Joypad.hpp"
+#include "APU.hpp"
 
 enum GB_MODE { DMG, CGB };
 
@@ -242,4 +242,4 @@ private:
 
 };
 
-#endif //PHOS_CPU_H
+#endif //PHOS_CPU_HPP

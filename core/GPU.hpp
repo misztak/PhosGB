@@ -1,10 +1,10 @@
-#ifndef PHOS_GPU_H
-#define PHOS_GPU_H
+#ifndef PHOS_GPU_HPP
+#define PHOS_GPU_HPP
 
 #include <array>
 
-#include "Common.h"
-#include "MMU.h"
+#include "Common.hpp"
+#include "MMU.hpp"
 
 class CPU;
 
@@ -103,4 +103,4 @@ private:
     u16 getColor(u8 type, u16 attribute, u16 paletteIndex);
 };
 
-#endif //PHOS_GPU_H
+#endif //PHOS_GPU_HPP

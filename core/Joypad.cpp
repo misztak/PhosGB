@@ -1,5 +1,5 @@
-#include "Joypad.h"
-#include "CPU.h"
+#include "Joypad.hpp"
+#include "CPU.hpp"
 
 Joypad::Joypad(CPU* c) : cpu(c), joypadState(0xFF), lane(BUTTON_KEYS) {}
 

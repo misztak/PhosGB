@@ -1,4 +1,4 @@
-#include "DebugSink.h"
+#include "DebugSink.hpp"
 
 DebugSink::DebugSink(bool enabled) : Sink(enabled), AutoScroll(true), ScrollToBottom(true) {
     Buf.clear();

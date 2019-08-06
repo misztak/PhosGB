@@ -1,9 +1,9 @@
-#ifndef PHOS_MBC_H
-#define PHOS_MBC_H
+#ifndef PHOS_MBC_HPP
+#define PHOS_MBC_HPP
 
 #include <ctime>
 
-#include "Common.h"
+#include "Common.hpp"
 
 class MMU;
 
@@ -89,4 +89,4 @@ private:
     bool hasRumble;
 };
 
-#endif //PHOS_MBC_H
+#endif //PHOS_MBC_HPP

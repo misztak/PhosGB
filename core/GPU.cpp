@@ -1,5 +1,5 @@
-#include "GPU.h"
-#include "CPU.h"
+#include "GPU.hpp"
+#include "CPU.hpp"
 
 GPU::GPU(CPU* c, MMU* m) :
     hitVBlank(false),

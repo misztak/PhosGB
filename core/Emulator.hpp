@@ -1,10 +1,10 @@
-#ifndef PHOS_EMULATOR_H
-#define PHOS_EMULATOR_H
+#ifndef PHOS_EMULATOR_HPP
+#define PHOS_EMULATOR_HPP
 
 #include <sstream>
 
-#include "Common.h"
-#include "CPU.h"
+#include "Common.hpp"
+#include "CPU.hpp"
 
 class Emulator {
 public:
@@ -33,4 +33,4 @@ private:
     bool waitingForFile;
 };
 
-#endif //PHOS_EMULATOR_H
+#endif //PHOS_EMULATOR_HPP

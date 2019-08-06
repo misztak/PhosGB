@@ -3,18 +3,18 @@ add_definitions(-DGLEW_STATIC)
 add_subdirectory(libs)
 
 set(PHOS_SOURCES
-        src/DebugHost.h
+        src/DebugHost.hpp
         src/DebugHost.cpp
-        src/DebugSink.h
+        src/DebugSink.hpp
         src/DebugSink.cpp
-        src/FileBrowser.h
+        src/FileBrowser.hpp
         src/MemoryEditor.hpp
-        src/Host.h
+        src/Host.hpp
         src/Host.cpp
         src/Main.cpp
-        src/NormalHost.h
+        src/NormalHost.hpp
         src/NormalHost.cpp
-        src/Timer.h
+        src/Timer.hpp
         src/Timer.cpp)
 
 find_package(SDL2 CONFIG REQUIRED)

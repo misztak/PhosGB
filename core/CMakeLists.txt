@@ -1,23 +1,23 @@
 set(CORE_SOURCES
         sound/blip_buf.h
         sound/blip_buf.c
-        APU.h
+        APU.hpp
         APU.cpp
-        Common.h
-        CPU.h
+        Common.hpp
+        CPU.hpp
         CPU.cpp
-        Emulator.h
+        Emulator.hpp
         Emulator.cpp
-        GPU.h
+        GPU.hpp
         GPU.cpp
-        Joypad.h
+        Joypad.hpp
         Joypad.cpp
-        Logger.h
+        Logger.hpp
         Logger.cpp
-        MBC.h
+        MBC.hpp
         MBC.cpp
-        MMU.h
+        MMU.hpp
         MMU.cpp
-        Serializer.h)
+        Serializer.hpp)
 
 add_library(core "${CORE_SOURCES}")

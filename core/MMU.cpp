@@ -1,6 +1,6 @@
-#include "MMU.h"
-#include "CPU.h"
-#include "GPU.h"
+#include "MMU.hpp"
+#include "CPU.hpp"
+#include "GPU.hpp"
 
 MMU::MMU() :
     cpu(nullptr),

@@ -5,7 +5,7 @@
 #include <chrono>
 #include <thread>
 
-#include "../../core/Emulator.h"
+#include "../../core/Emulator.hpp"
 
 //constexpr double frameTimeMicro = (1.0 / 60) * 1e6;
 constexpr int WEB_SCALE = 4;

@@ -1,5 +1,5 @@
-#include "APU.h"
-#include "CPU.h"
+#include "APU.hpp"
+#include "CPU.hpp"
 
 Channel::Channel(CPU* cpu) : cpu(cpu) {}
 

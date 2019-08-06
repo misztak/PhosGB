@@ -1,5 +1,5 @@
-#ifndef PHOS_FILEBROWSER_H
-#define PHOS_FILEBROWSER_H
+#ifndef PHOS_FILEBROWSER_HPP
+#define PHOS_FILEBROWSER_HPP
 
 #include <filesystem>
 #include <iostream>
@@ -149,4 +149,4 @@ struct FileBrowser {
 
 };
 
-#endif //PHOS_FILEBROWSER_H
+#endif //PHOS_FILEBROWSER_HPP
