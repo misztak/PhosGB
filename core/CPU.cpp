@@ -13,7 +13,9 @@ CPU::CPU():
     dividerCounter(0),
     headless(false),
     runCGBinDMGMode(false),
-    doubleSpeedMode(false)
+    doubleSpeedMode(false),
+    isExecutingInstruction(false),
+    partialTicks(0)
     {
     mmu.cpu = this;
     mmu.gpu = &gpu;
@@ -533,11 +535,11 @@ void CPU::handleInputUp(u8 key) {
 }
 
 u32 CPU::tick() {
-    cycles = 0;
+    u32 ticks = 0;
     u8 opcode = 0;
     bool isCBInstruction = false;
     if (halted) {
-        cycles = NOP(0x00);
+        ticks = NOP(0x00);
     } else {
         opcode = readByte(r.pc++);
         Instruction instruction;
@@ -553,25 +555,43 @@ u32 CPU::tick() {
             Log(F, "Invalid opcode 0x%02X at address 0x%04X\n", opcode, r.pc-1);
             return 0;
         }
-        cycles = (this->*instruction)(opcode);
+
+        isExecutingInstruction = true;
+        ticks = (this->*instruction)(opcode);
+        isExecutingInstruction = false;
     }
 
-    if (cycles == 0) {
+    if (ticks == 0) {
         Log(F, "Unimplemented opcode");
         if (isCBInstruction) LogRaw(F, " 0xCB");
         LogRaw(F, " 0x%02X at address 0x%02X\n", opcode, r.pc-1);
         return 0;
     }
 
-    gpu.tick(cycles);
+    cycles = ticks;
+    assert(ticks > partialTicks);
+    ticks -= partialTicks;
+    partialTicks = 0;
 
-    updateTimer(cycles);
+    gpu.tick(ticks);
 
-    apu.update(cycles);
+    updateTimer(ticks);
+
+    apu.update(ticks);
 
     checkInterrupts();
 
     return cycles;
+}
+
+void CPU::runPartialInstruction(u32 ticks) {
+    if (!isExecutingInstruction) return;
+
+    gpu.tick(ticks);
+    updateTimer(ticks);
+    apu.update(ticks);
+
+    partialTicks += ticks;
 }
 
 void CPU::updateTimer(u32 ticks) {
@@ -829,6 +849,7 @@ u32 CPU::LD_HL_r(const u8& opcode) {
 
 u32 CPU::LD_HL_n(const u8& opcode) {
     u8 n = readByte(r.pc++);
+    runPartialInstruction(4);
     writeByte(r.hl, n);
     return 12;
 }
@@ -846,6 +867,7 @@ u32 CPU::LD_A_DE(const u8& opcode) {
 u32 CPU::LD_A_nn(const u8& opcode) {
     u16 address = readWord(r.pc);
     r.pc += 2;
+    runPartialInstruction(8);
     r.a = readByte(address);
     return 16;
 }
@@ -863,6 +885,7 @@ u32 CPU::LD_DE_A(const u8& opcode) {
 u32 CPU::LD_nn_A(const u8& opcode) {
     u16 address = readWord(r.pc);
     r.pc += 2;
+    runPartialInstruction(8);
     writeByte(address, r.a);
     return 16;
 }
@@ -903,12 +926,14 @@ u32 CPU::LDI_HL_A(const u8& opcode) {
 
 u32 CPU::LD_nff00_A(const u8& opcode) {
     u16 address = (u16) 0xFF00 + readByte(r.pc++);
+    runPartialInstruction(4);
     writeByte(address, r.a);
     return 12;
 }
 
 u32 CPU::LD_A_nff00(const u8& opcode) {
     u16 address = (u16) 0xFF00 + readByte(r.pc++);
+    runPartialInstruction(4);
     r.a = readByte(address);
     return 12;
 }
@@ -1341,6 +1366,7 @@ u32 CPU::INC_HL(const u8& opcode) {
     if ((readByte(r.hl) & 0xF) + 0x1 > 0xF) setFlag(HALF_CARRY);
     else clearFlag(HALF_CARRY);
 
+    runPartialInstruction(4);
     writeByte(r.hl, result);
     return 12;
 }
@@ -1365,6 +1391,7 @@ u32 CPU::DEC_HL(const u8& opcode) {
     if ((readByte(r.hl) & 0xF) - 0x1 < 0) setFlag(HALF_CARRY);
     else clearFlag(HALF_CARRY);
 
+    runPartialInstruction(4);
     writeByte(r.hl, result);
     return 12;
 }
@@ -1664,6 +1691,7 @@ u32 CPU::RLC_r(const u8& opcode) {
 }
 
 u32 CPU::RLC_HL(const u8& opcode) {
+    runPartialInstruction(4);
     u8 value = readByte(r.hl);
     isBitSet(value, 7) ? setFlag(CARRY) : clearFlag(CARRY);
 
@@ -1674,6 +1702,7 @@ u32 CPU::RLC_HL(const u8& opcode) {
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
 
+    runPartialInstruction(4);
     writeByte(r.hl, value);
     return 16;
 }
@@ -1695,6 +1724,7 @@ u32 CPU::RL_r(const u8& opcode) {
 }
 
 u32 CPU::RL_HL(const u8& opcode) {
+    runPartialInstruction(4);
     u8 value = readByte(r.hl);
 
     bool oldCarry = isFlagSet(CARRY);
@@ -1707,6 +1737,7 @@ u32 CPU::RL_HL(const u8& opcode) {
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
 
+    runPartialInstruction(4);
     writeByte(r.hl, value);
     return 16;
 }
@@ -1726,6 +1757,7 @@ u32 CPU::RRC_r(const u8& opcode) {
 }
 
 u32 CPU::RRC_HL(const u8& opcode) {
+    runPartialInstruction(4);
     u8 value = readByte(r.hl);
 
     isBitSet(value, 0) ? setFlag(CARRY) : clearFlag(CARRY);
@@ -1736,6 +1768,7 @@ u32 CPU::RRC_HL(const u8& opcode) {
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
 
+    runPartialInstruction(4);
     writeByte(r.hl, value);
     return 16;
 }
@@ -1757,6 +1790,7 @@ u32 CPU::RR_r(const u8& opcode) {
 }
 
 u32 CPU::RR_HL(const u8& opcode) {
+    runPartialInstruction(4);
     u8 value = readByte(r.hl);
 
     bool oldCarry = isFlagSet(CARRY);
@@ -1769,6 +1803,7 @@ u32 CPU::RR_HL(const u8& opcode) {
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
 
+    runPartialInstruction(4);
     writeByte(r.hl, value);
     return 16;
 }
@@ -1787,6 +1822,7 @@ u32 CPU::SLA_r(const u8& opcode) {
 }
 
 u32 CPU::SLA_HL(const u8& opcode) {
+    runPartialInstruction(4);
     u8 value = readByte(r.hl);
     isBitSet(value, 7) ? setFlag(CARRY) : clearFlag(CARRY);
 
@@ -1796,6 +1832,7 @@ u32 CPU::SLA_HL(const u8& opcode) {
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
 
+    runPartialInstruction(4);
     writeByte(r.hl, value);
     return 16;
 }
@@ -1817,6 +1854,7 @@ u32 CPU::SRA_r(const u8& opcode) {
 }
 
 u32 CPU::SRA_HL(const u8& opcode) {
+    runPartialInstruction(4);
     u8 value = readByte(r.hl);
     isBitSet(value, 0) ? setFlag(CARRY) : clearFlag(CARRY);
 
@@ -1829,6 +1867,7 @@ u32 CPU::SRA_HL(const u8& opcode) {
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
 
+    runPartialInstruction(4);
     writeByte(r.hl, value);
     return 16;
 }
@@ -1849,6 +1888,7 @@ u32 CPU::SRL_r(const u8& opcode) {
 }
 
 u32 CPU::SRL_HL(const u8& opcode) {
+    runPartialInstruction(4);
     u8 value = readByte(r.hl);
     isBitSet(value, 0) ? setFlag(CARRY) : clearFlag(CARRY);
 
@@ -1860,11 +1900,13 @@ u32 CPU::SRL_HL(const u8& opcode) {
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
 
+    runPartialInstruction(4);
     writeByte(r.hl, value);
     return 16;
 }
 
 u32 CPU::BIT_b_r(const u8& opcode) {
+    runPartialInstruction(4);
     u8 bit = (opcode >> 3) & 0x07;
     u8* reg = byteRegister(opcode);
 
@@ -1877,6 +1919,7 @@ u32 CPU::BIT_b_r(const u8& opcode) {
 }
 
 u32 CPU::BIT_b_HL(const u8& opcode) {
+    runPartialInstruction(4);
     u8 bit = (opcode >> 3) & 0x07;
     u8 value = readByte(r.hl);
 
@@ -1897,11 +1940,13 @@ u32 CPU::SET_b_r(const u8& opcode) {
 }
 
 u32 CPU::SET_b_HL(const u8& opcode) {
+    runPartialInstruction(4);
     u8 bitPos = (opcode >> 3) & 0x07;
     u8 value = readByte(r.hl);
 
     value = setBit(value, bitPos);
 
+    runPartialInstruction(4);
     writeByte(r.hl, value);
     return 16;
 }
@@ -1916,11 +1961,13 @@ u32 CPU::RES_b_r(const u8& opcode) {
 }
 
 u32 CPU::RES_b_HL(const u8& opcode) {
+    runPartialInstruction(4);
     u8 bitPos = (opcode >> 3) & 0x07;
     u8 value = readByte(r.hl);
 
     value = clearBit(value, bitPos);
 
+    runPartialInstruction(4);
     writeByte(r.hl, value);
     return 16;
 }
@@ -1940,6 +1987,7 @@ u32 CPU::SWAP_r(const u8& opcode) {
 }
 
 u32 CPU::SWAP_HL(const u8& opcode) {
+    runPartialInstruction(4);
     u8 value = readByte(r.hl);
     u8 low = value & 0x0F;
     u8 high = value & 0xF0;
@@ -1950,6 +1998,7 @@ u32 CPU::SWAP_HL(const u8& opcode) {
     clearFlag(HALF_CARRY);
     clearFlag(CARRY);
 
+    runPartialInstruction(4);
     writeByte(r.hl, value);
     return 16;
 }

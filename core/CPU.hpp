@@ -96,6 +96,9 @@ public:
 
     void serialize(hak::serializer& s);
 private:
+    bool isExecutingInstruction;
+    u32 partialTicks;
+
     u8*  byteRegisterMap[8]  = {nullptr};
     u16* shortRegisterMap[4] = {nullptr};
 
@@ -110,6 +113,8 @@ private:
     void checkInterrupts();
     void updateTimer(u32 ticks);
     void setTimerFreq();
+
+    void runPartialInstruction(u32 ticks);
 
     void pushByte(u8 value);
     void pushWord(u16 value);
