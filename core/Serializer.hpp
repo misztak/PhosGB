@@ -2,6 +2,7 @@
 #define PHOS_SERIALIZER_HPP
 
 // this is a slightly modified version of the serializer used in the higan emulator made by byuu
+// https://github.com/byuu/higan/blob/master/nall/serializer.hpp
 
 //serializer: a class designed to save and restore the state of classes.
 //
@@ -55,9 +56,8 @@ namespace phos {
         }
 
         template<typename T> auto real(T& value) -> serializer& {
-            enum : u32 { size = sizeof(T) };
-            //this is rather dangerous, and not cross-platform safe;
-            //but there is no standardized way to export FP-values
+            u32 size = sizeof(T);
+            // potentially not cross-platform safe
             auto p = (u8*)&value;
             if(_mode == Save) {
                 for(u32 n = 0; n < size; n++) _data[_size++] = p[n];
@@ -81,7 +81,7 @@ namespace phos {
         }
 
         template<typename T> auto integer(T& value) -> serializer& {
-            enum : u32 { size = std::is_same<bool, T>::value ? 1 : sizeof(T) };
+            u32 size = std::is_same<bool, T>::value ? 1 : sizeof(T);
             if(_mode == Save) {
                 T copy = value;
                 for(u32 n = 0; n < size; n++) _data[_size++] = copy, copy >>= 8;
@@ -127,35 +127,9 @@ namespace phos {
         template<typename T> auto operator()(T& value, typename std::enable_if<std::is_array<T>::value>::type* = 0) -> serializer& { return array(value); }
         template<typename T> auto operator()(T& value, u32 size, typename std::enable_if<std::is_pointer<T>::value>::type* = 0) -> serializer& { return array(value, size); }
 
-        auto operator=(const serializer& s) -> serializer& {
-            if(_data) delete[] _data;
-
-            _mode = s._mode;
-            _data = new u8[s._capacity];
-            _size = s._size;
-            _capacity = s._capacity;
-
-            memcpy(_data, s._data, s._capacity);
-            return *this;
-        }
-
-        auto operator=(serializer&& s) noexcept -> serializer& {
-            if(_data) delete[] _data;
-
-            _mode = s._mode;
-            _data = s._data;
-            _size = s._size;
-            _capacity = s._capacity;
-
-            s._data = nullptr;
-            return *this;
-        }
-
         serializer() = default;
-        serializer(const serializer& s) { operator=(s); }
-        serializer(serializer&& s) noexcept { operator=(std::move(s)); }
 
-        serializer(u32 capacity) {
+        explicit serializer(u32 capacity) {
             _mode = Save;
             _data = new u8[capacity]();
             _size = 0;
