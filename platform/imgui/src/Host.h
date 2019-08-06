@@ -1,7 +1,7 @@
 #ifndef PHOS_HOST_H
 #define PHOS_HOST_H
 
-#include <GL/glew.h>
+#include <GL/gl3w.h>
 #include <SDL.h>
 
 #include "imgui.h"

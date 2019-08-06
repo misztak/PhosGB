@@ -1,5 +1,5 @@
 #include <SDL.h>
-#include <GL/glew.h>
+#include <GL/gl3w.h>
 
 #include "Common.h"
 #include "DebugHost.h"
@@ -80,9 +80,9 @@ int main(int argc, char** argv) {
     SDL_GLContext glContext = SDL_GL_CreateContext(window);
     SDL_GL_SetSwapInterval(0);  // Vsync
 
-    bool err = glewInit() != GLEW_OK;
+    bool err = gl3wInit() != 0;
     if (err) {
-        fprintf(stderr, "Failed to initialize GLEW!\n");
+        fprintf(stderr, "Failed to initialize GL3W!\n");
         return 1;
     }
 

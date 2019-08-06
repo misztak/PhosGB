@@ -3,7 +3,7 @@
 
 #include "Host.h"
 
-#include "imgui_memory_editor.h"
+#include "MemoryEditor.hpp"
 #include "DebugSink.h"
 
 class DebugHost : public Host {
