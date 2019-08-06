@@ -9,7 +9,8 @@
 #include "Common.hpp"
 #include "MBC.hpp"
 
-constexpr int BIOS_SIZE     = 256;
+constexpr int BIOS_SIZE_DMG = 256;
+constexpr int BIOS_SIZE_CGB = 2048;
 constexpr int ROM_BANK_SIZE = 16384;
 constexpr int RAM_BANK_SIZE = 8192;
 constexpr int WRAM_SIZE     = 8192;

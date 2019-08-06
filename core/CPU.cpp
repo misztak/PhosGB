@@ -448,7 +448,7 @@ CPU::CPU():
 
 bool CPU::init(std::string& romPath) {
     // TODO: remove hardcoded BIOS path
-    std::string biosPath = "../../gb/BootROM.gb";
+    std::string biosPath = "../gb/BootROM.gb";
 
     // MMU reset
     if (!mmu.init(romPath, biosPath)) return false;

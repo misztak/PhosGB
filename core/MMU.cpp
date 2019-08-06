@@ -9,7 +9,7 @@ MMU::MMU() :
     runBIOS(false),
     WRAMBankPtr(1),
     VRAMBankPtr(0),
-    BIOS(BIOS_SIZE, 0),
+    BIOS(BIOS_SIZE_DMG, 0),
     ROM_0(ROM_BANK_SIZE, 0),
     // init ROM and RAM with capacity of NO_MBC cartridge
     ROM(ROM_BANK_SIZE, 0),
@@ -31,15 +31,6 @@ MMU::MMU() :
 
 bool MMU::init(std::string& romPath, std::string& biosPath) {
     std::vector<u8> buffer;
-
-    if (runBIOS && !biosPath.empty() && loadFile(biosPath, FileType::BIOS, buffer)) {
-        std::copy_n(buffer.begin(), BIOS_SIZE, BIOS.begin());
-        inBIOS = true;
-    } else {
-        inBIOS = false;
-    }
-
-    buffer.clear();
     if (!loadFile(romPath, FileType::ROM, buffer)) return false;
 
     u8 cartridgeType = buffer[0x147];
@@ -52,6 +43,20 @@ bool MMU::init(std::string& romPath, std::string& biosPath) {
     } else if (buffer[0x143] == 0x80 || buffer[0x143] == 0xC0) {
         cpu->gbMode = CGB;
         Log(I, "Running ROM in CGB Mode\n");
+    }
+
+    std::vector<u8> biosBuffer;
+    if (runBIOS && !biosPath.empty() && loadFile(biosPath, FileType::BIOS, biosBuffer)) {
+        if (cpu->gbMode == DMG) {
+            BIOS.resize(BIOS_SIZE_DMG);
+            std::copy_n(biosBuffer.begin(), BIOS_SIZE_DMG, BIOS.begin());
+        } else if (cpu->gbMode == CGB) {
+            BIOS.resize(BIOS_SIZE_CGB);
+            std::copy_n(biosBuffer.begin(), BIOS_SIZE_CGB, BIOS.begin());
+        }
+        inBIOS = true;
+    } else {
+        inBIOS = false;
     }
 
     switch (cartridgeType) {
@@ -186,11 +191,10 @@ bool MMU::loadFile(std::string& path, FileType fileType, std::vector<u8>& buffer
 
     switch (fileType) {
         case FileType::BIOS:
-            if (length != BIOS_SIZE) {
-                Log(W, "Invalid BootROM size: %li\n", length);
-                return false;
-            }
-            return true;
+            if ((length == BIOS_SIZE_DMG && cpu->gbMode == DMG) || (length == BIOS_SIZE_CGB && cpu->gbMode == CGB))
+                return true;
+            Log(W, "Invalid BootROM size: %li. Starting ROM without BIOS.\n", length);
+            return false;
         case FileType::ROM:
             // check type id and underlying value
             if (ROMSizeTypes.count(buffer[0x148]) && ROMSizeTypes[buffer[0x148]] == length) return true;
