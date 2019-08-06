@@ -19,9 +19,8 @@
     const int compatFlag = 0;
 #endif
 
-void render(SDL_Window* window, SDL_GLContext& glContext, Host* host, Emulator* emulator) {
+void render(SDL_Window* window, Host* host, Emulator* emulator) {
     host->update(emulator->getDisplayState());
-    SDL_GL_MakeCurrent(window, glContext);
 
     glClear(GL_COLOR_BUFFER_BIT);
     host->render();
@@ -78,6 +77,7 @@ int main(int argc, char** argv) {
             1200, 900,
             SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE|SDL_WINDOW_ALLOW_HIGHDPI );
     SDL_GLContext glContext = SDL_GL_CreateContext(window);
+    SDL_GL_MakeCurrent(window, glContext);
     SDL_GL_SetSwapInterval(0);  // Vsync
 
     bool err = gl3wInit() != 0;
@@ -190,7 +190,7 @@ int main(int argc, char** argv) {
 
                 if (emulator.hitVBlank()) {
                     // Under normal circumstances the display should update at the start of every VBLANK period.
-                    render(window, glContext, host, &emulator);
+                    render(window, host, &emulator);
                     emulator.cpu.apu.readSamples();
                     if (SDL_GetAudioDeviceStatus(deviceId) == SDL_AUDIO_PLAYING && !host->requestOverlay)
                         SDL_QueueAudio(deviceId, emulator.cpu.apu.audioBuffer.data(),
@@ -211,7 +211,7 @@ int main(int argc, char** argv) {
                 if (debugger.singleStepMode) {
                     debugger.nextStep = false;
                     emulator.isHalted = true;
-                    render(window, glContext, host, &emulator);
+                    render(window, host, &emulator);
                     ticks = emulator.cpu.ticksPerFrame;
                     Log(D, "Step\n");
                     break;
@@ -220,7 +220,7 @@ int main(int argc, char** argv) {
             ticks -= emulator.cpu.ticksPerFrame;
         } else {
             // Just keep rendering if the debugger has halted execution or if a fatal error has occurred.
-            render(window, glContext, host, &emulator);
+            render(window, host, &emulator);
         }
 
         frameTimer.syncFrame();
