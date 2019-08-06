@@ -328,7 +328,7 @@ void GPU::renderSpriteScanline() {
         // vertical flip
         if (spriteAttr & 0x40) relY = (spriteSize - 1) - relY;
 
-        u8 dmgPaletteNumber = isBitSet(spriteAttr, 0x10);
+        u8 dmgPaletteNumber = isBitSet(spriteAttr, 4);
         const u8 dmgPalette[4] {
             0x00,
             colors[dmgPaletteNumber ? (getReg(SPRITE_PALETTE_1_DATA) >> 2 & 0x03) : (getReg(SPRITE_PALETTE_0_DATA) >> 2 & 0x03)],
@@ -355,7 +355,7 @@ void GPU::renderSpriteScanline() {
                 unsigned index = ((getReg(LCDC_Y_COORDINATE) * 160) + x) * 4;
                 if (isBitSet(getReg(LCD_CONTROL), BG_DISPLAY)) {
                     if (pixelLine[x].type == 3) continue;
-                    if (isBitSet(spriteAttr, 0x80)) {
+                    if (isBitSet(spriteAttr, 7)) {
                         if (pixelLine[x].type == 1 && pixelLine[x].palette > 0) continue;
                     }
                 }
@@ -518,7 +518,7 @@ void GPU::setBGColor(u8 color) {
     }
 }
 
-void GPU::serialize(phos::serializer &s) {
+void GPU::serialize(serializer &s) {
     s.integer(hitVBlank);
     s.integer(modeclock);
     s.integer(DMATicks);

@@ -17,7 +17,7 @@ set(CORE_SOURCES
         MBC.hpp
         MBC.cpp
         MMU.hpp
-        MMU.cpp
-        Serializer.hpp)
+        MMU.cpp)
 
 add_library(core "${CORE_SOURCES}")
+target_link_libraries(core hak)

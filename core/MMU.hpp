@@ -50,7 +50,7 @@ public:
     void performHDMA();
     void performGDMA();
 
-    void serialize(phos::serializer& s);
+    void serialize(serializer& s);
 public:
     CPU* cpu;
     GPU* gpu;

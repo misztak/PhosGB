@@ -10,13 +10,12 @@ void Joypad::reset() {
 
 void Joypad::handleInputDown(u8 key) {
     bool prevStateON = false;
-    u8 keyMask = (u8) 1 << key;
 
-    if (!isBitSet(joypadState, keyMask)) {
+    if (!isBitSet(joypadState, key)) {
         prevStateON = true;
     }
 
-    joypadState = clearBit(joypadState, keyMask);
+    joypadState = clearBit(joypadState, key);
 
     bool isDirectional = key <= 3;
     if (!prevStateON) {
@@ -27,7 +26,7 @@ void Joypad::handleInputDown(u8 key) {
 }
 
 void Joypad::handleInputUp(u8 key) {
-    joypadState = setBit(joypadState, 1 << key);
+    joypadState = setBit(joypadState, key);
 }
 
 u8 Joypad::readByte() {
@@ -47,7 +46,7 @@ void Joypad::writeByte(u8 val) {
     else if (laneVal == 0x30) lane = BOTH;
 }
 
-void Joypad::serialize(phos::serializer &s) {
+void Joypad::serialize(serializer &s) {
     s.integer(joypadState);
     s.enumeration(lane);
 }

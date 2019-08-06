@@ -1,5 +1,4 @@
-#ifndef PHOS_SERIALIZER_HPP
-#define PHOS_SERIALIZER_HPP
+#pragma once
 
 // this is a slightly modified version of the serializer used in the higan emulator made by byuu
 // https://github.com/byuu/higan/blob/master/nall/serializer.hpp
@@ -18,10 +17,9 @@
 #include <utility>
 #include <cstring>
 
-namespace phos {
-    using u8  = unsigned char;
-    using u16 = unsigned short;
-    using u32 = unsigned int;
+#include <types.hpp>
+
+namespace hak {
 
     struct serializer;
 
@@ -156,5 +154,3 @@ namespace phos {
     };
 
 }
-
-#endif //PHOS_SERIALIZER_HPP

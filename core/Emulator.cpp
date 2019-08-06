@@ -78,7 +78,7 @@ void Emulator::handleInputUp(u8 key) {
 
 void Emulator::saveState() {
     u32 serializerSize = serializeInit();
-    phos::serializer s(serializerSize);
+    serializer s(serializerSize);
 
     char header[11] = "PHOS-STATE";
     s.array(header);
@@ -119,7 +119,7 @@ bool Emulator::loadState(std::string& path) {
         Log(W, "Size of save state file does not match serializer size\n");
         return false;
     }
-    phos::serializer s(buf, length);
+    serializer s(buf, length);
     delete[] buf;
 
     char header[11] = {0};
@@ -136,7 +136,7 @@ bool Emulator::loadState(std::string& path) {
 }
 
 u32 Emulator::serializeInit() {
-    phos::serializer s;
+    serializer s;
 
     char header[11] = {0};
     // TODO: add some sort of checksum
@@ -146,7 +146,7 @@ u32 Emulator::serializeInit() {
     return s.size();
 }
 
-void Emulator::serializeAll(phos::serializer& s) {
+void Emulator::serializeAll(serializer& s) {
     cpu.serialize(s);
     cpu.joypad.serialize(s);
     cpu.gpu.serialize(s);

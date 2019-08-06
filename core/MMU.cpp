@@ -385,7 +385,7 @@ void MMU::writeByte(u16 address, u8 value) {
                     case 0x55: {    // VRAM DMA Transfer (CGB Mode Only)
                         if (cpu->gbMode != CGB) return;
                         VramDma.transferLength = ((value & 0x7F) + 1) * 16;
-                        bool stat = isBitSet(value, 0x80);
+                        bool stat = isBitSet(value, 7);
 
                         if (stat) {
                             IO[0x55] = value & 0x7F;
@@ -409,11 +409,11 @@ void MMU::writeByte(u16 address, u8 value) {
                         break;
                     case 0x69:      // BG Palette Data (CGB Mode Only)
                         PaletteMemory[IO[0x68] & 0x3F] = value;
-                        if (isBitSet(IO[0x68], 0x80)) IO[0x68]++;
+                        if (isBitSet(IO[0x68], 7)) IO[0x68]++;
                         break;
                     case 0x6B:      // Sprite Palette Data (CGB Mode Only)
                         PaletteMemory[(IO[0x6A] & 0x3F) + 0x40] = value;
-                        if (isBitSet(IO[0x6A], 0x80)) IO[0x6A]++;
+                        if (isBitSet(IO[0x6A], 7)) IO[0x6A]++;
                         break;
                     case 0x6C:
                         if (cpu->gbMode != CGB) return;
@@ -522,7 +522,7 @@ void MMU::writeWord(u16 address, u16 value) {
     writeByte(address + 1, high);
 }
 
-void MMU::serialize(phos::serializer &s) {
+void MMU::serialize(serializer &s) {
     s.integer(inBIOS);
     s.integer(runBIOS);
     s.integer(WRAMBankPtr);

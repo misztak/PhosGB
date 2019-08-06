@@ -18,7 +18,7 @@ public:
     u8 readByte();
     void writeByte(u8 val);
 
-    void serialize(phos::serializer& s);
+    void serialize(serializer& s);
 private:
     CPU* cpu;
     u8 joypadState;

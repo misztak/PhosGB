@@ -7,6 +7,13 @@
 #include "Joypad.hpp"
 #include "APU.hpp"
 
+// addresses of interrupt service routines
+constexpr u16 INTERRUPT_VBLANK = 0x40;
+constexpr u16 INTERRUPT_LCD_STAT = 0x48;
+constexpr u16 INTERRUPT_TIMER = 0x50;
+constexpr u16 INTERRUPT_SERIAL = 0x58;
+constexpr u16 INTERRUPT_JOYPAD = 0x60;
+
 enum GB_MODE { DMG, CGB };
 
 // bitmasks for flags stored in lower 8bit of AF register
@@ -87,7 +94,7 @@ public:
     u16 readWord(u16 address);
     void writeWord(u16 address, u16 value);
 
-    void serialize(phos::serializer& s);
+    void serialize(hak::serializer& s);
 private:
     u8*  byteRegisterMap[8]  = {nullptr};
     u16* shortRegisterMap[4] = {nullptr};

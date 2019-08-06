@@ -12,7 +12,7 @@ void Channel::setReg(u8 address, u8 value) {
 }
 
 void Channel::updateLengthCounter(u8 channel, u8 frameStep) {
-    if (isBitSet(frameStep, 0x01) && isBitSet(getReg(channel + 4), 0x40)) {
+    if (isBitSet(frameStep, 0) && isBitSet(getReg(channel + 4), 6)) {
         if (lengthCounter > 0) {
             lengthCounter--;
             if (lengthCounter == 0) on = false;
@@ -21,8 +21,8 @@ void Channel::updateLengthCounter(u8 channel, u8 frameStep) {
     if (frameStep == 7 && envelopeSweeps > 0) {
         envelopeSweeps--;
         if (envelopeSweeps == 0) {
-            if (isBitSet(getReg(channel + 2), 0x08) && volume < 0xF) volume++;
-            else if (!isBitSet(getReg(channel + 2), 0x08) && volume > 0x0) volume--;
+            if (isBitSet(getReg(channel + 2), 3) && volume < 0xF) volume++;
+            else if (!isBitSet(getReg(channel + 2), 3) && volume > 0x0) volume--;
             envelopeSweeps = getReg(channel + 2) & 0x7;
         }
     }
@@ -51,7 +51,7 @@ void Square1Channel::updateFrame(u8 frameStep) {
     if ((frameStep & 0x3) == 0x2 && sweepOn && sweepLength > 0 && --sweepLength == 0) {
         sweepLength = (getReg(CH1_SWEEP) >> 4) & 0x7;
         u16 freq = sweepFrequency >> (getReg(CH1_SWEEP) & 0x7);
-        if (!isBitSet(getReg(CH1_SWEEP), 0x10))
+        if (!isBitSet(getReg(CH1_SWEEP), 4))
             sweepFrequency += freq;
         else
             sweepFrequency-= freq;
@@ -70,7 +70,7 @@ void Square1Channel::updateWave() {
     u8 dutyPattern = getReg(CH1_SOUND_LENGTH) >> 6;
     waveStep = (waveStep + 1) & 0x7;
     channelOutput = 0;
-    if (on && isBitSet(dutyCycleWaveform[dutyPattern], 0x1 << waveStep)) channelOutput = volume;
+    if (on && isBitSet(dutyCycleWaveform[dutyPattern], waveStep)) channelOutput = volume;
 }
 
 Square2Channel::Square2Channel(CPU* cpu) : Channel(cpu) {}
@@ -91,7 +91,7 @@ void Square2Channel::updateWave() {
     u8 dutyPattern = getReg(CH2_SOUND_LENGTH) >> 6;
     waveStep = (waveStep + 1) & 0x7;
     channelOutput = 0;
-    if (on && isBitSet(dutyCycleWaveform[dutyPattern], 0x1 << waveStep)) channelOutput = volume;
+    if (on && isBitSet(dutyCycleWaveform[dutyPattern], waveStep)) channelOutput = volume;
 }
 
 WaveChannel::WaveChannel(CPU* cpu) : Channel(cpu) {}
@@ -102,7 +102,7 @@ void WaveChannel::reset() {
 }
 
 void WaveChannel::updateFrame(u8 frameStep) {
-    if (isBitSet(frameStep, 0x01) && isBitSet(getReg(CH3_FREQ_HIGH), 0x40)) {
+    if (isBitSet(frameStep, 0) && isBitSet(getReg(CH3_FREQ_HIGH), 6)) {
         if (lengthCounter > 0) {
             lengthCounter--;
             if (lengthCounter == 0) on = false;
@@ -114,7 +114,7 @@ void WaveChannel::updateWave() {
     timer = ((0x800 - (((getReg(CH3_FREQ_HIGH) & 0x7) << 8) | getReg(CH3_FREQ_LOW))) << 1) + 1;
     waveStep = (waveStep + 1) & 0x1F;
     u8 waveformData = cpu->mmu.IO[0x30 + (waveStep >> 1)];
-    if (isBitSet(waveStep, 0x01)) waveformData >>= 4;
+    if (isBitSet(waveStep, 0)) waveformData >>= 4;
     else waveformData &= 0xF;
     channelOutput = 0;
     if (on) channelOutput = waveformData >> volume;
@@ -134,20 +134,20 @@ void NoiseChannel::updateFrame(u8 frameStep) {
 }
 
 void NoiseChannel::updateWave() {
-    bool lowBits = isBitSet(lsfr, 0x01) ^ isBitSet(lsfr, 0x02);
+    bool lowBits = isBitSet(lsfr, 0) ^ isBitSet(lsfr, 1);
     timer = ((noiseDivisors[getReg(CH4_POLY_COUNTER) & 0x7] / 2) << (getReg(CH4_POLY_COUNTER) >> 4)) + 1;
     if (lowBits)
         lsfr = ((lsfr >> 1) | (0x1 << 14));
     else
         lsfr = ((lsfr >> 1) & ~(0x1 << 14));
-    if (isBitSet(getReg(CH4_POLY_COUNTER), 0x08)) {
+    if (isBitSet(getReg(CH4_POLY_COUNTER), 3)) {
         if (lowBits)
             lsfr = (lsfr | (0x1 << 6));
         else
             lsfr = (lsfr & ~(0x1 << 6));
     }
     channelOutput = 0;
-    if (on && !isBitSet(lsfr, 0x01)) channelOutput = volume;
+    if (on && !isBitSet(lsfr, 0)) channelOutput = volume;
 }
 
 
@@ -185,7 +185,7 @@ void APU::update(u32 cycles) {
     if (cpu->headless) return;
     //if (cpu->doubleSpeedMode) cycles /= 2;
     u32 mCycles = cycles / 4;
-    bool dividerCycle = isBitSet(cpu->mmu.IO[0x04], 0x10 << (cpu->doubleSpeedMode ? 1 : 0));
+    bool dividerCycle = isBitSet(cpu->mmu.IO[0x04], 4 + (cpu->doubleSpeedMode ? 1 : 0));
     if (lastCounter && !dividerCycle) {
         frame = (frame + 1) & 0x7;
         for (auto& channel : channels) {

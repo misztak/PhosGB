@@ -583,7 +583,7 @@ void CPU::updateTimer(u32 ticks) {
     }
 
     u8 tac = readByte(0xFF07);
-    if (!isBitSet(tac, 0x04)) return;
+    if (!isBitSet(tac, 2)) return;
     static bool delayedOverflow = false;
 
     for (u32 i=0; i<ticks; i++) {
@@ -630,21 +630,21 @@ void CPU::checkInterrupts() {
             r.ime = 0;
             pushWord(r.pc);
 
-            if (isBitSet(activeInterrupts, 0x01)) {
+            if (isBitSet(activeInterrupts, 0)) {
                 r.pc = INTERRUPT_VBLANK;
-                IF = clearBit(IF, 0x01);
-            } else if (isBitSet(activeInterrupts, 0x02)) {
+                IF = clearBit(IF, 0);
+            } else if (isBitSet(activeInterrupts, 1)) {
                 r.pc = INTERRUPT_LCD_STAT;
-                IF = clearBit(IF, 0x02);
-            } else if (isBitSet(activeInterrupts, 0x04)) {
+                IF = clearBit(IF, 1);
+            } else if (isBitSet(activeInterrupts, 2)) {
                 r.pc = INTERRUPT_TIMER;
-                IF = clearBit(IF, 0x04);
-            } else if (isBitSet(activeInterrupts, 0x08)) {
+                IF = clearBit(IF, 2);
+            } else if (isBitSet(activeInterrupts, 3)) {
                 r.pc = INTERRUPT_SERIAL;
-                IF = clearBit(IF, 0x08);
-            } else if (isBitSet(activeInterrupts, 0x10)) {
+                IF = clearBit(IF, 3);
+            } else if (isBitSet(activeInterrupts, 4)) {
                 r.pc = INTERRUPT_JOYPAD;
-                IF = clearBit(IF, 0x10);
+                IF = clearBit(IF, 4);
             }
             mmu.writeByte(0xFF0F, IF);
         }
@@ -656,11 +656,11 @@ void CPU::checkInterrupts() {
 
 void CPU::requestInterrupt(u8 interrupt) {
     u8 IF = mmu.readByte(0xFF0F);
-    if (interrupt == INTERRUPT_VBLANK) IF = setBit(IF, 0x01);
-    else if (interrupt == INTERRUPT_LCD_STAT) IF = setBit(IF, 0x02);
-    else if (interrupt == INTERRUPT_TIMER) IF = setBit(IF, 0x04);
-    else if (interrupt == INTERRUPT_SERIAL) IF = setBit(IF, 0x08);
-    else if (interrupt == INTERRUPT_JOYPAD) IF = setBit(IF, 0x10);
+    if (interrupt == INTERRUPT_VBLANK) IF = setBit(IF, 0);
+    else if (interrupt == INTERRUPT_LCD_STAT) IF = setBit(IF, 1);
+    else if (interrupt == INTERRUPT_TIMER) IF = setBit(IF, 2);
+    else if (interrupt == INTERRUPT_SERIAL) IF = setBit(IF, 3);
+    else if (interrupt == INTERRUPT_JOYPAD) IF = setBit(IF, 4);
 
     if (r.ime == 0 && ((mmu.readByte(0xFFFF) & IF) & 0x1F) == 0) halted = false;
 
@@ -724,10 +724,10 @@ void CPU::writeByte(u16 address, u8 value) {
             case CH2_FREQ_HIGH:
             case CH3_FREQ_HIGH:
             case CH4_COUNTER_INITIAL:
-                if (isBitSet(value, 0x80)) apu.channels[(type - 0x14) / 5]->reset();
+                if (isBitSet(value, 7)) apu.channels[(type - 0x14) / 5]->reset();
                 break;
             case CH3_SOUND_ON_OFF:
-                if (!isBitSet(value, 0x80)) apu.channels[2]->on = false;
+                if (!isBitSet(value, 7)) apu.channels[2]->on = false;
                 break;
             case CH3_SOUND_LENGTH:
                 apu.channels[2]->lengthCounter = 0xFF - value;
@@ -742,8 +742,8 @@ void CPU::writeByte(u16 address, u8 value) {
                 break;
             case OUTPUT_SELECT:
                 for (u8 i = 0; i < 4; ++i) {
-                    apu.channels[i]->onLeft = isBitSet(value, 0x01 << (4 + i));
-                    apu.channels[i]->onRight = isBitSet(value, 0x01 << i);
+                    apu.channels[i]->onLeft = isBitSet(value, 4 + i);
+                    apu.channels[i]->onRight = isBitSet(value, i);
                 }
                 break;
             default:
@@ -781,7 +781,7 @@ void CPU::checkCarry(u8 reg) {
     ((r.a & 0xFF) < (reg & 0xFF)) ? setFlag(CARRY) : clearFlag(CARRY);
 }
 
-void CPU::serialize(phos::serializer &s) {
+void CPU::serialize(serializer &s) {
     s.integer(r.af);
     s.integer(r.bc);
     s.integer(r.de);
@@ -1456,10 +1456,10 @@ u32 CPU::HALT(const u8& opcode) {
 
 u32 CPU::STOP(const u8& opcode) {
     halted = true;
-    if (gbMode == CGB && isBitSet(mmu.IO[0x4D], 0x01)) {
-        doubleSpeedMode = !isBitSet(mmu.IO[0x4D], 0x80);
+    if (gbMode == CGB && isBitSet(mmu.IO[0x4D], 0)) {
+        doubleSpeedMode = !isBitSet(mmu.IO[0x4D], 7);
         mmu.IO[0x4D]--;
-        mmu.IO[0x4D] = doubleSpeedMode ? setBit(mmu.IO[0x4D], 0x80) : clearBit(mmu.IO[0x4D], 0x80);
+        mmu.IO[0x4D] = doubleSpeedMode ? setBit(mmu.IO[0x4D], 7) : clearBit(mmu.IO[0x4D], 7);
         ticksPerFrame = doubleSpeedMode ? (70224 * 2) : 70224;
         apu.reset();
     }
@@ -1477,10 +1477,10 @@ u32 CPU::EI(const u8& opcode) {
 }
 
 u32 CPU::RLCA(const u8& opcode) {
-    isBitSet(r.a, 0x80) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(r.a, 7) ? setFlag(CARRY) : clearFlag(CARRY);
 
     r.a <<= 1;
-    r.a = isFlagSet(CARRY) ? setBit(r.a, 0x01) : clearBit(r.a, 0x01);
+    r.a = isFlagSet(CARRY) ? setBit(r.a, 0) : clearBit(r.a, 0);
 
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
@@ -1491,10 +1491,10 @@ u32 CPU::RLCA(const u8& opcode) {
 
 u32 CPU::RLA(const u8& opcode) {
     bool oldCarry = isFlagSet(CARRY);
-    isBitSet(r.a, 0x80) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(r.a, 7) ? setFlag(CARRY) : clearFlag(CARRY);
 
     r.a <<= 1;
-    r.a = oldCarry ? setBit(r.a, 0x01) : clearBit(r.a, 0x01);
+    r.a = oldCarry ? setBit(r.a, 0) : clearBit(r.a, 0);
 
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
@@ -1504,10 +1504,10 @@ u32 CPU::RLA(const u8& opcode) {
 }
 
 u32 CPU::RRCA(const u8& opcode) {
-    isBitSet(r.a, 0x01) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(r.a, 0) ? setFlag(CARRY) : clearFlag(CARRY);
 
     r.a >>= 1;
-    r.a = isFlagSet(CARRY) ? setBit(r.a, 0x80) : clearBit(r.a, 0x80);
+    r.a = isFlagSet(CARRY) ? setBit(r.a, 7) : clearBit(r.a, 7);
 
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
@@ -1518,10 +1518,10 @@ u32 CPU::RRCA(const u8& opcode) {
 
 u32 CPU::RRA(const u8& opcode) {
     bool oldCarry = isFlagSet(CARRY);
-    isBitSet(r.a, 0x01) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(r.a, 0) ? setFlag(CARRY) : clearFlag(CARRY);
 
     r.a >>= 1;
-    r.a = oldCarry ? setBit(r.a, 0x80) : clearBit(r.a, 0x80);
+    r.a = oldCarry ? setBit(r.a, 7) : clearBit(r.a, 7);
 
     clearFlag(ADD_SUB);
     clearFlag(HALF_CARRY);
@@ -1651,10 +1651,10 @@ u32 CPU::RETI(const u8& opcode) {
 
 u32 CPU::RLC_r(const u8& opcode) {
     u8* reg = byteRegister(opcode);
-    isBitSet(*reg, 0x80) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(*reg, 7) ? setFlag(CARRY) : clearFlag(CARRY);
 
     (*reg) <<= 1;
-    (*reg) = isFlagSet(CARRY) ? setBit(*reg, 0x01) : clearBit(*reg, 0x01);
+    (*reg) = isFlagSet(CARRY) ? setBit(*reg, 0) : clearBit(*reg, 0);
 
     (*reg == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(ADD_SUB);
@@ -1665,10 +1665,10 @@ u32 CPU::RLC_r(const u8& opcode) {
 
 u32 CPU::RLC_HL(const u8& opcode) {
     u8 value = readByte(r.hl);
-    isBitSet(value, 0x80) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(value, 7) ? setFlag(CARRY) : clearFlag(CARRY);
 
     value <<= 1;
-    value = isFlagSet(CARRY) ? setBit(value, 0x01) : clearBit(value, 0x01);
+    value = isFlagSet(CARRY) ? setBit(value, 0) : clearBit(value, 0);
 
     (value == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(ADD_SUB);
@@ -1682,10 +1682,10 @@ u32 CPU::RL_r(const u8& opcode) {
     u8* reg = byteRegister(opcode);
 
     bool oldCarry = isFlagSet(CARRY);
-    isBitSet(*reg, 0x80) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(*reg, 7) ? setFlag(CARRY) : clearFlag(CARRY);
 
     (*reg) <<= 1;
-    (*reg) = oldCarry ? setBit(*reg, 0x01) : clearBit(*reg, 0x01);
+    (*reg) = oldCarry ? setBit(*reg, 0) : clearBit(*reg, 0);
 
     (*reg == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(ADD_SUB);
@@ -1698,10 +1698,10 @@ u32 CPU::RL_HL(const u8& opcode) {
     u8 value = readByte(r.hl);
 
     bool oldCarry = isFlagSet(CARRY);
-    isBitSet(value, 0x80) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(value, 7) ? setFlag(CARRY) : clearFlag(CARRY);
 
     value <<= 1;
-    value = oldCarry ? setBit(value, 0x01) : clearBit(value, 0x01);
+    value = oldCarry ? setBit(value, 0) : clearBit(value, 0);
 
     (value == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(ADD_SUB);
@@ -1714,9 +1714,9 @@ u32 CPU::RL_HL(const u8& opcode) {
 u32 CPU::RRC_r(const u8& opcode) {
     u8* reg = byteRegister(opcode);
 
-    isBitSet(*reg, 0x01) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(*reg, 0) ? setFlag(CARRY) : clearFlag(CARRY);
     *reg >>= 1;
-    *reg = isFlagSet(CARRY) ? setBit(*reg, 0x80) : clearBit(*reg, 0x80);
+    *reg = isFlagSet(CARRY) ? setBit(*reg, 7) : clearBit(*reg, 7);
 
     (*reg == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(ADD_SUB);
@@ -1728,9 +1728,9 @@ u32 CPU::RRC_r(const u8& opcode) {
 u32 CPU::RRC_HL(const u8& opcode) {
     u8 value = readByte(r.hl);
 
-    isBitSet(value, 0x01) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(value, 0) ? setFlag(CARRY) : clearFlag(CARRY);
     value >>= 1;
-    value = isFlagSet(CARRY) ? setBit(value, 0x80) : clearBit(value, 0x80);
+    value = isFlagSet(CARRY) ? setBit(value, 7) : clearBit(value, 7);
 
     (value == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(ADD_SUB);
@@ -1744,10 +1744,10 @@ u32 CPU::RR_r(const u8& opcode) {
     u8* reg = byteRegister(opcode);
 
     bool oldCarry = isFlagSet(CARRY);
-    isBitSet(*reg, 0x01) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(*reg, 0) ? setFlag(CARRY) : clearFlag(CARRY);
 
     *reg >>= 1;
-    *reg = oldCarry ? setBit(*reg, 0x80) : clearBit(*reg, 0x80);
+    *reg = oldCarry ? setBit(*reg, 7) : clearBit(*reg, 7);
 
     (*reg == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(ADD_SUB);
@@ -1760,10 +1760,10 @@ u32 CPU::RR_HL(const u8& opcode) {
     u8 value = readByte(r.hl);
 
     bool oldCarry = isFlagSet(CARRY);
-    isBitSet(value, 0x01) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(value, 0) ? setFlag(CARRY) : clearFlag(CARRY);
 
     value >>= 1;
-    value = oldCarry ? setBit(value, 0x80) : clearBit(value, 0x80);
+    value = oldCarry ? setBit(value, 7) : clearBit(value, 7);
 
     (value == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(ADD_SUB);
@@ -1775,7 +1775,7 @@ u32 CPU::RR_HL(const u8& opcode) {
 
 u32 CPU::SLA_r(const u8& opcode) {
     u8* reg = byteRegister(opcode);
-    isBitSet(*reg, 0x80) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(*reg, 7) ? setFlag(CARRY) : clearFlag(CARRY);
 
     *reg <<= 1;
 
@@ -1788,7 +1788,7 @@ u32 CPU::SLA_r(const u8& opcode) {
 
 u32 CPU::SLA_HL(const u8& opcode) {
     u8 value = readByte(r.hl);
-    isBitSet(value, 0x80) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(value, 7) ? setFlag(CARRY) : clearFlag(CARRY);
 
     value <<= 1;
 
@@ -1802,7 +1802,7 @@ u32 CPU::SLA_HL(const u8& opcode) {
 
 u32 CPU::SRA_r(const u8& opcode) {
     u8* reg = byteRegister(opcode);
-    isBitSet(*reg, 0x01) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(*reg, 0) ? setFlag(CARRY) : clearFlag(CARRY);
 
     // the value of bit 7 stays the same
     u8 oldBit7 = *reg & 0x80;
@@ -1818,7 +1818,7 @@ u32 CPU::SRA_r(const u8& opcode) {
 
 u32 CPU::SRA_HL(const u8& opcode) {
     u8 value = readByte(r.hl);
-    isBitSet(value, 0x01) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(value, 0) ? setFlag(CARRY) : clearFlag(CARRY);
 
     // the value of bit 7 stays the same
     u8 oldBit7 = value & 0x80;
@@ -1835,11 +1835,11 @@ u32 CPU::SRA_HL(const u8& opcode) {
 
 u32 CPU::SRL_r(const u8& opcode) {
     u8* reg = byteRegister(opcode);
-    isBitSet(*reg, 0x01) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(*reg, 0) ? setFlag(CARRY) : clearFlag(CARRY);
 
     // the value of bit 7 is reset
     (*reg) >>= 1;
-    (*reg) = clearBit(*reg, 0x80);
+    (*reg) = clearBit(*reg, 7);
 
     (*reg == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(ADD_SUB);
@@ -1850,11 +1850,11 @@ u32 CPU::SRL_r(const u8& opcode) {
 
 u32 CPU::SRL_HL(const u8& opcode) {
     u8 value = readByte(r.hl);
-    isBitSet(value, 0x01) ? setFlag(CARRY) : clearFlag(CARRY);
+    isBitSet(value, 0) ? setFlag(CARRY) : clearFlag(CARRY);
 
     // the value of bit 7 is reset
     value >>= 1;
-    value = clearBit(value, 0x80);
+    value = clearBit(value, 7);
 
     (value == 0) ? setFlag(ZERO) : clearFlag(ZERO);
     clearFlag(ADD_SUB);
@@ -1868,7 +1868,7 @@ u32 CPU::BIT_b_r(const u8& opcode) {
     u8 bit = (opcode >> 3) & 0x07;
     u8* reg = byteRegister(opcode);
 
-    if (!isBitSet(*reg, 1 << bit)) setFlag(ZERO);
+    if (!isBitSet(*reg, bit)) setFlag(ZERO);
     else clearFlag(ZERO);
     setFlag(HALF_CARRY);
     clearFlag(ADD_SUB);
@@ -1880,7 +1880,7 @@ u32 CPU::BIT_b_HL(const u8& opcode) {
     u8 bit = (opcode >> 3) & 0x07;
     u8 value = readByte(r.hl);
 
-    (!isBitSet(value, 1 << bit)) ? setFlag(ZERO) : clearFlag(ZERO);
+    (!isBitSet(value, bit)) ? setFlag(ZERO) : clearFlag(ZERO);
     setFlag(HALF_CARRY);
     clearFlag(ADD_SUB);
 
@@ -1891,7 +1891,7 @@ u32 CPU::SET_b_r(const u8& opcode) {
     u8 bitPos = (opcode >> 3) & 0x07;
     u8* reg = byteRegister(opcode);
 
-    *reg = setBit(*reg, 1 << bitPos);
+    *reg = setBit(*reg, bitPos);
 
     return 8;
 }
@@ -1900,7 +1900,7 @@ u32 CPU::SET_b_HL(const u8& opcode) {
     u8 bitPos = (opcode >> 3) & 0x07;
     u8 value = readByte(r.hl);
 
-    value = setBit(value, 1 << bitPos);
+    value = setBit(value, bitPos);
 
     writeByte(r.hl, value);
     return 16;
@@ -1910,7 +1910,7 @@ u32 CPU::RES_b_r(const u8& opcode) {
     u8 bitPos = (opcode >> 3) & 0x7;
     u8* reg = byteRegister(opcode);
 
-    *reg = clearBit(*reg, 1 << bitPos);
+    *reg = clearBit(*reg, bitPos);
 
     return 8;
 }
@@ -1919,7 +1919,7 @@ u32 CPU::RES_b_HL(const u8& opcode) {
     u8 bitPos = (opcode >> 3) & 0x07;
     u8 value = readByte(r.hl);
 
-    value = clearBit(value, 1 << bitPos);
+    value = clearBit(value, bitPos);
 
     writeByte(r.hl, value);
     return 16;

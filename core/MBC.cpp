@@ -26,7 +26,7 @@ void NO_MBC::writeRAMByte(u16 address, u8 value) {
     mmu->RAM[address] = value;
 }
 
-void NO_MBC::serialize(phos::serializer &s) {
+void NO_MBC::serialize(serializer &s) {
     s.integer(ROMBankPtr);
     s.integer(RAMBankPtr);
 }
@@ -86,7 +86,7 @@ void MBC1::writeRAMByte(u16 address, u8 value) {
     if (RAMEnable) mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE] = value;
 }
 
-void MBC1::serialize(phos::serializer &s) {
+void MBC1::serialize(serializer &s) {
     s.integer(ROMBankPtr);
     s.integer(RAMBankPtr);
     s.integer(RAMEnable);
@@ -131,7 +131,7 @@ void MBC2::writeRAMByte(u16 address, u8 value) {
     if (RAMEnable) mmu->RAM[address] = value & 0x0F;
 }
 
-void MBC2::serialize(phos::serializer &s) {
+void MBC2::serialize(serializer &s) {
     s.integer(ROMBankPtr);
     s.integer(RAMBankPtr);
     s.integer(RAMEnable);
@@ -225,7 +225,7 @@ void MBC3::latchClockData() {
     latchedTime = currentTime;
 }
 
-void MBC3::serialize(phos::serializer &s) {
+void MBC3::serialize(serializer &s) {
     s.integer(ROMBankPtr);
     s.integer(RAMBankPtr);
     s.integer(latchedTime);
@@ -285,7 +285,7 @@ void MBC5::writeRAMByte(u16 address, u8 value) {
     mmu->RAM[address + RAMBankPtr * RAM_BANK_SIZE] = value;
 }
 
-void MBC5::serialize(phos::serializer &s) {
+void MBC5::serialize(serializer &s) {
     s.integer(ROMBankPtr);
     s.integer(RAMBankPtr);
     s.integer(RAMEnable);
