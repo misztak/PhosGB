@@ -1,6 +1,3 @@
-set(HAK_SRC
-        types.hpp
-        bit.hpp)
 
 add_library(hak INTERFACE)
 
