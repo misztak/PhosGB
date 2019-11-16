@@ -1,0 +1,6 @@
+# Object files
+*.o
+# Emscripten output
+phos_emscripten.html
+phos_emscripten.wasm
+phos_emscripten.js

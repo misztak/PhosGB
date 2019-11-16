@@ -27,7 +27,11 @@ void Host::ImGuiInit(SDL_Window *window, void *glContext) {
     ImGui::StyleColorsDark();
 
     ImGui_ImplSDL2_InitForOpenGL(window, glContext);
+#ifdef __EMSCRIPTEN__
+    ImGui_ImplOpenGL3_Init("#version 100");
+#else
     ImGui_ImplOpenGL3_Init(GLSL_VERSION);
+#endif
     ImGui::GetStyle().WindowBorderSize = 0;
 }
 
@@ -58,6 +62,7 @@ void Host::showMainMenu() {
     if (ImGui::MenuItem("Pause", "H")) {
         emulator->pause();
     }
+    #ifndef __EMSCRIPTEN__
     if (ImGui::MenuItem("Save State", "F5")) {
         emulator->saveState();
     }
@@ -88,6 +93,7 @@ void Host::showMainMenu() {
                 Log(I, "Created screenshot %s\n", fileName.c_str());
         }
     }
+    #endif
     if (ImGui::BeginMenu("Options")) {
         // Sound Control
         static bool soundDisabled = false;

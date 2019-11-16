@@ -8,8 +8,10 @@
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 
+#ifndef __EMSCRIPTEN__
 #include "lodepng.h"
 #include "FileBrowser.hpp"
+#endif
 
 #include "Common.hpp"
 #include "Emulator.hpp"

@@ -82,10 +82,12 @@ void DebugHost::update(u8* data) {
         ImGui::EndMenuBar();
     }
 
+    #ifndef __EMSCRIPTEN__
     if (requestFileChooser)
         ImGui::OpenPopup("FileBrowser");
     static FileBrowser fileChooser(std::bind(&Host::loadFile, this, std::placeholders::_1));
     fileChooser.DrawWindow(&requestFileChooser, 600, 400);
+    #endif
 
     emulatorView(data);
     if (showMemWindow) memoryView();

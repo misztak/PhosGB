@@ -58,12 +58,14 @@ void NormalHost::update(u8* data) {
         ImGui::EndPopup();
     }
 
+    #ifndef __EMSCRIPTEN__
     if (requestFileChooser)
         ImGui::OpenPopup("FileBrowser");
     static FileBrowser fileChooser(std::bind(&Host::loadFile, this, std::placeholders::_1));
     int w, h;
     SDL_GetWindowSize(window, &w, &h);
     fileChooser.DrawWindow(&requestFileChooser, w-10, h-10);
+    #endif
 
     if (enableOverlay && requestOverlay) showOverlay(&enableOverlay);
 

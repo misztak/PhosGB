@@ -3,6 +3,8 @@
 
 #include "Host.hpp"
 
+#include <unordered_map>
+
 #include "MemoryEditor.hpp"
 #include "DebugSink.hpp"
 
